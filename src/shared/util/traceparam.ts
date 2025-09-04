@@ -1,10 +1,10 @@
 import { t } from "@rbxts/t";
-import CBaseEntity from "shared/entities/BaseEntity";
+import BaseEntity from "shared/entities/BaseEntity";
 
 /* -------------------------------------------------------------------------- */
 /*                                  Functions                                 */
 /* -------------------------------------------------------------------------- */
-function IsEntityIncluded(entity: CBaseEntity, searchList: (keyof GameEntities)[]) {
+function IsEntityIncluded(entity: BaseEntity, searchList: (keyof GameEntities)[]) {
   for (const key of rawget(entity, "setIsA") as Set<keyof GameEntities>) {
     if (!searchList.includes(key)) continue;
 

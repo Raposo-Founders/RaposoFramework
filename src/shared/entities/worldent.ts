@@ -1,12 +1,12 @@
-import { CBaseRecordableEntity } from "./BaseRecordableEntity";
+import BaseEntity from "./BaseEntity";
 
 declare global {
   interface GameEntities {
-    WorldEntity: typeof CWorldEntity;
+    WorldEntity: typeof WorldEntity;
   }
 }
 
-abstract class CWorldEntity extends CBaseRecordableEntity {
+abstract class WorldEntity extends BaseEntity {
   abstract origin: CFrame;
   abstract size: Vector3;
   abstract velocity: Vector3;
@@ -18,4 +18,4 @@ abstract class CWorldEntity extends CBaseRecordableEntity {
   }
 }
 
-export = CWorldEntity;
+export = WorldEntity;

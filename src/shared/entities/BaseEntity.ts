@@ -2,12 +2,12 @@ import { ErrorObject, RandomString } from "shared/util/utilfuncs";
 
 declare global {
   interface GameEntities {
-    BaseEntity: typeof CBaseEntity;
+    BaseEntity: typeof BaseEntity;
   }
 }
 
-abstract class CBaseEntity {
-  readonly id = ErrorObject<string>("Entity id cannot be accessed during contruction.")
+abstract class BaseEntity {
+  readonly id = ErrorObject<string>("Entity id cannot be accessed during contruction.");
   readonly environment = ErrorObject<T_EntityEnvironment>("Entity session cannot be accessed during construction.");
 
   abstract readonly classname: keyof GameEntities;
@@ -56,6 +56,9 @@ abstract class CBaseEntity {
   }
 
   abstract Destroy(): void;
+
+  abstract GetStateBuffer(): buffer;
+  abstract ApplyStateBuffer(state: buffer): void;
 }
 
-export = CBaseEntity;
+export = BaseEntity;

@@ -31,7 +31,7 @@ function RecordEnvironment(entityEnvironment: CEntityEnvironment, lifecycleEnvir
     const entitiesSaveData = new Array<I_EntitySnapshotContent>();
     const currentRecordingTime = time() - startingTime;
 
-    for (const ent of entityEnvironment.GetEntitiesThatIsA("RecordableEntity"))
+    for (const [, ent] of entityEnvironment.entities)
       entitiesSaveData.push({
         id: ent.id,
         classname: ent.classname,
@@ -172,18 +172,9 @@ export class CReplayPlayer {
   GetEntity(entityId: string, classname: keyof GameEntities) {
     if (this._entitiesOnCreationQueue.has(entityId)) return;
 
-    const entity = this._environment.GetEntityFromId(entityId);
+    const entity = this._environment.entities.get(entityId);
     if (entity && entity.classname !== classname) return; // How the fuck?
-    if (entity) {
-
-      // This is just fucking ugly
-      if (!entity.IsA("RecordableEntity")) {
-        warn(entityId, "is not an RecordableEntity");
-        return;
-      }
-
-      return entity;
-    }
+    if (entity) return entity;
 
     this._entitiesOnCreationQueue.add(entityId);
 
