@@ -78,7 +78,8 @@ export class CEntityEnvironment {
         break;
       }
 
-    assert(!this.entities.has(entityId), `Entity of id ${entityId} already exists as an ${this.entities.get(entityId)!.classname}.`);
+    if (this.entities.has(entityId))
+      throw `Entity of id ${entityId} already exists as an ${this.entities.get(entityId)!.classname}.`;
 
     const entity = new entity_constructor(...(args as never[]));
     rawset(entity, "environment", this);
