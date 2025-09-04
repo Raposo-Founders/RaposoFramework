@@ -6,7 +6,7 @@ export type T_LOGTYPE = "INFO" | "WARN" | "EXCEPTION";
 export const MESSAGE_OUT_SIGNAL = new CBindableSignal<[T_LOGTYPE, string]>();
 
 export function msg(logType: T_LOGTYPE, ...content: unknown[]) {
-  const caller = debug.info(2, "s");
+  const caller = debug.info(2, "s")[0];
 
   let finalString = "";
 
