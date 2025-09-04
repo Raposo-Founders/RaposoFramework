@@ -49,6 +49,7 @@ for (const inst of StarterGui.GetChildren()) {
 // Import systems
 _G.Systems = {};
 import("shared/systems/sound").andThen((val) => _G.Systems["sound"] = val);
+import("shared/systems/playermngr").andThen((val) => _G.Systems["playermngr"] = val);
 import("shared/systems/sessionmngr").andThen((val) => _G.Systems["sessionmngr"] = val);
 
 import("./newsFetcher");
