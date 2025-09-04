@@ -1,7 +1,7 @@
 import { Players, RunService, TextChatService } from "@rbxts/services";
 import { createdCVars, registeredCallbacks, CVAR_FLAGS, registeredCallbackArgs, ExecuteConsoleCallback } from "./cvar";
 import { gameValues } from "shared/gamevalues";
-import { messageOut } from "shared/logger";
+import { MESSAGE_OUT_SIGNAL } from "shared/logger";
 
 // # Constants & variables
 
@@ -35,17 +35,17 @@ export async function ExecuteCommand(content: string) {
     const numValue1 = tonumber(value1);
 
     if (!value1) {
-      messageOut.Fire("INFO", `${targetVariable.name}: ${tostring(targetVariable.Get())} [${targetVariable.type}]`);
+      MESSAGE_OUT_SIGNAL.Fire("INFO", `${targetVariable.name}: ${tostring(targetVariable.Get())} [${targetVariable.type}]`);
     }
 
     if (targetVariable.flags.includes(CVAR_FLAGS.readonly)) {
-      messageOut.Fire("EXCEPTION", `CVar ${name} is read only.`);
+      MESSAGE_OUT_SIGNAL.Fire("EXCEPTION", `CVar ${name} is read only.`);
       return;
     }
 
     if (targetVariable.type === "number") {
       if (!numValue1) {
-        messageOut.Fire("EXCEPTION", `Value must be a number, got string.`);
+        MESSAGE_OUT_SIGNAL.Fire("EXCEPTION", `Value must be a number, got string.`);
         return;
       }
       targetVariable.Set(numValue1);
@@ -54,7 +54,7 @@ export async function ExecuteCommand(content: string) {
     if (targetVariable.type === "string")
       targetVariable.Set(value1);
 
-    messageOut.Fire("INFO", `${name} set to ${value1}`);
+    MESSAGE_OUT_SIGNAL.Fire("INFO", `${name} set to ${value1}`);
     return;
   }
 
@@ -95,7 +95,7 @@ export async function ExecuteCommand(content: string) {
     return;
   }
 
-  messageOut.Fire("EXCEPTION", `Unknown command "${content}".`);
+  MESSAGE_OUT_SIGNAL.Fire("EXCEPTION", `Unknown command "${content}".`);
 }
 
 // # Bindings & misc

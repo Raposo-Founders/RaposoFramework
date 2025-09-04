@@ -4,7 +4,7 @@ import ReactRoblox from "@rbxts/react-roblox";
 import { UserInputService } from "@rbxts/services";
 import { ExecuteCommand } from "shared/cmd";
 import { registeredCallbacks, createdCVars, RegisterConsoleCallback } from "shared/cmd/cvar";
-import { messageOut } from "shared/logger";
+import { MESSAGE_OUT_SIGNAL } from "shared/logger";
 import CBindableSignal from "shared/util/signal";
 import { colorTable, uiPreferences } from "./default/values";
 import { BaseWindow, HideWindow, ShowWindow } from "./default/window";
@@ -339,7 +339,7 @@ UserInputService.InputBegan.Connect((input) => {
   setTextboxFocus.Fire(isWindowVisible);
 });
 
-messageOut.Connect((logType, content) => {
+MESSAGE_OUT_SIGNAL.Connect((logType, content) => {
 
   let accentColor: Color3 | undefined;
 

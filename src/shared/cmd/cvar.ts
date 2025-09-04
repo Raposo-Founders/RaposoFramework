@@ -1,4 +1,4 @@
-import { messageOut } from "shared/logger";
+import { MESSAGE_OUT_SIGNAL } from "shared/logger";
 
 // # Types
 type T_VALID_TYPES = "string" | "number";
@@ -48,13 +48,13 @@ export function RegisterConsoleCallback< // Abandon all hope below, this is curs
 export function ExecuteConsoleCallback(name: string, ...args: unknown[]) {
   const contextEnvironment: I_CommandContext = {
     Reply: (message) => {
-      messageOut.Fire("INFO", `[${name}]: ${message}`);
+      MESSAGE_OUT_SIGNAL.Fire("INFO", `[${name}]: ${message}`);
     },
     Warn: (message) => {
-      messageOut.Fire("WARN", `[${name}]: ${message}`);
+      MESSAGE_OUT_SIGNAL.Fire("WARN", `[${name}]: ${message}`);
     },
     Error: (message) => {
-      messageOut.Fire("EXCEPTION", `[${name}]: ${message}`);
+      MESSAGE_OUT_SIGNAL.Fire("EXCEPTION", `[${name}]: ${message}`);
     },
   };
 
