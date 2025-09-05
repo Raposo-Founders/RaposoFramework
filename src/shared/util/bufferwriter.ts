@@ -156,7 +156,7 @@ export function WriteBufferVector(value1: number, value2: number, value3: number
   bufferQueue.push({
     type: BUFFER_TYPE.VECTOR,
     value: vector.create(value1, value2, value3),
-  })
+  });
 }
 
 export function FinalizeBufferCreation() {
@@ -169,41 +169,41 @@ export function FinalizeBufferCreation() {
 
   for (const element of bufferQueue) {
     switch (element.type) {
-      case BUFFER_TYPE.U8:
-        currentSize += 8;
-        break;
-      case BUFFER_TYPE.I8:
-        currentSize += 8;
-        break;
-      case BUFFER_TYPE.U16:
-        currentSize += 16;
-        break;
-      case BUFFER_TYPE.I16:
-        currentSize += 16;
-        break;
-      case BUFFER_TYPE.U32:
-        currentSize += 32;
-        break;
-      case BUFFER_TYPE.I32:
-        currentSize += 32;
-        break;
-      case BUFFER_TYPE.F32:
-        currentSize += 32;
-        break;
-      case BUFFER_TYPE.F64:
-        currentSize += 64;
-        break;
-      case BUFFER_TYPE.STRING: {
-        const stringSize = tostring(element.value).size();
-        currentSize += stringSize + DEFAULT_STRING_SIZE;
-        break;
-      }
-      case BUFFER_TYPE.BOOL:
-        currentSize += 8;
-        break;
-      case BUFFER_TYPE.VECTOR:
-        currentSize += 32 * 3;
-        break;
+    case BUFFER_TYPE.U8:
+      currentSize += 8;
+      break;
+    case BUFFER_TYPE.I8:
+      currentSize += 8;
+      break;
+    case BUFFER_TYPE.U16:
+      currentSize += 16;
+      break;
+    case BUFFER_TYPE.I16:
+      currentSize += 16;
+      break;
+    case BUFFER_TYPE.U32:
+      currentSize += 32;
+      break;
+    case BUFFER_TYPE.I32:
+      currentSize += 32;
+      break;
+    case BUFFER_TYPE.F32:
+      currentSize += 32;
+      break;
+    case BUFFER_TYPE.F64:
+      currentSize += 64;
+      break;
+    case BUFFER_TYPE.STRING: {
+      const stringSize = tostring(element.value).size();
+      currentSize += stringSize + DEFAULT_STRING_SIZE;
+      break;
+    }
+    case BUFFER_TYPE.BOOL:
+      currentSize += 8;
+      break;
+    case BUFFER_TYPE.VECTOR:
+      currentSize += 32 * 3;
+      break;
     }
   }
 
@@ -211,65 +211,66 @@ export function FinalizeBufferCreation() {
 
   for (const element of bufferQueue) {
     switch (element.type) {
-      case BUFFER_TYPE.U8:
-        buffer.writeu8(bfr, currentOffset, element.value as number);
-        currentOffset += 8;
-        break;
-      case BUFFER_TYPE.I8:
-        buffer.writei8(bfr, currentOffset, element.value as number);
-        currentOffset += 8;
-        break;
-      case BUFFER_TYPE.U16:
-        buffer.writeu16(bfr, currentOffset, element.value as number);
-        currentOffset += 16;
-        break;
-      case BUFFER_TYPE.I16:
-        buffer.writei16(bfr, currentOffset, element.value as number);
-        currentOffset += 16;
-        break;
-      case BUFFER_TYPE.U32:
-        buffer.writeu32(bfr, currentOffset, element.value as number);
-        currentOffset += 32;
-        break;
-      case BUFFER_TYPE.I32:
-        buffer.writei32(bfr, currentOffset, element.value as number);
-        currentOffset += 32;
-        break;
-      case BUFFER_TYPE.F32:
-        buffer.writef32(bfr, currentOffset, element.value as number);
-        currentOffset += 32;
-        break;
-      case BUFFER_TYPE.F64:
-        buffer.writef64(bfr, currentOffset, element.value as number);
-        currentOffset += 64;
-        break;
-      case BUFFER_TYPE.STRING: {
-        const stringValue = tostring(element.value);
-        const stringSize = stringValue.size();
+    case BUFFER_TYPE.U8:
+      buffer.writeu8(bfr, currentOffset, element.value as number);
+      currentOffset += 8;
+      break;
+    case BUFFER_TYPE.I8:
+      buffer.writei8(bfr, currentOffset, element.value as number);
+      currentOffset += 8;
+      break;
+    case BUFFER_TYPE.U16:
+      buffer.writeu16(bfr, currentOffset, element.value as number);
+      currentOffset += 16;
+      break;
+    case BUFFER_TYPE.I16:
+      buffer.writei16(bfr, currentOffset, element.value as number);
+      currentOffset += 16;
+      break;
+    case BUFFER_TYPE.U32:
+      buffer.writeu32(bfr, currentOffset, element.value as number);
+      currentOffset += 32;
+      break;
+    case BUFFER_TYPE.I32:
+      buffer.writei32(bfr, currentOffset, element.value as number);
+      currentOffset += 32;
+      break;
+    case BUFFER_TYPE.F32:
+      buffer.writef32(bfr, currentOffset, element.value as number);
+      currentOffset += 32;
+      break;
+    case BUFFER_TYPE.F64:
+      buffer.writef64(bfr, currentOffset, element.value as number);
+      currentOffset += 64;
+      break;
+    case BUFFER_TYPE.STRING: {
+      const stringValue = tostring(element.value);
+      const stringSize = stringValue.size();
 
-        buffer.writeu16(bfr, currentOffset, stringSize);
-        currentOffset += DEFAULT_STRING_SIZE;
+      buffer.writeu16(bfr, currentOffset, stringSize);
+      currentOffset += DEFAULT_STRING_SIZE;
 
-        buffer.writestring(bfr, currentOffset, stringValue);
-        currentOffset += stringSize;
-        break;
-      }
-      case BUFFER_TYPE.BOOL:
-        buffer.writeu8(bfr, currentOffset, element.value === true ? 255 : 0);
-        currentOffset += 8;
-        break;
-      case BUFFER_TYPE.VECTOR:
-        const x = (element.value as vector).x;
-        const y = (element.value as vector).y;
-        const z = (element.value as vector).z;
-        const addOffset = 32;
+      buffer.writestring(bfr, currentOffset, stringValue);
+      currentOffset += stringSize;
+      break;
+    }
+    case BUFFER_TYPE.BOOL:
+      buffer.writeu8(bfr, currentOffset, element.value === true ? 255 : 0);
+      currentOffset += 8;
+      break;
+    case BUFFER_TYPE.VECTOR: {
+      const x = (element.value as vector).x;
+      const y = (element.value as vector).y;
+      const z = (element.value as vector).z;
+      const addOffset = 32;
 
-        buffer.writef32(bfr, currentOffset, x);
-        buffer.writef32(bfr, currentOffset + addOffset, y);
-        buffer.writef32(bfr, currentOffset + (addOffset * 2), z);
+      buffer.writef32(bfr, currentOffset, x);
+      buffer.writef32(bfr, currentOffset + addOffset, y);
+      buffer.writef32(bfr, currentOffset + (addOffset * 2), z);
 
-        currentOffset += (addOffset * 3);
-        break;
+      currentOffset += (addOffset * 3);
+      break;
+    }
     }
   }
 
