@@ -25,7 +25,7 @@ _G.RaposoEnv = {
   }
 };
 
-clientSharedEnv.lifecycle.BindTickrate(() => clientSharedEnv.netportal.ProcessIncomingPackets());
+clientSharedEnv.lifecycle.BindTickrate(() => clientSharedEnv.netportal.processQueuedPackets());
 clientSharedEnv.lifecycle.BindTickrate((_, dt) => {
   for (const ent of clientSharedEnv.entityEnvironment.GetEntitiesThatIsA("BaseEntity")) {
     if (ent.entity_think_list.size() <= 0) continue;

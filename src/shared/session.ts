@@ -2,7 +2,7 @@ import { Players } from "@rbxts/services";
 import { CEntityEnvironment } from "./entities";
 import { CLifecycleEnvironment } from "./lifecycle";
 import { CNetworkPortal } from "./network";
-import { FinalizeBufferCreation, StartBufferCreation, WriteBufferString } from "./util/bufferwriter";
+import { WriteBufferString } from "./util/bufferwriter";
 import CBindableSignal from "./util/signal";
 import CWorldInstance from "./worldrender";
 
@@ -35,16 +35,16 @@ class CSessionInstance {
     CSessionInstance.running_sessions.set(sessionid, this);
     CSessionInstance.session_created.Fire(this);
 
-    this._netLifecycleDisconnect = this.lifecycle_env.BindTickrate(() => this.network_env.ProcessIncomingPackets());
+    this._netLifecycleDisconnect = this.lifecycle_env.BindTickrate(() => this.network_env.processQueuedPackets());
 
     this._connections.push(Players.PlayerRemoving.Connect(user => this.RemovePlayer(user, "Left the game.")));
 
     this.entity_env.is_server = true;
     this.lifecycle_env.running = true;
 
-    this.network_env.ListenPacket("session_disconnect_request", (sender, bfr) => {
-      if (!sender.instance) return;
-      this.RemovePlayer(sender.instance, "Disconnected by user.");
+    this.network_env.listenPacket("session_disconnect_request", (sender, bfr) => {
+      if (!sender) return;
+      this.RemovePlayer(sender, "Disconnected by user.");
     });
   }
 
@@ -90,7 +90,7 @@ class CSessionInstance {
   InsertPlayer(player: Player) {
     print(`${player.Name} has joined the session ${this.sessionid}`);
 
-    this.network_env.player_list.add(player);
+    this.network_env.signedUsers.add(player);
     this.active_players.add(player);
     this.player_joined.Fire(player);
   }
@@ -100,11 +100,11 @@ class CSessionInstance {
 
     print(`${player.Name} has left the session ${this.sessionid}. (${disconnectreason})`);
 
-    StartBufferCreation();
+    this.network_env.startWritingMessage("session_disconnected", [player], []);
     WriteBufferString(disconnectreason);
-    this.network_env.WritePacket("session_disconnected", [player], [], FinalizeBufferCreation());
+    this.network_env.finishWritingMessage();
 
-    this.network_env.player_list.delete(player);
+    this.network_env.signedUsers.delete(player);
     this.active_players.delete(player);
     this.player_left.Fire(player, disconnectreason);
   }

@@ -89,17 +89,17 @@ export function ClientCreateLocalSession() {
   assert(RunService.IsClient(), "Function can only be called from the client.");
 
   const serverSession = new CSessionInstance("local", "default");
-  serverSession.network_env.post_to_remote = false;
-  const serverSessionConnection = serverSession.network_env.network_outgoing_signal.Connect((id, bfr) => clientSharedEnv.netportal.NetworkIn(undefined, id, bfr));
+  serverSession.network_env.postToRemote = false;
+  const serverSessionConnection = serverSession.network_env.networkOutgoing.Connect((id, bfr) => clientSharedEnv.netportal.insertNetwork(undefined, id, bfr));
 
-  clientSharedEnv.netportal.post_to_remote = false;
-  const clientSessionConnection = clientSharedEnv.netportal.network_outgoing_signal.Connect((id, bfr) => serverSession.network_env.NetworkIn(Players.LocalPlayer, id, bfr));
+  clientSharedEnv.netportal.postToRemote = false;
+  const clientSessionConnection = clientSharedEnv.netportal.networkOutgoing.Connect((id, bfr) => serverSession.network_env.insertNetwork(Players.LocalPlayer, id, bfr));
 
   serverSession.BindToClose(() => {
     serverSessionConnection.Disconnect();
     clientSessionConnection.Disconnect();
 
-    clientSharedEnv.netportal.post_to_remote = true;
+    clientSharedEnv.netportal.postToRemote = true;
   });
 
   clientSessionConnected.Fire("local");
@@ -119,8 +119,8 @@ export function ClientCreateLocalSession() {
 RegisterConsoleCallback(["disconnect", "dc"])((ctx) => {
   ctx.Reply("Disconnecting from session...");
 
-  StartBufferCreation();
-  clientSharedEnv.netportal.WritePacket("session_disconnect_request", undefined, undefined, FinalizeBufferCreation());
+  clientSharedEnv.netportal.startWritingMessage("session_disconnect_request", undefined, undefined);
+  clientSharedEnv.netportal.finishWritingMessage();
 });
 
 RegisterConsoleCallback(["connect"], { name: "sessionId", number: false })((ctx, sessionId) => {
@@ -225,7 +225,7 @@ if (RunService.IsClient())
 
 // Handling disconnections
 if (RunService.IsClient())
-  clientSharedEnv.netportal.ListenPacket("session_disconnected", (sender, bfr) => {
+  clientSharedEnv.netportal.listenPacket("session_disconnected", (sender, bfr) => {
     const reader = BufferReader(bfr);
     const reason = reader.STRING();
 
