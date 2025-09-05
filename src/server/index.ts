@@ -1,7 +1,7 @@
 import BannerNotify from "@rbxts/banner-notify";
 import { ReplicatedStorage, StarterGui } from "@rbxts/services";
 import { modelsFolder, modulesFolder, uiFolder } from "shared/folders";
-import { ListenDirectPacket } from "shared/network";
+import { listenDirectMessage } from "shared/network";
 import CSessionInstance from "shared/session";
 import { BufferReader } from "shared/util/bufferreader";
 
@@ -25,7 +25,7 @@ function CleanUpWorkspace() {
 }
 
 // # Bindings & misc
-ListenDirectPacket("d_connectToPortal", (user, bfr) => {
+listenDirectMessage("d_connectToPortal", (user, bfr) => {
   if (!user) return;
 
   const reader = BufferReader(bfr);

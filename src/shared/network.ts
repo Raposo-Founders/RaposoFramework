@@ -3,6 +3,7 @@ import { ReplicatedInstance } from "./util/utilfuncs";
 import CBindableSignal from "./util/signal";
 import { HttpService, Players, RunService } from "@rbxts/services";
 import Object from "@rbxts/object-utils";
+import { FinalizeBufferCreation, StartBufferCreation } from "./util/bufferwriter";
 
 // # Types
 interface PacketInfo {
@@ -22,35 +23,50 @@ interface NetworkSenderInfo {
 const packetsRemoteEvent = ReplicatedInstance(workspace, "NETWORK_PACKETS", "RemoteEvent");
 const unreliablePacketsRemoteEvent = ReplicatedInstance(workspace, "NETWORK_UNRELIABLE_PACKETS", "UnreliableRemoteEvent");
 
-const directPacketsRemoteEvent = ReplicatedInstance(workspace, "NETWORK_DIRECT_PACKETS", "RemoteEvent");
-const directUnreliablePacketsRemoteEvent = ReplicatedInstance(workspace, "NETWORK_DIRECT_UNRELIABLE_PACKETS", "UnreliableRemoteEvent");
+const DIRECT_MESSAGES_REMOTE = ReplicatedInstance(workspace, "NETWORK_DIRECT_PACKETS", "RemoteEvent");
+const UNREL_DIRECT_MESSAGES_REMOTE = ReplicatedInstance(workspace, "NETWORK_DIRECT_UNRELIABLE_PACKETS", "UnreliableRemoteEvent");
 
 const boundDirectCallbacks = new Map<string, Callback>();
 
+const writingDirectMessages = new Map<thread, { id: string, user: Player | undefined, unreliable: boolean }>();
+
 // # Functions
-export function WriteDirectPacket(id: string, user: Player | undefined = undefined, bfr: buffer) {
+export function startDirectMessage(id: string, user: Player | undefined = undefined, unreliable = false) {
+  const thread = coroutine.running();
+  if (writingDirectMessages.has(thread))
+    throw "An direct packet is already being written in the current thread.";
+
   if (RunService.IsServer() && !t.instanceIsA("Player")(user))
     throw `Argument #2 must be an player, got ${tostring(user)} (${typeOf(user)}).`;
 
-  if (RunService.IsClient())
-    directPacketsRemoteEvent.FireServer(id, bfr);
-
-  if (RunService.IsServer())
-    directPacketsRemoteEvent.FireClient(user!, id, bfr);
+  StartBufferCreation();
+  writingDirectMessages.set(thread, { id, user, unreliable });
 }
 
-export function WriteUnreliableDirectPacket(id: string, user: Player | undefined = undefined, bfr: buffer) {
-  if (RunService.IsServer() && !t.instanceIsA("Player")(user))
-    throw `Argument #2 must be an player, got ${tostring(user)} (${typeOf(user)}).`;
+export function finishDirectMessage() {
+  const thread = coroutine.running();
+  if (!writingDirectMessages.has(thread))
+    throw "No direct messages have been started in the current thread.";
+
+  const info = writingDirectMessages.get(thread)!;
+  const bfr = FinalizeBufferCreation();
 
   if (RunService.IsClient())
-    directUnreliablePacketsRemoteEvent.FireServer(id, bfr);
+    if (info.unreliable)
+      UNREL_DIRECT_MESSAGES_REMOTE.FireServer(info.id, bfr);
+    else
+      DIRECT_MESSAGES_REMOTE.FireServer(info.id, bfr);
 
   if (RunService.IsServer())
-    directUnreliablePacketsRemoteEvent.FireClient(user!, id, bfr);
+    if (info.unreliable)
+      UNREL_DIRECT_MESSAGES_REMOTE.FireClient(info.user!, info.id, bfr);
+    else
+      DIRECT_MESSAGES_REMOTE.FireClient(info.user!, info.id, bfr);
+
+  writingDirectMessages.delete(thread);
 }
 
-export function ListenDirectPacket(id: string, callback: (sender: Player | undefined, bfr: buffer) => void) {
+export function listenDirectMessage(id: string, callback: (sender: Player | undefined, bfr: buffer) => void) {
   boundDirectCallbacks.set(id, callback);
 }
 
@@ -170,7 +186,7 @@ export class CNetworkPortal {
 
 // # Bindings & misc
 if (RunService.IsServer()) {
-  directPacketsRemoteEvent.OnServerEvent.Connect((user, id, bfr) => {
+  DIRECT_MESSAGES_REMOTE.OnServerEvent.Connect((user, id, bfr) => {
     if (!t.string(id) || !t.buffer(bfr))
       throw `User ${user.UserId} has sent an invalid DIRECT package.\n{ id = ${id}, tid = ${typeOf(id)}}, bfr = ${typeOf(bfr)}`;
 
@@ -181,7 +197,7 @@ if (RunService.IsServer()) {
     callback(user, bfr);
   });
 
-  directUnreliablePacketsRemoteEvent.OnServerEvent.Connect((user, id, bfr) => {
+  UNREL_DIRECT_MESSAGES_REMOTE.OnServerEvent.Connect((user, id, bfr) => {
     if (!t.string(id) || !t.buffer(bfr))
       throw `User ${user.UserId} has sent an invalid (unreliable) DIRECT package.\n{ id = ${id}, tid = ${typeOf(id)}}, bfr = ${typeOf(bfr)}`;
 
@@ -192,7 +208,7 @@ if (RunService.IsServer()) {
     callback(user, bfr);
   });
 } else {
-  directPacketsRemoteEvent.OnClientEvent.Connect((id, bfr) => {
+  DIRECT_MESSAGES_REMOTE.OnClientEvent.Connect((id, bfr) => {
     if (!t.string(id) || !t.buffer(bfr))
       throw `The server has sent an invalid DIRECT package.\n{ id = ${id}, tid = ${typeOf(id)}}, bfr = ${typeOf(bfr)}`;
 
@@ -203,7 +219,7 @@ if (RunService.IsServer()) {
     callback(undefined, bfr);
   });
 
-  directUnreliablePacketsRemoteEvent.OnClientEvent.Connect((id, bfr) => {
+  UNREL_DIRECT_MESSAGES_REMOTE.OnClientEvent.Connect((id, bfr) => {
     if (!t.string(id) || !t.buffer(bfr))
       throw `The server has sent an invalid (unreliable) DIRECT package.\n{ id = ${id}, tid = ${typeOf(id)}}, bfr = ${typeOf(bfr)}`;
 

@@ -2,7 +2,7 @@ import { Players, RunService } from "@rbxts/services";
 import { clientSessionConnected, clientSessionDisconnected, clientSharedEnv } from "shared/clientshared";
 import { RegisterConsoleCallback } from "shared/cmd/cvar";
 import { CEntityEnvironment } from "shared/entities";
-import { ListenDirectPacket, WriteDirectPacket } from "shared/network";
+import { finishDirectMessage, listenDirectMessage, startDirectMessage } from "shared/network";
 import CSessionInstance from "shared/session";
 import { BufferReader } from "shared/util/bufferreader";
 import { FinalizeBufferCreation, StartBufferCreation, WriteBufferString, WriteBufferU8 } from "shared/util/bufferwriter";
@@ -45,9 +45,9 @@ export function ClientConnectToServerSession(sessionId: string) {
 
   print("Requesting connection to session:", sessionId);
 
-  StartBufferCreation();
+  startDirectMessage(SESSION_CONNECTION_IDS.CONNECT_REQUEST, undefined);
   WriteBufferString(sessionId);
-  WriteDirectPacket(SESSION_CONNECTION_IDS.CONNECT_REQUEST, undefined, FinalizeBufferCreation());
+  finishDirectMessage();
 
   const connectionResult = coroutine.yield()[0] as SESSION_CONNECTION_REPLY;
   if (connectionResult !== SESSION_CONNECTION_REPLY.ALLOWED) {
@@ -57,9 +57,9 @@ export function ClientConnectToServerSession(sessionId: string) {
 
   task.wait(CONNECTION_STEP_COOLDOWN);
 
-  StartBufferCreation();
+  startDirectMessage(SESSION_CONNECTION_IDS.GET_SESSION_INFO, undefined);
   WriteBufferString(sessionId);
-  WriteDirectPacket(SESSION_CONNECTION_IDS.GET_SESSION_INFO, undefined, FinalizeBufferCreation());
+  finishDirectMessage();
 
   const mapName = tostring(coroutine.yield()[0]);
 
@@ -75,9 +75,9 @@ export function ClientConnectToServerSession(sessionId: string) {
 
   task.wait(CONNECTION_STEP_COOLDOWN);
 
-  StartBufferCreation();
+  startDirectMessage(SESSION_CONNECTION_IDS.MAP_LOADED, undefined);
   WriteBufferString(sessionId);
-  WriteDirectPacket(SESSION_CONNECTION_IDS.MAP_LOADED, undefined, FinalizeBufferCreation());
+  finishDirectMessage();
 
   canConnect = true;
   currentConnectionThread = undefined;
@@ -134,7 +134,7 @@ RegisterConsoleCallback(["connect"], { name: "sessionId", number: false })((ctx,
 
 // Connection requests
 if (RunService.IsServer())
-  ListenDirectPacket(SESSION_CONNECTION_IDS.CONNECT_REQUEST, (sender, bfr) => {
+  listenDirectMessage(SESSION_CONNECTION_IDS.CONNECT_REQUEST, (sender, bfr) => {
     if (!sender) return;
     if (playersConnectionQueue.has(sender)) return;
 
@@ -142,16 +142,16 @@ if (RunService.IsServer())
     const sessionId = reader.STRING();
 
     if (!CSessionInstance.running_sessions.has(sessionId)) {
-      StartBufferCreation();
+      startDirectMessage("SESSION_CONNECTION_REPLY", sender);
       WriteBufferU8(SESSION_CONNECTION_REPLY.NOEXIST);
-      WriteDirectPacket("SESSION_CONNECTION_REPLY", sender, FinalizeBufferCreation());
+      finishDirectMessage();
 
       return;
     }
 
-    StartBufferCreation();
+    startDirectMessage("SESSION_CONNECTION_REPLY", sender);
     WriteBufferU8(SESSION_CONNECTION_REPLY.ALLOWED);
-    WriteDirectPacket("SESSION_CONNECTION_REPLY", sender, FinalizeBufferCreation());
+    finishDirectMessage();
 
     playersConnectionQueue.set(sender, {
       sessionId: sessionId,
@@ -161,7 +161,7 @@ if (RunService.IsServer())
 
 // Getting info from sessions
 if (RunService.IsServer())
-  ListenDirectPacket(SESSION_CONNECTION_IDS.GET_SESSION_INFO, (sender, bfr) => {
+  listenDirectMessage(SESSION_CONNECTION_IDS.GET_SESSION_INFO, (sender, bfr) => {
     if (!sender) return;
 
     const reader = BufferReader(bfr);
@@ -173,16 +173,16 @@ if (RunService.IsServer())
     const targetSession = CSessionInstance.running_sessions.get(sessionId);
     if (!targetSession) return; // TODO: Better error handling
 
-    StartBufferCreation();
+    startDirectMessage("SESSION_INFO_REPLY", sender);
     WriteBufferString(targetSession.map);
-    WriteDirectPacket("SESSION_INFO_REPLY", sender, FinalizeBufferCreation());
+    finishDirectMessage();
 
     info.nextCallId = SESSION_CONNECTION_IDS.MAP_LOADED;
   });
 
 // Finalize connection
 if (RunService.IsServer())
-  ListenDirectPacket(SESSION_CONNECTION_IDS.MAP_LOADED, (sender, bfr) => {
+  listenDirectMessage(SESSION_CONNECTION_IDS.MAP_LOADED, (sender, bfr) => {
     if (!sender) return;
 
     const reader = BufferReader(bfr);
@@ -201,7 +201,7 @@ if (RunService.IsServer())
 
 // Receiving connection reply info
 if (RunService.IsClient())
-  ListenDirectPacket("SESSION_CONNECTION_REPLY", (sender, bfr) => {
+  listenDirectMessage("SESSION_CONNECTION_REPLY", (sender, bfr) => {
     const reader = BufferReader(bfr);
     const reply = reader.U8() as SESSION_CONNECTION_REPLY;
 
@@ -213,7 +213,7 @@ if (RunService.IsClient())
 
 // Receiving connection reply info
 if (RunService.IsClient())
-  ListenDirectPacket("SESSION_INFO_REPLY", (sender, bfr) => {
+  listenDirectMessage("SESSION_INFO_REPLY", (sender, bfr) => {
     const reader = BufferReader(bfr);
     const mapName = reader.STRING();
 
