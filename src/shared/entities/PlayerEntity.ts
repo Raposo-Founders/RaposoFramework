@@ -1,5 +1,5 @@
-import HealthEntity from "./HealthEntity";
 import { FinalizeBufferCreation, StartBufferCreation } from "shared/util/bufferwriter";
+import HealthEntity from "./HealthEntity";
 
 declare global {
   interface GameEntities {
@@ -29,8 +29,10 @@ class PlayerEntity extends HealthEntity {
     return FinalizeBufferCreation();
   }
 
-  ApplyStateBuffer(state: buffer): void {
-    
+  ApplyStateBuffer(state: buffer): void { }
+
+  Think(dt: number): void {
+      
   }
 
   Destroy(): void { }

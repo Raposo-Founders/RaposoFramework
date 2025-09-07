@@ -49,16 +49,12 @@ abstract class BaseEntity {
     return this.attributes_list.get(name);
   }
 
-  BindThinkCallback(callback: (dt: number) => void) {
-    this.entity_think_list.push(callback);
-
-    return callback;
-  }
-
   abstract Destroy(): void;
 
   abstract GetStateBuffer(): buffer;
   abstract ApplyStateBuffer(state: buffer): void;
+
+  abstract Think(dt: number): void;
 }
 
 export = BaseEntity;
