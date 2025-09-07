@@ -1,14 +1,9 @@
 import BannerNotify from "@rbxts/banner-notify";
 import { ReplicatedStorage, StarterGui } from "@rbxts/services";
 import { modelsFolder, modulesFolder, uiFolder } from "shared/folders";
-import { listenDirectMessage } from "shared/network";
-import CSessionInstance from "shared/session";
 import { BufferReader } from "shared/util/bufferreader";
 
-// # Constants
-
-// # Variables
-let defaultSession: CSessionInstance | undefined;
+// # Constants & variables
 
 // # Functions
 function CleanUpWorkspace() {
@@ -23,24 +18,6 @@ function CleanUpWorkspace() {
     inst.Destroy();
   }
 }
-
-// # Bindings & misc
-listenDirectMessage("d_connectToPortal", (user, bfr) => {
-  if (!user) return;
-
-  const reader = BufferReader(bfr);
-  const sessionId = reader.STRING();
-
-  if (sessionId === "default") {
-    if (!defaultSession) {
-      defaultSession = new CSessionInstance("default", "default");
-
-      game.BindToClose(() => defaultSession?.Close());
-    }
-
-    defaultSession.InsertPlayer(user);
-  }
-});
 
 for (const inst of StarterGui.GetChildren()) {
   inst.Parent = uiFolder;
@@ -77,7 +54,5 @@ for (const inst of modulesFolder.GetChildren()) {
 
 // Misc & other shit
 BannerNotify.InitServer(); // Why the fuck does the server need to be initialized?
-
-modelsFolder.WaitForChild("CheezIt"); // ALL HAIL THE LOAD BEARING CHEEZIT!;
 
 ReplicatedStorage.SetAttribute("ServerRunning", true);
