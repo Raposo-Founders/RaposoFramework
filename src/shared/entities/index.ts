@@ -1,11 +1,10 @@
-import { t } from "@rbxts/t";
-import BaseEntity from "./BaseEntity";
-import CBindableSignal from "shared/util/signal";
 import { RunService } from "@rbxts/services";
+import { t } from "@rbxts/t";
+import { msg } from "shared/logger";
+import CBindableSignal from "shared/util/signal";
 import { RandomString } from "shared/util/utilfuncs";
 import CWorldInstance from "shared/worldrender";
-import { msg } from "shared/logger";
-import Object from "@rbxts/object-utils";
+import BaseEntity from "./BaseEntity";
 
 // # Types
 declare global {
@@ -33,6 +32,7 @@ export function requireEntityModulesFromFolder(instance: Instance) {
     if (!inst.IsA("ModuleScript")) continue;
 
     const content = require(inst);
+    if (t.nil(content)) continue;
     if (!t.table(content) || !("constructor" in content)) {
       warn(inst, "did not return an valid entity class constructor.");
       continue;
