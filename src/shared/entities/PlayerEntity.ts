@@ -1,4 +1,5 @@
 import { FinalizeBufferCreation, StartBufferCreation } from "shared/util/bufferwriter";
+import { registerEntityClass } from ".";
 import HealthEntity from "./HealthEntity";
 
 declare global {
@@ -7,9 +8,16 @@ declare global {
   }
 }
 
-class PlayerEntity extends HealthEntity {
+// # Constants & variables
+export enum PlayerTeam {
+  Defenders,
+  Raiders,
+  Spectators,
+}
+
+// # Class
+export default class PlayerEntity extends HealthEntity {
   readonly classname: keyof GameEntities = "PlayerEntity";
-  controller: number | undefined;
 
   health = 100;
   maxHealth = 100;
@@ -17,6 +25,8 @@ class PlayerEntity extends HealthEntity {
   origin = new CFrame();
   size = new Vector3(2, 5, 2);
   velocity = new Vector3();
+
+  team = PlayerTeam.Spectators;
 
   constructor() {
     super();
@@ -38,4 +48,5 @@ class PlayerEntity extends HealthEntity {
   Destroy(): void { }
 }
 
-export = PlayerEntity;
+// # Misc
+registerEntityClass("PlayerEntity", PlayerEntity);
