@@ -2,6 +2,7 @@ import BannerNotify from "@rbxts/banner-notify";
 import { ReplicatedStorage, StarterGui } from "@rbxts/services";
 import { modelsFolder, modulesFolder, uiFolder } from "shared/folders";
 import { BufferReader } from "shared/util/bufferreader";
+import { getInstanceFromPath } from "shared/util/instancepath";
 
 // # Constants & variables
 
@@ -39,6 +40,15 @@ _G.RaposoEnv = {
     BufferWriter: import("shared/util/bufferwriter").expect(),
   }
 };
+
+// Import entities
+{
+  const [root, path] = $getModuleTree("shared/entities");
+  for (const inst of getInstanceFromPath(root, path).GetChildren()) {
+    if (!inst.IsA("ModuleScript")) continue;
+    require(inst);
+  }
+}
 
 CleanUpWorkspace();
 

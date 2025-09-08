@@ -7,6 +7,7 @@ import { CreateSoundGroup } from "shared/systems/sound";
 import { BufferReader } from "shared/util/bufferreader";
 import ConsoleWindow from "./UI/consolewindow";
 import { defaultRoot } from "./UI/default/values";
+import { getInstanceFromPath } from "shared/util/instancepath";
 
 // # Functions
 
@@ -28,7 +29,7 @@ _G.RaposoEnv = {
 clientSharedEnv.lifecycle.BindTickrate(() => clientSharedEnv.netportal.processQueuedPackets());
 clientSharedEnv.lifecycle.BindTickrate((_, dt) => {
   for (const [, entity] of clientSharedEnv.entityEnvironment.entities) 
-    task.spawn(entity.Think, dt);
+    task.spawn(() => entity.Think(dt));
 });
 
 // # Init
@@ -42,6 +43,15 @@ import("shared/recording");
 import("shared/systems/sound").andThen((val) => _G.Systems["sound"] = val);
 import("shared/systems/playermngr").andThen((val) => _G.Systems["playermngr"] = val);
 import("shared/systems/sessionmngr").andThen((val) => _G.Systems["sessionmngr"] = val);
+
+// Import entities
+{
+  const [root, path] = $getModuleTree("shared/entities");
+  for (const inst of getInstanceFromPath(root, path).GetChildren()) {
+    if (!inst.IsA("ModuleScript")) continue;
+    require(inst);
+  }
+}
 
 clientSharedEnv.lifecycle.running = true;
 
