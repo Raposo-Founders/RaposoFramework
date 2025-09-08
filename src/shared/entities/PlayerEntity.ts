@@ -31,6 +31,7 @@ export function getPlayerEntityFromUserId(environment: EntityManager, userid: nu
 export default class PlayerEntity extends HealthEntity {
   readonly classname: keyof GameEntities = "PlayerEntity";
 
+  readonly spawned = new Signal<[origin: CFrame]>();
   health = 100;
   maxHealth = 100;
 
@@ -38,6 +39,7 @@ export default class PlayerEntity extends HealthEntity {
   origin = new CFrame();
   size = new Vector3(2, 5, 2);
   velocity = new Vector3();
+  grounded = false;
 
   readonly teleportPlayermodelSignal = new Signal<[origin: CFrame]>();
 
@@ -70,6 +72,7 @@ export default class PlayerEntity extends HealthEntity {
     writeBufferVector(this.size.X, this.size.Y, this.size.Z);
     writeBufferVector(this.velocity.X, this.velocity.Y, this.velocity.Z);
     writeBufferBool(this.pendingTeleport);
+    writeBufferBool(this.grounded);
 
     writeBufferU8(this.team);
     writeBufferString(tostring(this.userid));
@@ -92,6 +95,7 @@ export default class PlayerEntity extends HealthEntity {
     const size = reader.vec();
     const velocity = reader.vec();
     const pendingTeleport = reader.bool();
+    const grounded = reader.bool();
 
     const teamIndex = reader.u8();
     const userId = tonumber(reader.string()) || 0;
@@ -119,6 +123,7 @@ export default class PlayerEntity extends HealthEntity {
 
     this.size = new Vector3(size.x, size.y, size.z);
     this.velocity = new Vector3(velocity.x, velocity.y, velocity.z);
+    this.grounded = grounded;
 
     if (this.environment.isPlayback || !this.environment.isServer) {
       this.health = health;
@@ -136,6 +141,14 @@ export default class PlayerEntity extends HealthEntity {
 
   Think(dt: number): void {
       
+  }
+
+  Spawn(origin: CFrame) {
+    this.maxHealth = 100;
+    this.health = this.maxHealth;
+
+    this.TeleportTo(origin);
+    this.spawned.Fire(origin);
   }
 
   TeleportTo(origin: CFrame) {
