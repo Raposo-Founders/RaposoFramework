@@ -12,10 +12,10 @@ interface I_WindowProps extends React.PropsWithChildren {
 const visibilityMappings = new Map<string, Callback>();
 const windowTitleSize = 25;
 
-export function HideWindow(id: string) {
+export function hideWindow(id: string) {
   visibilityMappings.get(id)?.(false);
 }
-export function ShowWindow(id: string) {
+export function showWindow(id: string) {
   visibilityMappings.get(id)?.(true);
 }
 

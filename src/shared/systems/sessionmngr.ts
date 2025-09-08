@@ -1,36 +1,35 @@
 import { Players, RunService } from "@rbxts/services";
 import { clientSessionConnected, clientSessionDisconnected, clientSharedEnv } from "shared/clientshared";
-import { RegisterConsoleCallback } from "shared/cmd/cvar";
-import { CEntityEnvironment } from "shared/entities";
+import { registerConsoleFunction } from "shared/cmd/cvar";
+import { EntityManager } from "shared/entities";
 import { finishDirectMessage, listenDirectMessage, startDirectMessage } from "shared/network";
 import CSessionInstance from "shared/session";
 import { BufferReader } from "shared/util/bufferreader";
-import { FinalizeBufferCreation, StartBufferCreation, WriteBufferString, WriteBufferU8 } from "shared/util/bufferwriter";
-import CWorldInstance from "shared/worldrender";
+import { writeBufferString, writeBufferU8 } from "shared/util/bufferwriter";
+import WorldInstance from "shared/worldrender";
 
 // # Interfaces & types
-interface I_ConnectionQueueInfo {
+interface ConnectionQueueInfo {
   sessionId: string;
-  nextCallId: SESSION_CONNECTION_IDS,
+  nextCallId: SessionConnectionIds,
 }
 
 // # Constants & variables
-enum SESSION_CONNECTION_IDS {
-  CONNECT_REQUEST = "d_sessionConnect",
-  GET_SESSION_INFO = "d_sessionGetInfo",
-  MAP_LOADED = "d_sessionClientMapLoaded",
+enum SessionConnectionIds {
+  Request = "d_sessionConnect",
+  GetSessionInfo = "d_sessionGetInfo",
+  MapLoaded = "d_sessionClientMapLoaded",
 }
 
-enum SESSION_CONNECTION_REPLY {
-  ALLOWED,
-  DISALLOWED,
-  NOEXIST,
-  INTERNALERR,
+enum SessionConnectionReply {
+  Allowed,
+  Disallowed,
+  NoExist,
+  InternalErr,
 }
 
-const CONNECTION_STEP_COOLDOWN = 1;
-
-const playersConnectionQueue = new Map<Player, I_ConnectionQueueInfo>();
+const connectionStepCooldown = 1;
+const playersConnectionQueue = new Map<Player, ConnectionQueueInfo>();
 
 let canConnect = true;
 let currentConnectionThread: thread | undefined;
@@ -45,38 +44,38 @@ export function ClientConnectToServerSession(sessionId: string) {
 
   print("Requesting connection to session:", sessionId);
 
-  startDirectMessage(SESSION_CONNECTION_IDS.CONNECT_REQUEST, undefined);
-  WriteBufferString(sessionId);
+  startDirectMessage(SessionConnectionIds.Request, undefined);
+  writeBufferString(sessionId);
   finishDirectMessage();
 
-  const connectionResult = coroutine.yield()[0] as SESSION_CONNECTION_REPLY;
-  if (connectionResult !== SESSION_CONNECTION_REPLY.ALLOWED) {
+  const connectionResult = coroutine.yield()[0] as SessionConnectionReply;
+  if (connectionResult !== SessionConnectionReply.Allowed) {
     warn("Failed to connect to the session. ID: ", connectionResult);
     return;
   }
 
-  task.wait(CONNECTION_STEP_COOLDOWN);
+  task.wait(connectionStepCooldown);
 
-  startDirectMessage(SESSION_CONNECTION_IDS.GET_SESSION_INFO, undefined);
-  WriteBufferString(sessionId);
+  startDirectMessage(SessionConnectionIds.GetSessionInfo, undefined);
+  writeBufferString(sessionId);
   finishDirectMessage();
 
   const mapName = tostring(coroutine.yield()[0]);
 
-  task.wait(CONNECTION_STEP_COOLDOWN);
+  task.wait(connectionStepCooldown);
 
-  clientSharedEnv.entityEnvironment?.KillAllThoseBitchAsses();
-  clientSharedEnv.worldInstance?.Destroy();
+  clientSharedEnv.entityEnvironment?.murderAllFuckers();
+  clientSharedEnv.worldInstance?.destroy();
 
-  clientSharedEnv.worldInstance = new CWorldInstance(mapName);
-  clientSharedEnv.entityEnvironment = new CEntityEnvironment(clientSharedEnv.worldInstance);
+  clientSharedEnv.worldInstance = new WorldInstance(mapName);
+  clientSharedEnv.entityEnvironment = new EntityManager(clientSharedEnv.worldInstance);
 
   clientSharedEnv.worldInstance.root_instance.Parent = workspace;
 
-  task.wait(CONNECTION_STEP_COOLDOWN);
+  task.wait(connectionStepCooldown);
 
-  startDirectMessage(SESSION_CONNECTION_IDS.MAP_LOADED, undefined);
-  WriteBufferString(sessionId);
+  startDirectMessage(SessionConnectionIds.MapLoaded, undefined);
+  writeBufferString(sessionId);
   finishDirectMessage();
 
   canConnect = true;
@@ -89,11 +88,11 @@ export function ClientCreateLocalSession() {
   assert(RunService.IsClient(), "Function can only be called from the client.");
 
   const serverSession = new CSessionInstance("local", "default");
-  serverSession.network_env.postToRemote = false;
-  const serverSessionConnection = serverSession.network_env.networkOutgoing.Connect((id, bfr) => clientSharedEnv.netportal.insertNetwork(undefined, id, bfr));
+  serverSession.networkManager.postToRemote = false;
+  const serverSessionConnection = serverSession.networkManager.networkOutgoing.Connect((id, bfr) => clientSharedEnv.netportal.insertNetwork(undefined, id, bfr));
 
   clientSharedEnv.netportal.postToRemote = false;
-  const clientSessionConnection = clientSharedEnv.netportal.networkOutgoing.Connect((id, bfr) => serverSession.network_env.insertNetwork(Players.LocalPlayer, id, bfr));
+  const clientSessionConnection = clientSharedEnv.netportal.networkOutgoing.Connect((id, bfr) => serverSession.networkManager.insertNetwork(Players.LocalPlayer, id, bfr));
 
   serverSession.BindToClose(() => {
     serverSessionConnection.Disconnect();
@@ -104,7 +103,7 @@ export function ClientCreateLocalSession() {
 
   clientSessionConnected.Fire("local");
 
-  serverSession.player_left.Connect(user => {
+  serverSession.playerLeft.Connect(user => {
     if (user !== Players.LocalPlayer) return; // WHAT?
     serverSession.Close();
   });
@@ -116,14 +115,14 @@ export function ClientCreateLocalSession() {
 }
 
 // # Execution
-RegisterConsoleCallback(["disconnect", "dc"])((ctx) => {
+registerConsoleFunction(["disconnect", "dc"])((ctx) => {
   ctx.Reply("Disconnecting from session...");
 
   clientSharedEnv.netportal.startWritingMessage("session_disconnect_request", undefined, undefined);
   clientSharedEnv.netportal.finishWritingMessage();
 });
 
-RegisterConsoleCallback(["connect"], { name: "sessionId", number: false })((ctx, sessionId) => {
+registerConsoleFunction(["connect"], { name: "sessionId", number: false })((ctx, sessionId) => {
   ctx.Reply(`Connecting to session: ${sessionId}...`);
 
   if (sessionId === "local")
@@ -134,64 +133,64 @@ RegisterConsoleCallback(["connect"], { name: "sessionId", number: false })((ctx,
 
 // Connection requests
 if (RunService.IsServer())
-  listenDirectMessage(SESSION_CONNECTION_IDS.CONNECT_REQUEST, (sender, bfr) => {
+  listenDirectMessage(SessionConnectionIds.Request, (sender, bfr) => {
     if (!sender) return;
     if (playersConnectionQueue.has(sender)) return;
 
     const reader = BufferReader(bfr);
-    const sessionId = reader.STRING();
+    const sessionId = reader.string();
 
-    if (!CSessionInstance.running_sessions.has(sessionId)) {
+    if (!CSessionInstance.runningSessions.has(sessionId)) {
       startDirectMessage("SESSION_CONNECTION_REPLY", sender);
-      WriteBufferU8(SESSION_CONNECTION_REPLY.NOEXIST);
+      writeBufferU8(SessionConnectionReply.NoExist);
       finishDirectMessage();
 
       return;
     }
 
     startDirectMessage("SESSION_CONNECTION_REPLY", sender);
-    WriteBufferU8(SESSION_CONNECTION_REPLY.ALLOWED);
+    writeBufferU8(SessionConnectionReply.Allowed);
     finishDirectMessage();
 
     playersConnectionQueue.set(sender, {
       sessionId: sessionId,
-      nextCallId: SESSION_CONNECTION_IDS.GET_SESSION_INFO,
+      nextCallId: SessionConnectionIds.GetSessionInfo,
     });
   });
 
 // Getting info from sessions
 if (RunService.IsServer())
-  listenDirectMessage(SESSION_CONNECTION_IDS.GET_SESSION_INFO, (sender, bfr) => {
+  listenDirectMessage(SessionConnectionIds.GetSessionInfo, (sender, bfr) => {
     if (!sender) return;
 
     const reader = BufferReader(bfr);
-    const sessionId = reader.STRING();
+    const sessionId = reader.string();
 
     const info = playersConnectionQueue.get(sender);
-    if (!info || info.sessionId !== sessionId || info.nextCallId !== SESSION_CONNECTION_IDS.GET_SESSION_INFO) return;
+    if (!info || info.sessionId !== sessionId || info.nextCallId !== SessionConnectionIds.GetSessionInfo) return;
 
-    const targetSession = CSessionInstance.running_sessions.get(sessionId);
+    const targetSession = CSessionInstance.runningSessions.get(sessionId);
     if (!targetSession) return; // TODO: Better error handling
 
     startDirectMessage("SESSION_INFO_REPLY", sender);
-    WriteBufferString(targetSession.map);
+    writeBufferString(targetSession.map);
     finishDirectMessage();
 
-    info.nextCallId = SESSION_CONNECTION_IDS.MAP_LOADED;
+    info.nextCallId = SessionConnectionIds.MapLoaded;
   });
 
 // Finalize connection
 if (RunService.IsServer())
-  listenDirectMessage(SESSION_CONNECTION_IDS.MAP_LOADED, (sender, bfr) => {
+  listenDirectMessage(SessionConnectionIds.MapLoaded, (sender, bfr) => {
     if (!sender) return;
 
     const reader = BufferReader(bfr);
-    const sessionId = reader.STRING();
+    const sessionId = reader.string();
 
     const info = playersConnectionQueue.get(sender);
-    if (!info || info.sessionId !== sessionId || info.nextCallId !== SESSION_CONNECTION_IDS.MAP_LOADED) return;
+    if (!info || info.sessionId !== sessionId || info.nextCallId !== SessionConnectionIds.MapLoaded) return;
 
-    const targetSession = CSessionInstance.running_sessions.get(sessionId);
+    const targetSession = CSessionInstance.runningSessions.get(sessionId);
     if (!targetSession) return; // TODO: Better error handling
 
     targetSession.InsertPlayer(sender);
@@ -203,7 +202,7 @@ if (RunService.IsServer())
 if (RunService.IsClient())
   listenDirectMessage("SESSION_CONNECTION_REPLY", (sender, bfr) => {
     const reader = BufferReader(bfr);
-    const reply = reader.U8() as SESSION_CONNECTION_REPLY;
+    const reply = reader.u8() as SessionConnectionReply;
 
     if (!currentConnectionThread)
       return;
@@ -215,7 +214,7 @@ if (RunService.IsClient())
 if (RunService.IsClient())
   listenDirectMessage("SESSION_INFO_REPLY", (sender, bfr) => {
     const reader = BufferReader(bfr);
-    const mapName = reader.STRING();
+    const mapName = reader.string();
 
     if (!currentConnectionThread)
       return;
@@ -227,13 +226,13 @@ if (RunService.IsClient())
 if (RunService.IsClient())
   clientSharedEnv.netportal.listenPacket("session_disconnected", (sender, bfr) => {
     const reader = BufferReader(bfr);
-    const reason = reader.STRING();
+    const reason = reader.string();
 
     clientSessionDisconnected.Fire(reason, reason);
 
     warn("Disconnected from session. Reason:", reason);
 
-    clientSharedEnv.entityEnvironment.KillAllThoseBitchAsses();
+    clientSharedEnv.entityEnvironment.murderAllFuckers();
   });
 
 if (RunService.IsServer())

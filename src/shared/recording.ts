@@ -1,6 +1,6 @@
-import { CEntityEnvironment } from "./entities";
-import { CLifecycleEnvironment } from "./lifecycle";
-import { RegisterConsoleCallback } from "./cmd/cvar";
+import { EntityManager } from "./entities";
+import { LifecycleInstance } from "./lifecycle";
+import { registerConsoleFunction } from "./cmd/cvar";
 import { clientSharedEnv } from "./clientshared";
 import { ExecuteCommand } from "./cmd";
 import { UserInputService } from "@rbxts/services";
@@ -23,7 +23,7 @@ const savedReplays = new Map<string, I_SnapshotInfo[]>();
 let stopRecordingConnection: Callback | undefined;
 
 // # Functions
-function RecordEnvironment(entityEnvironment: CEntityEnvironment, lifecycleEnvironment: CLifecycleEnvironment) {
+function RecordEnvironment(entityEnvironment: EntityManager, lifecycleEnvironment: LifecycleInstance) {
   const snapshots = new Array<I_SnapshotInfo>();
   const startingTime = time();
 
@@ -65,7 +65,7 @@ export class CReplayPlayer {
 
   private _entitiesOnCreationQueue = new Set<string>();
 
-  constructor(private _environment: CEntityEnvironment, private _lifecycle: CLifecycleEnvironment, private _replayData: I_SnapshotInfo[]) {
+  constructor(private _environment: EntityManager, private _lifecycle: LifecycleInstance, private _replayData: I_SnapshotInfo[]) {
     _replayData.sort((a, b) => {
       return a.time < b.time;
     });
@@ -178,13 +178,13 @@ export class CReplayPlayer {
 
     this._entitiesOnCreationQueue.add(entityId);
 
-    this._environment.CreateEntityByName(classname, entityId) // This might be a bug... too bad!
+    this._environment.createEntity(classname, entityId) // This might be a bug... too bad!
       .finally(() => this._entitiesOnCreationQueue.delete(entityId));
   }
 }
 
 // # Bindings & misc
-RegisterConsoleCallback(["record"], { name: "name" })((ctx, name) => {
+registerConsoleFunction(["record"], { name: "name" })((ctx, name) => {
   const stopRecordingCallback = RecordEnvironment(clientSharedEnv.entityEnvironment, clientSharedEnv.lifecycle);
 
   ctx.Reply(`Recording replay ${name}...`);
@@ -198,9 +198,9 @@ RegisterConsoleCallback(["record"], { name: "name" })((ctx, name) => {
   };
 });
 
-RegisterConsoleCallback(["stop"])(() => stopRecordingConnection?.());
+registerConsoleFunction(["stop"])(() => stopRecordingConnection?.());
 
-RegisterConsoleCallback(["playdemo"], { name: "name" })((ctx, name) => {
+registerConsoleFunction(["playdemo"], { name: "name" })((ctx, name) => {
   ExecuteCommand("disconnect").expect(); // Ugly ass hack.
 
   const targetSnapshots = savedReplays.get(tostring(name));
@@ -210,7 +210,7 @@ RegisterConsoleCallback(["playdemo"], { name: "name" })((ctx, name) => {
   }
 
   clientSharedEnv.lifecycle.YieldForTicks(20);
-  clientSharedEnv.entityEnvironment.is_playback = true;
+  clientSharedEnv.entityEnvironment.isPlayback = true;
 
   const player = new CReplayPlayer(clientSharedEnv.entityEnvironment, clientSharedEnv.lifecycle, targetSnapshots);
 

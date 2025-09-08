@@ -1,21 +1,21 @@
 import { MESSAGE_OUT_SIGNAL } from "shared/logger";
 
 // # Types
-type T_VALID_TYPES = "string" | "number";
+type ValidValueTypes = "string" | "number";
 
-interface I_CommandArgument<N extends true | false> {
+interface CommandArgument<N extends true | false> {
   name: string,
   number?: N,
 }
 
-interface I_CommandContext {
+interface CommandContext {
   Reply: (message: string) => void;
   Warn: (message: string) => void;
   Error: (message: string) => void;
 }
 
 // # Constants & variables
-export enum CVAR_FLAGS {
+export enum cvarFlags {
   debug, // Only usable on studio
   hidden,
   readonly,
@@ -24,15 +24,15 @@ export enum CVAR_FLAGS {
 
 export const createdCVars = new Map<string, CCVar<unknown>>();
 export const registeredCallbacks = new Set<string>();
-export const registeredCallbackArgs = new Map<string, I_CommandArgument<true | false>[]>();
+export const registeredCallbackArgs = new Map<string, CommandArgument<true | false>[]>();
 
 const builtCallbacks = new Map<string, Callback>();
 
 // # Functions
-export function RegisterConsoleCallback< // Abandon all hope below, this is cursed 💀
-  T extends I_CommandArgument<true | false>[],
-  A extends { [K in keyof T]: T[K] extends I_CommandArgument<infer N> ? (N extends true ? number : string) : never},
-  C extends (ctx: I_CommandContext, ...args: A) => (string | undefined | void)
+export function registerConsoleFunction< // Abandon all hope below, this is cursed 💀
+  T extends CommandArgument<true | false>[],
+  A extends { [K in keyof T]: T[K] extends CommandArgument<infer N> ? (N extends true ? number : string) : never},
+  C extends (ctx: CommandContext, ...args: A) => (string | undefined | void)
   >(name: string[], ...checkTypes: T) {
   for (const element of name)
     registeredCallbackArgs.set(element, checkTypes);
@@ -45,8 +45,8 @@ export function RegisterConsoleCallback< // Abandon all hope below, this is curs
   };
 }
 
-export function ExecuteConsoleCallback(name: string, ...args: unknown[]) {
-  const contextEnvironment: I_CommandContext = {
+export function executeConsoleFunction(name: string, ...args: unknown[]) {
+  const contextEnvironment: CommandContext = {
     Reply: (message) => {
       MESSAGE_OUT_SIGNAL.Fire("INFO", `[${name}]: ${message}`);
     },
@@ -63,31 +63,31 @@ export function ExecuteConsoleCallback(name: string, ...args: unknown[]) {
 
 // # Classes
 export class CCVar<T> {
-  private _currentValue: T;
+  private currentValue: T;
 
-  readonly type: T_VALID_TYPES;
+  readonly type: ValidValueTypes;
 
-  constructor(readonly name: string, private _defaultValue: T, readonly flags: CVAR_FLAGS[]) {
+  constructor(readonly name: string, private defaultValue: T, readonly flags: cvarFlags[]) {
     assert(!createdCVars.has(name), `Duplicate CVar ${name}.`);
-    assert(typeIs(_defaultValue, "string") || typeIs(_defaultValue, "number"), `Only strings and numbers are supported on CVars, got ${typeOf(_defaultValue)}.`);
+    assert(typeIs(defaultValue, "string") || typeIs(defaultValue, "number"), `Only strings and numbers are supported on CVars, got ${typeOf(defaultValue)}.`);
 
-    this._currentValue = _defaultValue;
-    this.type = typeIs(_defaultValue, "string") ? "string" : "number";
+    this.currentValue = defaultValue;
+    this.type = typeIs(defaultValue, "string") ? "string" : "number";
 
     table.freeze(flags);
     createdCVars.set(name, this);
   }
 
   Set(newValue: T) {
-    if (this.flags.includes(CVAR_FLAGS.readonly)) return;
-    this._currentValue = newValue;
+    if (this.flags.includes(cvarFlags.readonly)) return;
+    this.currentValue = newValue;
   }
 
   Get() {
-    return this._currentValue;
+    return this.currentValue;
   }
 
   Reset() {
-    this._currentValue = this._defaultValue;
+    this.currentValue = this.defaultValue;
   }
 }

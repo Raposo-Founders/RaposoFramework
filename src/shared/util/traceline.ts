@@ -14,7 +14,7 @@ declare global {
   }
 }
 
-export function ValidateTraceline(data: TracelineResult | undefined): boolean {
+export function validadeTraceline(data: TracelineResult | undefined): boolean {
   const blatantCheck = t.interface({
     origin: t.Vector3,
     finish: t.Vector3,
@@ -31,7 +31,7 @@ export function ValidateTraceline(data: TracelineResult | undefined): boolean {
   return true;
 }
 
-export function Traceline(
+export function traceline(
   root: WorldRoot,
   pos: Vector3,
   rot: Vector3,
@@ -54,7 +54,7 @@ export function Traceline(
   };
 }
 
-export function TraceFixedLine(root: WorldRoot, start: Vector3, finish: Vector3, params: RaycastParams): TracelineResult | undefined {
+export function tracelineFixed(root: WorldRoot, start: Vector3, finish: Vector3, params: RaycastParams): TracelineResult | undefined {
   const raycast = root.Raycast(
     start,
     new CFrame(start, finish).LookVector.mul(start.sub(finish).Magnitude),

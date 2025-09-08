@@ -4,12 +4,12 @@ import { RandomString } from "./util/utilfuncs";
 // # Types
 
 // # Constants & variables
-export const spawnedWorlds = new Map<string, CWorldInstance>();
+export const spawnedWorlds = new Map<string, WorldInstance>();
 
 // # Functions
 
 // # Classes
-export default class CWorldInstance {
+export default class WorldInstance {
   world_id = RandomString(10);
   root_instance = new Instance("WorldModel");
 
@@ -30,7 +30,7 @@ export default class CWorldInstance {
     spawnedWorlds.set(this.world_id, this);
   }
 
-  Destroy() {
+  destroy() {
     this.root_instance.Destroy();
     spawnedWorlds.delete(this.world_id);
     table.clear(this);

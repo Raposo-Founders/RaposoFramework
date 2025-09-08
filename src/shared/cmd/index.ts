@@ -1,5 +1,5 @@
 import { Players, RunService, TextChatService } from "@rbxts/services";
-import { createdCVars, registeredCallbacks, CVAR_FLAGS, registeredCallbackArgs, ExecuteConsoleCallback } from "./cvar";
+import { createdCVars, registeredCallbacks, cvarFlags, registeredCallbackArgs, executeConsoleFunction } from "./cvar";
 import { gameValues } from "shared/gamevalues";
 import { MESSAGE_OUT_SIGNAL } from "shared/logger";
 
@@ -38,7 +38,7 @@ export async function ExecuteCommand(content: string) {
       MESSAGE_OUT_SIGNAL.Fire("INFO", `${targetVariable.name}: ${tostring(targetVariable.Get())} [${targetVariable.type}]`);
     }
 
-    if (targetVariable.flags.includes(CVAR_FLAGS.readonly)) {
+    if (targetVariable.flags.includes(cvarFlags.readonly)) {
       MESSAGE_OUT_SIGNAL.Fire("EXCEPTION", `CVar ${name} is read only.`);
       return;
     }
@@ -86,12 +86,12 @@ export async function ExecuteCommand(content: string) {
       }
 
       print("Executing command:", name, "...");
-      ExecuteConsoleCallback(name, ...passingArguments);
+      executeConsoleFunction(name, ...passingArguments);
       return;
     }
 
     print("Executing command:", name, "...");
-    ExecuteConsoleCallback(name, ...args);
+    executeConsoleFunction(name, ...args);
     return;
   }
 

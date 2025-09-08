@@ -14,7 +14,7 @@ abstract class WorldEntity extends BaseEntity {
   constructor() {
     super();
 
-    this._inheritance_list.add("WorldEntity");
+    this.inheritanceList.add("WorldEntity");
   }
 }
 

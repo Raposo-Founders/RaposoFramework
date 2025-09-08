@@ -1,4 +1,4 @@
-import { ErrorObject, RandomString } from "shared/util/utilfuncs";
+import { ErrorObject } from "shared/util/utilfuncs";
 
 declare global {
   interface GameEntities {
@@ -11,42 +11,41 @@ abstract class BaseEntity {
   readonly environment = ErrorObject<T_EntityEnvironment>("Entity session cannot be accessed during construction.");
 
   abstract readonly classname: keyof GameEntities;
-  protected _inheritance_list = new Set<keyof GameEntities>();
-  readonly deletion_callbacks = new Array<Callback>();
-  readonly associated_instances = new Set<Instance>();
-  readonly attributes_list = new Map<string, unknown>();
-  readonly entity_think_list = new Array<(dt: number) => void>();
+  protected inheritanceList = new Set<keyof GameEntities>();
+  readonly deletionCallbacks = new Array<Callback>();
+  readonly associatedInstances = new Set<Instance>();
+  readonly attributesList = new Map<string, unknown>();
 
   constructor() {
-    this._inheritance_list.add("BaseEntity");
+    this.inheritanceList.add("BaseEntity");
   }
 
   IsA<C extends keyof GameEntities>(classname: C): this is EntityType<C> {
-    return this._inheritance_list.has(classname) || this.classname === classname;
+    return this.inheritanceList.has(classname) || this.classname === classname;
   }
 
   OnDelete(callback: (entity: this) => void) {
-    this.deletion_callbacks.push(callback);
+    this.deletionCallbacks.push(callback);
   }
 
   AssociateInstance(inst: Instance) {
-    this.associated_instances.add(inst);
+    this.associatedInstances.add(inst);
   }
   UnassociateInstance(inst: Instance) {
-    this.associated_instances.delete(inst);
+    this.associatedInstances.delete(inst);
   }
 
   SetAttribute(name: string, value: unknown) {
     if (value === undefined) {
-      this.attributes_list.delete(name);
+      this.attributesList.delete(name);
       return;
     }
 
-    this.attributes_list.set(name, value);
+    this.attributesList.set(name, value);
   }
 
   GetAttribute(name: string) {
-    return this.attributes_list.get(name);
+    return this.attributesList.get(name);
   }
 
   abstract Destroy(): void;

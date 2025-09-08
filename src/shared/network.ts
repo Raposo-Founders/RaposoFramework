@@ -1,9 +1,9 @@
 import { t } from "@rbxts/t";
 import { ReplicatedInstance } from "./util/utilfuncs";
-import CBindableSignal from "./util/signal";
+import Signal from "./util/signal";
 import { HttpService, Players, RunService } from "@rbxts/services";
 import Object from "@rbxts/object-utils";
-import { FinalizeBufferCreation, StartBufferCreation } from "./util/bufferwriter";
+import { finalizeBufferCreation, startBufferCreation } from "./util/bufferwriter";
 
 // # Types
 interface MessageInfo {
@@ -32,7 +32,7 @@ export function startDirectMessage(id: string, user: Player | undefined = undefi
   if (RunService.IsServer() && !t.instanceIsA("Player")(user))
     throw `Argument #2 must be an player, got ${tostring(user)} (${typeOf(user)}).`;
 
-  StartBufferCreation();
+  startBufferCreation();
   writingDirectMessages.set(thread, { id, user, unreliable });
 }
 
@@ -42,7 +42,7 @@ export function finishDirectMessage() {
     throw "No direct messages have been started in the current thread.";
 
   const info = writingDirectMessages.get(thread)!;
-  const bfr = FinalizeBufferCreation();
+  const bfr = finalizeBufferCreation();
 
   if (RunService.IsClient())
     if (info.unreliable)
@@ -64,13 +64,13 @@ export function listenDirectMessage(id: string, callback: (sender: Player | unde
 }
 
 // # Class
-export class CNetworkPortal {
+export class NetworkManager {
   private messageQueue = new Array<MessageInfo>();
   private boundListeners = new Map<string, Callback[]>();
   private connections: RBXScriptConnection[] = [];
   private writingMessages = new Map<thread, { id: string, players: Player[], ignore: Player[], unreliable: boolean }>();
 
-  networkOutgoing = new CBindableSignal<[id: string, bfr: buffer]>();
+  networkOutgoing = new Signal<[id: string, bfr: buffer]>();
   postToRemote = true;
 
   readonly signedUsers = new Set<Player>();
@@ -134,7 +134,7 @@ export class CNetworkPortal {
 
     this.writingMessages.set(thread, { id, players, ignore, unreliable });
 
-    StartBufferCreation();
+    startBufferCreation();
   }
 
   finishWritingMessage() {
@@ -143,7 +143,7 @@ export class CNetworkPortal {
       throw "No messages have been started in the current thread.";
 
     const info = this.writingMessages.get(thread)!;
-    const bfr = FinalizeBufferCreation();
+    const bfr = finalizeBufferCreation();
 
     if (this.postToRemote) {
       if (RunService.IsServer())

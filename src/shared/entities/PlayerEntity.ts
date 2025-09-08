@@ -1,4 +1,4 @@
-import { FinalizeBufferCreation, StartBufferCreation } from "shared/util/bufferwriter";
+import { finalizeBufferCreation, startBufferCreation } from "shared/util/bufferwriter";
 import { registerEntityClass } from ".";
 import HealthEntity from "./HealthEntity";
 
@@ -31,12 +31,12 @@ export default class PlayerEntity extends HealthEntity {
   constructor() {
     super();
 
-    this._inheritance_list.add("PlayerEntity");
+    this.inheritanceList.add("PlayerEntity");
   }
 
   GetStateBuffer(): buffer {
-    StartBufferCreation();
-    return FinalizeBufferCreation();
+    startBufferCreation();
+    return finalizeBufferCreation();
   }
 
   ApplyStateBuffer(state: buffer): void { }

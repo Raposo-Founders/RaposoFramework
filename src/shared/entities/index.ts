@@ -1,30 +1,30 @@
 import { RunService } from "@rbxts/services";
 import { t } from "@rbxts/t";
 import { msg } from "shared/logger";
-import CBindableSignal from "shared/util/signal";
+import Signal from "shared/util/signal";
 import { RandomString } from "shared/util/utilfuncs";
-import CWorldInstance from "shared/worldrender";
+import WorldInstance from "shared/worldrender";
 import BaseEntity from "./BaseEntity";
 
 // # Types
 declare global {
   type EntityType<T extends keyof GameEntities> = GameEntities[T]["prototype"];
   type EntityId = typeof BaseEntity["prototype"]["id"];
-  type T_EntityEnvironment = CEntityEnvironment;
+  type T_EntityEnvironment = EntityManager;
 }
 
 // # Constants
-const REGISTERED_ENTITY_CLASSNAMES = new Set<keyof GameEntities>();
-const ENTITY_BUILD_LIST = new Map<string, new (...args: never[]) => BaseEntity>();
+const registeredEntityClassnames = new Set<keyof GameEntities>();
+const entitiesBuildList = new Map<string, new (...args: never[]) => BaseEntity>();
 
 // # Functions
 export function registerEntityClass(name: keyof GameEntities, builder?: new () => BaseEntity) {
-  assert(!REGISTERED_ENTITY_CLASSNAMES.has(name), `Entity ${name} has already been registered.`);
+  assert(!registeredEntityClassnames.has(name), `Entity ${name} has already been registered.`);
 
-  REGISTERED_ENTITY_CLASSNAMES.add(name);
+  registeredEntityClassnames.add(name);
 
   if (builder)
-    ENTITY_BUILD_LIST.set(name, builder);
+    entitiesBuildList.set(name, builder);
 }
 
 export function requireEntityModulesFromFolder(instance: Instance) {
@@ -46,22 +46,22 @@ export function requireEntityModulesFromFolder(instance: Instance) {
 }
 
 // # Class
-export class CEntityEnvironment {
+export class EntityManager {
   readonly entities = new Map<EntityId, BaseEntity>();
-  readonly entity_created = new CBindableSignal<[Entity: BaseEntity]>();
-  readonly entity_deleting = new CBindableSignal<[Entity: BaseEntity]>();
+  readonly entityCreated = new Signal<[Entity: BaseEntity]>();
+  readonly entityDeleting = new Signal<[Entity: BaseEntity]>();
 
-  is_server = RunService.IsServer();
-  is_playback = false;
+  isServer = RunService.IsServer();
+  isPlayback = false;
 
-  constructor(readonly world: CWorldInstance) { }
+  constructor(readonly world: WorldInstance) { }
 
-  async CreateEntityByName<
+  async createEntity<
     K extends keyof GameEntities,
     E extends GameEntities[K],
     C extends E extends new (...args: infer A) => BaseEntity ? A : never[],
   >(classname: K, entityId: string | undefined, ...args: C): Promise<EntityType<K>> {
-    const entity_constructor = ENTITY_BUILD_LIST.get(classname);
+    const entity_constructor = entitiesBuildList.get(classname);
     assert(entity_constructor, `Attempt to create unknown entity: "${classname}"`);
 
     print(`Spawning entity ${classname}...`);
@@ -86,25 +86,25 @@ export class CEntityEnvironment {
     rawset(entity, "id", entityId);
 
     this.entities.set(entity.id, entity);
-    this.entity_created.Fire(entity);
+    this.entityCreated.Fire(entity);
 
     return entity as unknown as EntityType<K>;
   }
 
-  KillThisMafaker(entity: BaseEntity) {
-    if (!this.IsEntityOnMemoryOrImSchizo(entity)) return;
+  killThisFucker(entity: BaseEntity) {
+    if (!this.isEntityOnMemoryOrImSchizo(entity)) return;
     if (!t.table(entity) || !t.string(rawget(entity, "id") as EntityId))
       throw `This s### is an invalid entity. ${entity.classname} ${entity.id}`;
 
     msg("INFO", `Killing entity ${entity.classname} ${entity.id}`);
 
     this.entities.delete(entity.id);
-    this.entity_deleting.Fire(entity);
+    this.entityDeleting.Fire(entity);
 
     task.defer(() => {
       entity.Destroy();
 
-      for (const callback of entity.deletion_callbacks) {
+      for (const callback of entity.deletionCallbacks) {
         const [success, message] = pcall(() => callback());
         if (!success)
           msg("EXCEPTION", message);
@@ -113,7 +113,7 @@ export class CEntityEnvironment {
       // Fuckass hack :)
       const deepClearContent = (obj: object) => {
         for (const [index, value] of obj as Map<string, unknown>) {
-          if (t.table(value) && rawget(value, "_classname") === tostring(CBindableSignal))
+          if (t.table(value) && rawget(value, "_classname") === tostring(Signal))
             continue; // Will be handled later
 
           if (t.table(value)) deepClearContent(value);
@@ -129,10 +129,10 @@ export class CEntityEnvironment {
 
       // Unbinding signals
       for (const [key, value] of entity as unknown as Map<string, unknown>) {
-        if (!t.table(value) || rawget(value, "_classname") !== tostring(CBindableSignal)) continue;
+        if (!t.table(value) || rawget(value, "_classname") !== tostring(Signal)) continue;
 
         // print("Clearing entity signal content:", key);
-        (value as CBindableSignal<unknown[]>).Clear();
+        (value as Signal<unknown[]>).Clear();
 
         rawset(entity, key, undefined);
       }
@@ -141,7 +141,7 @@ export class CEntityEnvironment {
     });
   }
 
-  IsEntityOnMemoryOrImSchizo(entity: BaseEntity | EntityId | undefined): boolean {
+  isEntityOnMemoryOrImSchizo(entity: BaseEntity | EntityId | undefined): boolean {
 
     // If an nil value is given.
     if (!t.any(entity)) return false;
@@ -162,11 +162,11 @@ export class CEntityEnvironment {
     // Are we teaching this to a toddler or something?
   }
 
-  GetEntitiesThatIsA<K extends keyof GameEntities, E extends GameEntities[K]>(classname: K): E["prototype"][] {
+  getEntitiesThatIsA<K extends keyof GameEntities, E extends GameEntities[K]>(classname: K): E["prototype"][] {
     const list: (E["prototype"])[] = [];
 
     // Check if the classname is actually valid
-    if (!REGISTERED_ENTITY_CLASSNAMES.has(classname))
+    if (!registeredEntityClassnames.has(classname))
       throw `Invalid entity classname: ${classname}`;
 
     for (const [, ent] of this.entities) {
@@ -177,11 +177,11 @@ export class CEntityEnvironment {
     return list;
   }
 
-  GetEntitiesOfClass<K extends keyof GameEntities, E extends GameEntities[K]>(classname: K): E["prototype"][] {
+  getEntitiesOfClass<K extends keyof GameEntities, E extends GameEntities[K]>(classname: K): E["prototype"][] {
     const list: (E["prototype"])[] = [];
 
     // Check if the classname is actually valid
-    if (!REGISTERED_ENTITY_CLASSNAMES.has(classname))
+    if (!registeredEntityClassnames.has(classname))
       throw `Invalid entity classname: ${classname}`;
 
     for (const [, ent] of this.entities) {
@@ -192,11 +192,11 @@ export class CEntityEnvironment {
     return list;
   }
 
-  GetEntitiesFromInstance(inst: Instance) {
+  getEntitiesFromInstance(inst: Instance) {
     const list: BaseEntity[] = [];
 
     for (const [, ent] of this.entities) {
-      if (!ent.associated_instances.has(inst))
+      if (!ent.associatedInstances.has(inst))
         continue;
 
       list.push(ent);
@@ -205,11 +205,8 @@ export class CEntityEnvironment {
     return list;
   }
 
-  KillAllThoseBitchAsses() {
+  murderAllFuckers() {
     for (const [entid, info] of this.entities)
-      this.KillThisMafaker(info);
+      this.killThisFucker(info);
   }
 }
-
-// # Execution
-requireEntityModulesFromFolder(script); // This also inclues the BaseEntity class

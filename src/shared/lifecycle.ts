@@ -8,7 +8,7 @@ interface I_ThreadYieldInfo {
   thread: thread;
 }
 
-type T_UpdateCallbackInfo = (ctx: CLifecycleEnvironment, deltaTime: number) => void;
+type T_UpdateCallbackInfo = (ctx: LifecycleInstance, deltaTime: number) => void;
 
 // # Constants & variables
 export const TICKRATE = 1 / 33;
@@ -26,7 +26,7 @@ export function BindFramerate(callback: (dt: number) => void) {
 }
 
 // # Classes
-export class CLifecycleEnvironment {
+export class LifecycleInstance {
   private readonly _id = RandomString(20);
   running = false;
   tickrate = TICKRATE;

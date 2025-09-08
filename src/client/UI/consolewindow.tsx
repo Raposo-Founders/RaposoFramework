@@ -3,18 +3,18 @@ import React from "@rbxts/react";
 import ReactRoblox from "@rbxts/react-roblox";
 import { UserInputService } from "@rbxts/services";
 import { ExecuteCommand } from "shared/cmd";
-import { registeredCallbacks, createdCVars, RegisterConsoleCallback } from "shared/cmd/cvar";
+import { registeredCallbacks, createdCVars, registerConsoleFunction } from "shared/cmd/cvar";
 import { MESSAGE_OUT_SIGNAL } from "shared/logger";
-import CBindableSignal from "shared/util/signal";
+import Signal from "shared/util/signal";
 import { colorTable, uiPreferences } from "./default/values";
-import { BaseWindow, HideWindow, ShowWindow } from "./default/window";
+import { BaseWindow, hideWindow, showWindow } from "./default/window";
 
 // # Constants & variables
 const logEntryAccentSize = 5;
 const currentRenderingText: React.Element[] = [];
 const currentRenderingSuggestions: string[] = [];
-const setTextboxText = new CBindableSignal<[string]>();
-const setTextboxFocus = new CBindableSignal<[focused: boolean]>();
+const setTextboxText = new Signal<[string]>();
+const setTextboxFocus = new Signal<[focused: boolean]>();
 
 let currentLogsFrame: ScrollingFrame | undefined;
 let currentSuggestionsFrame: Frame | undefined;
@@ -26,9 +26,9 @@ let isTextboxFocused = false;
 let isWindowVisible = false;
 
 // # Functions
-function ClearLogs() {
+function clearLogs() {
   currentRenderingText.clear();
-  LogEntry([""]);
+  logEntry([""]);
 }
 
 function ConsoleLogEntry(props: { entries: string[], order: number, accent?: Color3 }) {
@@ -85,7 +85,7 @@ function ConsoleLogEntry(props: { entries: string[], order: number, accent?: Col
   </frame>;
 }
 
-export function LogEntry(content: string[], accentColor?: Color3) {
+export function logEntry(content: string[], accentColor?: Color3) {
   const element = <ConsoleLogEntry entries={content} order={currentRenderingText.size() + 1} accent={accentColor} />;
 
   currentRenderingText.push(element);
@@ -108,7 +108,7 @@ function GetCommandSuggestions(input: string) {
   return suggestionList;
 }
 
-function UpdateSuggestionsList() {
+function updateSuggestionsList() {
   if (!suggestionsRoot) return;
 
   const renderingList: React.Element[] = [];
@@ -137,7 +137,7 @@ function UpdateSuggestionsList() {
   suggestionsRoot.render(<>{renderingList}</>);
 }
 
-function FormatCommandString(text: string) {
+function formatCommandString(text: string) {
   return text.gsub("^%s+", "")[0].gsub("%s+$", "")[0];
 }
 
@@ -163,16 +163,16 @@ export default function ConsoleWindow() {
       textbox.FocusLost.Connect(enterPressed => {
         if (!enterPressed) return;
 
-        const content = FormatCommandString(textbox.Text);
+        const content = formatCommandString(textbox.Text);
 
         textbox.Text = "";
         textbox.CursorPosition = -1;
 
-        LogEntry([`> ${content}`]);
+        logEntry([`> ${content}`]);
 
         ExecuteCommand(content).andThen(reply => {
           if (!reply) return;
-          LogEntry([reply]);
+          logEntry([reply]);
         });
 
         task.wait();
@@ -186,7 +186,7 @@ export default function ConsoleWindow() {
 
       // Suggestions checking
       textbox.GetPropertyChangedSignal("Text").Connect(() => {
-        const formattedContent = FormatCommandString(textbox.Text);
+        const formattedContent = formatCommandString(textbox.Text);
         const split = formattedContent.split(" ");
         const name = split.shift();
 
@@ -194,14 +194,14 @@ export default function ConsoleWindow() {
         selectedSuggestionIndex = 0;
 
         if (!name || name === "") {
-          UpdateSuggestionsList();
+          updateSuggestionsList();
           return;
         }
 
         // If we're still typing out the first command
         if (split.size() === 0) {
           Object.assign(currentRenderingSuggestions, GetCommandSuggestions(name));
-          UpdateSuggestionsList();
+          updateSuggestionsList();
 
           return;
         }
@@ -215,11 +215,11 @@ export default function ConsoleWindow() {
         const lastCharacter = text.sub(text.size(), text.size());
 
         if (lastCharacter === "\t")
-          textbox.Text = FormatCommandString(text);
+          textbox.Text = formatCommandString(text);
       });
 
       setTextboxText.Connect(text => {
-        textbox.Text = FormatCommandString(text);
+        textbox.Text = formatCommandString(text);
         textbox.CursorPosition = text.size();
       });
 
@@ -308,7 +308,7 @@ export default function ConsoleWindow() {
 }
 
 // # Bindings & misc
-RegisterConsoleCallback(["clear", "cls"])(() => ClearLogs());
+registerConsoleFunction(["clear", "cls"])(() => clearLogs());
 
 UserInputService.InputBegan.Connect((input, busy) => {
   if (!isTextboxFocused) return;
@@ -324,16 +324,16 @@ UserInputService.InputBegan.Connect((input, busy) => {
   }
 
   selectedSuggestionIndex = math.clamp(selectedSuggestionIndex, 0, math.max(currentRenderingSuggestions.size() - 1, 0));
-  UpdateSuggestionsList();
+  updateSuggestionsList();
 });
 
 UserInputService.InputBegan.Connect((input) => {
   if (input.KeyCode.Name !== "F2") return;
 
   if (isWindowVisible)
-    HideWindow("console");
+    hideWindow("console");
   else
-    ShowWindow("console");
+    showWindow("console");
 
   isWindowVisible = !isWindowVisible;
   setTextboxFocus.Fire(isWindowVisible);
@@ -352,5 +352,5 @@ MESSAGE_OUT_SIGNAL.Connect((logType, content) => {
     break;
   }
 
-  LogEntry([content], accentColor);
+  logEntry([content], accentColor);
 });

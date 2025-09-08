@@ -32,14 +32,14 @@ class CTracelineParameter {
       rgSearchContent.push(entityEnvironment.world.parts);
     }
     if (this.FilterContents.includes("Entities")) {
-      for (const entity of entityEnvironment.GetEntitiesThatIsA("BaseEntity")) {
+      for (const entity of entityEnvironment.getEntitiesThatIsA("BaseEntity")) {
         if (
           (this.EntitiesFilterType === "Blacklist" && IsEntityIncluded(entity, this.FilterEntities)) ||
           (this.EntitiesFilterType === "Whitelist" && !IsEntityIncluded(entity, this.FilterEntities))
         )
           continue;
 
-        for (const inst of entity.associated_instances) {
+        for (const inst of entity.associatedInstances) {
           if (!inst.IsDescendantOf(entityEnvironment.world.objects))
             continue;
           rgSearchContent.push(inst);

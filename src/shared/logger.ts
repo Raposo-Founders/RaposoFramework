@@ -1,9 +1,9 @@
 import { RunService } from "@rbxts/services";
-import CBindableSignal from "./util/signal";
+import Signal from "./util/signal";
 
 export type T_LOGTYPE = "INFO" | "WARN" | "EXCEPTION";
 
-export const MESSAGE_OUT_SIGNAL = new CBindableSignal<[T_LOGTYPE, string]>();
+export const MESSAGE_OUT_SIGNAL = new Signal<[T_LOGTYPE, string]>();
 
 export function msg(logType: T_LOGTYPE, ...content: unknown[]) {
   const caller = debug.info(2, "s")[0];

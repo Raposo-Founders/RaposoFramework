@@ -1,48 +1,48 @@
 import { Players } from "@rbxts/services";
-import { CEntityEnvironment } from "./entities";
-import { CLifecycleEnvironment } from "./lifecycle";
-import { CNetworkPortal } from "./network";
-import { WriteBufferString } from "./util/bufferwriter";
-import CBindableSignal from "./util/signal";
-import CWorldInstance from "./worldrender";
+import { EntityManager } from "./entities";
+import { LifecycleInstance } from "./lifecycle";
+import { NetworkManager } from "./network";
+import { writeBufferString } from "./util/bufferwriter";
+import Signal from "./util/signal";
+import WorldInstance from "./worldrender";
 
 // # Class
 class CSessionInstance {
-  static running_sessions = new Map<string, CSessionInstance>();
+  static runningSessions = new Map<string, CSessionInstance>();
 
-  static session_created = new CBindableSignal<[CSessionInstance]>();
-  static session_closing = new CBindableSignal<[CSessionInstance]>();
+  static readonly sessionCreated = new Signal<[CSessionInstance]>();
+  static readonly sessionClosed = new Signal<[CSessionInstance]>();
 
-  private readonly _closing_connections = new Array<(session: CSessionInstance) => void>();
-  private readonly _connections: RBXScriptConnection[] = [];
-  private _netLifecycleDisconnect: Callback | undefined;
+  private readonly closingConnections = new Array<(session: CSessionInstance) => void>();
+  private readonly connections: RBXScriptConnection[] = [];
+  private networkLifecycleDisconnect: Callback | undefined;
 
-  readonly active_players = new Set<Player>();
-  readonly player_joined = new CBindableSignal<[Player]>();
-  readonly player_left = new CBindableSignal<[Player, string]>();
+  readonly trackingPlayers = new Set<Player>();
+  readonly playerJoined = new Signal<[Player]>();
+  readonly playerLeft = new Signal<[Player, string]>();
 
-  readonly entity_env: CEntityEnvironment;
-  readonly network_env = new CNetworkPortal();
-  readonly lifecycle_env = new CLifecycleEnvironment();
-  readonly world_env: CWorldInstance;
+  readonly entityEnvironment: EntityManager;
+  readonly networkManager = new NetworkManager();
+  readonly lifecycleInstance = new LifecycleInstance();
+  readonly worldInstance: WorldInstance;
 
   constructor(readonly sessionid: string, readonly map: string) {
     warn(`Spawning session ${sessionid}`);
 
-    this.world_env = new CWorldInstance(map);
-    this.entity_env = new CEntityEnvironment(this.world_env);
+    this.worldInstance = new WorldInstance(map);
+    this.entityEnvironment = new EntityManager(this.worldInstance);
 
-    CSessionInstance.running_sessions.set(sessionid, this);
-    CSessionInstance.session_created.Fire(this);
+    CSessionInstance.runningSessions.set(sessionid, this);
+    CSessionInstance.sessionCreated.Fire(this);
 
-    this._netLifecycleDisconnect = this.lifecycle_env.BindTickrate(() => this.network_env.processQueuedPackets());
+    this.networkLifecycleDisconnect = this.lifecycleInstance.BindTickrate(() => this.networkManager.processQueuedPackets());
 
-    this._connections.push(Players.PlayerRemoving.Connect(user => this.RemovePlayer(user, "Left the game.")));
+    this.connections.push(Players.PlayerRemoving.Connect(user => this.RemovePlayer(user, "Left the game.")));
 
-    this.entity_env.is_server = true;
-    this.lifecycle_env.running = true;
+    this.entityEnvironment.isServer = true;
+    this.lifecycleInstance.running = true;
 
-    this.network_env.listenPacket("session_disconnect_request", (sender, bfr) => {
+    this.networkManager.listenPacket("session_disconnect_request", (sender, bfr) => {
       if (!sender) return;
       this.RemovePlayer(sender, "Disconnected by user.");
     });
@@ -51,31 +51,31 @@ class CSessionInstance {
   async Close() {
     print(`Closing session ${this.sessionid}...`);
 
-    this.lifecycle_env.Destroy();
+    this.lifecycleInstance.Destroy();
 
-    CSessionInstance.running_sessions.delete(this.sessionid);
-    CSessionInstance.session_closing.Fire(this).expect();
+    CSessionInstance.runningSessions.delete(this.sessionid);
+    CSessionInstance.sessionClosed.Fire(this).expect();
 
-    for (const user of this.active_players)
+    for (const user of this.trackingPlayers)
       this.RemovePlayer(user, "Session closed.");
 
-    this._netLifecycleDisconnect?.();
-    this.network_env.Destroy();
+    this.networkLifecycleDisconnect?.();
+    this.networkManager.Destroy();
 
     task.wait(1);
 
-    for (const callback of this._closing_connections)
+    for (const callback of this.closingConnections)
       task.spawn(() => callback(this));
-    this._closing_connections.clear();
+    this.closingConnections.clear();
 
-    for (const conn of this._connections)
+    for (const conn of this.connections)
       conn.Disconnect();
-    this._connections.clear();
+    this.connections.clear();
 
-    this.entity_env.KillAllThoseBitchAsses();
+    this.entityEnvironment.murderAllFuckers();
 
-    this.player_joined.Clear();
-    this.player_left.Clear();
+    this.playerJoined.Clear();
+    this.playerLeft.Clear();
 
     task.wait();
     task.wait();
@@ -84,36 +84,36 @@ class CSessionInstance {
   }
 
   BindToClose(callback: (session: CSessionInstance) => void) {
-    this._closing_connections.push(callback);
+    this.closingConnections.push(callback);
   }
 
   InsertPlayer(player: Player) {
     print(`${player.Name} has joined the session ${this.sessionid}`);
 
-    this.network_env.signedUsers.add(player);
-    this.active_players.add(player);
-    this.player_joined.Fire(player);
+    this.networkManager.signedUsers.add(player);
+    this.trackingPlayers.add(player);
+    this.playerJoined.Fire(player);
   }
 
   RemovePlayer(player: Player, disconnectreason = "") {
-    if (!this.active_players.has(player)) return;
+    if (!this.trackingPlayers.has(player)) return;
 
     print(`${player.Name} has left the session ${this.sessionid}. (${disconnectreason})`);
 
-    this.network_env.startWritingMessage("session_disconnected", [player], []);
-    WriteBufferString(disconnectreason);
-    this.network_env.finishWritingMessage();
+    this.networkManager.startWritingMessage("session_disconnected", [player], []);
+    writeBufferString(disconnectreason);
+    this.networkManager.finishWritingMessage();
 
-    this.network_env.signedUsers.delete(player);
-    this.active_players.delete(player);
-    this.player_left.Fire(player, disconnectreason);
+    this.networkManager.signedUsers.delete(player);
+    this.trackingPlayers.delete(player);
+    this.playerLeft.Fire(player, disconnectreason);
   }
 
   static GetSessionsFromPlayer(user: Player) {
     const list = new Array<CSessionInstance>();
 
-    for (const [, sessioninst] of this.running_sessions)
-      if (sessioninst.active_players.has(user)) list.push(sessioninst);
+    for (const [, sessioninst] of this.runningSessions)
+      if (sessioninst.trackingPlayers.has(user)) list.push(sessioninst);
 
     return list;
   }

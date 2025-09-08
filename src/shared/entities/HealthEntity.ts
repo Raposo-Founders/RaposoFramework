@@ -1,4 +1,4 @@
-import CBindableSignal from "shared/util/signal";
+import Signal from "shared/util/signal";
 import WorldEntity from "./worldent";
 
 declare global {
@@ -16,14 +16,14 @@ abstract class HealthEntity extends WorldEntity {
   abstract health: number;
   abstract maxHealth: number;
 
-  readonly tookDamage = new CBindableSignal<[old: number, new: number, attacker?: WorldEntity]>();
-  readonly died = new CBindableSignal<[attacker?: WorldEntity]>();
+  readonly tookDamage = new Signal<[old: number, new: number, attacker?: WorldEntity]>();
+  readonly died = new Signal<[attacker?: WorldEntity]>();
   readonly attackersList: AttackerInfo[] = [];
 
   constructor() {
     super();
 
-    this._inheritance_list.add("HealthEntity");
+    this.inheritanceList.add("HealthEntity");
   }
 
   takeDamage(amount: number, attacker?: WorldEntity) {

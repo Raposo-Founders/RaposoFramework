@@ -1,23 +1,23 @@
 import { ErrorObject } from "./util/utilfuncs";
-import { CEntityEnvironment } from "./entities";
-import { CNetworkPortal } from "./network";
+import { EntityManager } from "./entities";
+import { NetworkManager } from "./network";
 import { RunService } from "@rbxts/services";
 import Object from "@rbxts/object-utils";
-import { CLifecycleEnvironment } from "./lifecycle";
-import CBindableSignal from "./util/signal";
-import CWorldInstance from "./worldrender";
+import { LifecycleInstance } from "./lifecycle";
+import Signal from "./util/signal";
+import WorldInstance from "./worldrender";
 
 // # Constants
-const worldInstance = new CWorldInstance("default");
+const worldInstance = new WorldInstance("default");
 
-export const clientSessionConnected = new CBindableSignal<[sessionId: string]>();
-export const clientSessionDisconnected = new CBindableSignal<[sessionId: string, reason: string]>();
+export const clientSessionConnected = new Signal<[sessionId: string]>();
+export const clientSessionDisconnected = new Signal<[sessionId: string, reason: string]>();
 
 export const clientSharedEnv = {
   worldInstance: worldInstance,
-  netportal: new CNetworkPortal(),
-  entityEnvironment: new CEntityEnvironment(worldInstance),
-  lifecycle: new CLifecycleEnvironment(),
+  netportal: new NetworkManager(),
+  entityEnvironment: new EntityManager(worldInstance),
+  lifecycle: new LifecycleInstance(),
 };
 
 // # Bindings & misc

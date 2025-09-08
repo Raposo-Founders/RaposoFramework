@@ -8,30 +8,30 @@ interface AudioEffectPath {
 }
 
 // # Constants
-const DEFAULT_OUTPUT = ReplicatedInstance(Services.SoundService, "MainOutput", "AudioDeviceOutput");
-const MAP_SOUND_GROUPS = new Map<string, AudioFader>();
+const defaultSoundOutput = ReplicatedInstance(Services.SoundService, "MainOutput", "AudioDeviceOutput");
+const mappedSoundGroups = new Map<string, AudioFader>();
 
-const CREATED_SOUNDS_MAP = new Map<string, CSoundInstance>();
+const createdSounds = new Map<string, CSoundInstance>();
 
 // # Classes
 export class CSoundInstance {
   player = new Instance("AudioPlayer");
 
-  protected _instances = new Array<Instance>();
-  protected _target_output: AudioFader | AudioDeviceOutput | AudioEmitter = DEFAULT_OUTPUT;
-  protected _latest_wire = new Instance("Wire");
+  protected instances = new Array<Instance>();
+  protected targetOutput: AudioFader | AudioDeviceOutput | AudioEmitter = defaultSoundOutput;
+  protected latestWire = new Instance("Wire");
 
   constructor(readonly name: string, readonly soundid: string) {
     this.player.Asset = soundid;
     this.player.Parent = Services.ReplicatedStorage;
     this.player.AutoLoad = true;
 
-    this._latest_wire.Parent = this.player;
-    this._latest_wire.SourceInstance = this.player;
-    this._latest_wire.TargetInstance = this._target_output;
+    this.latestWire.Parent = this.player;
+    this.latestWire.SourceInstance = this.player;
+    this.latestWire.TargetInstance = this.targetOutput;
 
-    this._instances.push(this.player, this._latest_wire);
-    CREATED_SOUNDS_MAP.set(name, this);
+    this.instances.push(this.player, this.latestWire);
+    createdSounds.set(name, this);
   }
 
   SetLoop(looped = true, region?: NumberRange) {
@@ -51,12 +51,12 @@ export class CSoundInstance {
   }
 
   Dispose() {
-    for (const inst of this._instances) {
+    for (const inst of this.instances) {
       inst.Destroy();
     }
-    this._instances.clear();
+    this.instances.clear();
 
-    CREATED_SOUNDS_MAP.delete(this.name);
+    createdSounds.delete(this.name);
     table.clear(this);
   }
 
@@ -74,22 +74,22 @@ export class CSoundInstance {
     wire.SourceInstance = inst;
     // wire.TargetInstance = this._target_output; // will be set by another function
 
-    this._latest_wire.TargetInstance = inst;
-    this._latest_wire = wire;
+    this.latestWire.TargetInstance = inst;
+    this.latestWire = wire;
 
-    this._instances.push(inst, wire);
+    this.instances.push(inst, wire);
 
     this._UpdateLatestDevicePath();
   }
 
-  SetOutput(output: typeof this._target_output) {
-    this._target_output = output;
+  SetOutput(output: typeof this.targetOutput) {
+    this.targetOutput = output;
 
     this._UpdateLatestDevicePath();
   }
 
   protected _UpdateLatestDevicePath() {
-    this._latest_wire.TargetInstance = this._target_output;
+    this.latestWire.TargetInstance = this.targetOutput;
   }
 }
 
@@ -105,8 +105,8 @@ export class CWorldSoundInstance extends CSoundInstance {
     const emitter = new Instance("AudioEmitter");
     emitter.Parent = this._attachment;
 
-    this._latest_wire.TargetInstance = emitter;
-    this._instances.push(emitter);
+    this.latestWire.TargetInstance = emitter;
+    this.instances.push(emitter);
   }
 
   SetPosition(pos: Vector3) {
@@ -120,7 +120,7 @@ export class CWorldSoundInstance extends CSoundInstance {
 
 // # Namespace
 export function CreateSoundGroup(name: string) {
-  assert(!MAP_SOUND_GROUPS.has(name), `SoundGroup ${name} already exists.`);
+  assert(!mappedSoundGroups.has(name), `SoundGroup ${name} already exists.`);
 
   const fader = new Instance("AudioFader");
   fader.Parent = Services.SoundService;
@@ -129,17 +129,17 @@ export function CreateSoundGroup(name: string) {
   const wire = new Instance("Wire");
   wire.Parent = fader;
   wire.SourceInstance = fader;
-  wire.TargetInstance = DEFAULT_OUTPUT;
+  wire.TargetInstance = defaultSoundOutput;
 
-  MAP_SOUND_GROUPS.set(name, fader);
+  mappedSoundGroups.set(name, fader);
 }
 
 export function GetSoundFromName(name: string) {
-  return CREATED_SOUNDS_MAP.get(name);
+  return createdSounds.get(name);
 }
 
 export function AddListenerToWorldObject(inst: BasePart | Camera, soundgroup: string) {
-  const fader = MAP_SOUND_GROUPS.get(soundgroup);
+  const fader = mappedSoundGroups.get(soundgroup);
   assert(fader, `SoundGroup ${soundgroup} does not exist.`);
 
   const listener = new Instance("AudioListener");

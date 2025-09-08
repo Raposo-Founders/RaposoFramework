@@ -14,12 +14,12 @@ export const gameValues = {
   cmdprefix: ":",
 } as const;
 
-export function GetStringMappedValue(name: string) {
+export function getStringMappedValue(name: string) {
   return stringValues.get(name.upper()) || `#${name.upper()}`;
 }
 
 const alertedAttributeValues = new Set<string>();
-export function GetGameDefinedValue<T extends AttributeValue>(name: string, defaultValue: T): T {
+export function getInstanceDefinedValue<T extends AttributeValue>(name: string, defaultValue: T): T {
   const targetInstance = ReplicatedStorage.FindFirstChild("Configuration");
   if (!targetInstance) {
     if (!alertedAttributeValues.has("MISSING_CONFIG_REPL")) {
