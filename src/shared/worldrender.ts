@@ -10,8 +10,8 @@ export const spawnedWorlds = new Map<string, WorldInstance>();
 
 // # Classes
 export default class WorldInstance {
-  world_id = RandomString(10);
-  root_instance = new Instance("WorldModel");
+  id = RandomString(10);
+  rootInstance = new Instance("Folder");
 
   parts: Instance;
   objects: Instance;
@@ -22,17 +22,17 @@ export default class WorldInstance {
 
     this.parts = mapInstance.WaitForChild("Parts");
     this.objects = mapInstance.WaitForChild("Objects");
-    mapInstance.Parent = this.root_instance;
+    mapInstance.Parent = this.rootInstance;
 
-    this.root_instance.Name = `world_${this.world_id}`;
+    this.rootInstance.Name = `world_${this.id}`;
     // this.root_instance.Parent = workspace;
 
-    spawnedWorlds.set(this.world_id, this);
+    spawnedWorlds.set(this.id, this);
   }
 
   destroy() {
-    this.root_instance.Destroy();
-    spawnedWorlds.delete(this.world_id);
+    this.rootInstance.Destroy();
+    spawnedWorlds.delete(this.id);
     table.clear(this);
   }
 }

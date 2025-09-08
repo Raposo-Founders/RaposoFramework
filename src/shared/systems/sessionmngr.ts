@@ -70,7 +70,7 @@ export function ClientConnectToServerSession(sessionId: string) {
   clientSharedEnv.worldInstance = new WorldInstance(mapName);
   clientSharedEnv.entityEnvironment = new EntityManager(clientSharedEnv.worldInstance);
 
-  clientSharedEnv.worldInstance.root_instance.Parent = workspace;
+  clientSharedEnv.worldInstance.rootInstance.Parent = workspace;
 
   task.wait(connectionStepCooldown);
 
