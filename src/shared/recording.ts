@@ -4,6 +4,7 @@ import { registerConsoleFunction } from "./cmd/cvar";
 import { clientSharedEnv } from "./clientshared";
 import { ExecuteCommand } from "./cmd";
 import { UserInputService } from "@rbxts/services";
+import { finalizeBufferCreation, startBufferCreation } from "./util/bufferwriter";
 
 // # Types
 interface I_EntitySnapshotContent {
@@ -31,12 +32,16 @@ function RecordEnvironment(entityEnvironment: EntityManager, lifecycleEnvironmen
     const entitiesSaveData = new Array<I_EntitySnapshotContent>();
     const currentRecordingTime = time() - startingTime;
 
-    for (const [, ent] of entityEnvironment.entities)
+    for (const [, ent] of entityEnvironment.entities) {
+      startBufferCreation();
+      ent.WriteStateBuffer();
+
       entitiesSaveData.push({
         id: ent.id,
         classname: ent.classname,
-        content: ent.GetStateBuffer(),
+        content: finalizeBufferCreation(),
       });
+    }
 
     snapshots.push({
       time: currentRecordingTime,

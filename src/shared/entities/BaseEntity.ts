@@ -50,7 +50,7 @@ abstract class BaseEntity {
 
   abstract Destroy(): void;
 
-  abstract GetStateBuffer(): buffer;
+  abstract WriteStateBuffer(): void;
   abstract ApplyStateBuffer(state: buffer): void;
 
   abstract Think(dt: number): void;

@@ -58,9 +58,7 @@ export default class PlayerEntity extends HealthEntity {
     this.inheritanceList.add("PlayerEntity");
   }
 
-  GetStateBuffer(): buffer {
-    startBufferCreation();
-
+  WriteStateBuffer(): void {
     writeBufferU8(this.health);
     writeBufferU8(this.maxHealth);
 
@@ -80,8 +78,6 @@ export default class PlayerEntity extends HealthEntity {
     writeBufferU16(this.stats.deaths);
     writeBufferU16(this.stats.ping);
     writeBufferU16(this.stats.damage);
-
-    return finalizeBufferCreation();
   }
 
   ApplyStateBuffer(state: buffer): void {
