@@ -52,7 +52,7 @@ export function getPlayermodelFromEntity(entityId: EntityId) {
   return entityPlayermodels.get(entityId);
 }
 
-export function createPlayermodelForEntity(entity: PlayerEntity) {
+export async function createPlayermodelForEntity(entity: PlayerEntity) {
   print("Creating character rig for entity:", entity.classname, entity.id);
 
   const targetPlayer = Services.Players.GetPlayerByUserId(entity.userid);
@@ -88,6 +88,8 @@ export function createPlayermodelForEntity(entity: PlayerEntity) {
       inst.AssemblyLinearVelocity = new Vector3();
       inst.AssemblyAngularVelocity = new Vector3();
     }
+
+    refreshPlayermodelAppearance(playermodel, entity.userid);
   });
 
   entity.died.Connect(() => {
@@ -147,6 +149,8 @@ export function createPlayermodelForEntity(entity: PlayerEntity) {
   });
 
   entityPlayermodels.set(entity.id, playermodel);
+
+  return playermodel;
 }
 
 // # Bindings & misc
