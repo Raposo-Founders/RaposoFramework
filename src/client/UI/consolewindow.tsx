@@ -41,6 +41,7 @@ function ConsoleLogEntry(props: { entries: string[], order: number, accent?: Col
         Text={element}
         TextColor3={Color3.fromHex(colorTable.windowText)}
         TextSize={18}
+        TextXAlignment={"Left"}
         AutomaticSize={"XY"}
         BackgroundTransparency={1}
         LayoutOrder={i}
