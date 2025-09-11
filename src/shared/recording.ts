@@ -1,10 +1,10 @@
 import { EntityManager } from "./entities";
 import { LifecycleInstance } from "./lifecycle";
 import { registerConsoleFunction } from "./cmd/cvar";
-import { clientSharedEnv } from "./clientshared";
 import { ExecuteCommand } from "./cmd";
 import { UserInputService } from "@rbxts/services";
 import { finalizeBufferCreation, startBufferCreation } from "./util/bufferwriter";
+import { defaultEnvironments } from "./defaultinsts";
 
 // # Types
 interface I_EntitySnapshotContent {
@@ -190,7 +190,7 @@ export class CReplayPlayer {
 
 // # Bindings & misc
 registerConsoleFunction(["record"], { name: "name" })((ctx, name) => {
-  const stopRecordingCallback = RecordEnvironment(clientSharedEnv.entityEnvironment, clientSharedEnv.lifecycle);
+  const stopRecordingCallback = RecordEnvironment(defaultEnvironments.entity, defaultEnvironments.lifecycle);
 
   ctx.Reply(`Recording replay ${name}...`);
 
@@ -214,10 +214,10 @@ registerConsoleFunction(["playdemo"], { name: "name" })((ctx, name) => {
     return;
   }
 
-  clientSharedEnv.lifecycle.YieldForTicks(20);
-  clientSharedEnv.entityEnvironment.isPlayback = true;
+  defaultEnvironments.lifecycle.YieldForTicks(20);
+  defaultEnvironments.entity.isPlayback = true;
 
-  const player = new CReplayPlayer(clientSharedEnv.entityEnvironment, clientSharedEnv.lifecycle, targetSnapshots);
+  const player = new CReplayPlayer(defaultEnvironments.entity, defaultEnvironments.lifecycle, targetSnapshots);
 
   UserInputService.InputBegan.Connect((input, busy) => {
     if (busy) return;

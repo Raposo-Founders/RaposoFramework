@@ -1,9 +1,9 @@
-import { t } from "@rbxts/t";
-import { ReplicatedInstance } from "./util/utilfuncs";
-import Signal from "./util/signal";
-import { HttpService, Players, RunService } from "@rbxts/services";
 import Object from "@rbxts/object-utils";
+import { Players, RunService } from "@rbxts/services";
+import { t } from "@rbxts/t";
 import { finalizeBufferCreation, startBufferCreation } from "./util/bufferwriter";
+import Signal from "./util/signal";
+import { ReplicatedInstance } from "./util/utilfuncs";
 
 // # Types
 interface MessageInfo {
@@ -14,11 +14,11 @@ interface MessageInfo {
 }
 
 // # Constants
-const MESSAGES_REMOTE = ReplicatedInstance(workspace, "NETWORK_PACKETS", "RemoteEvent");
-const UNREL_MESSAGES_REMOTE = ReplicatedInstance(workspace, "NETWORK_UNRELIABLE_PACKETS", "UnreliableRemoteEvent");
+const MESSAGES_REMOTE = ReplicatedInstance(workspace, "MESSAGES", "RemoteEvent");
+const UNREL_MESSAGES_REMOTE = ReplicatedInstance(workspace, "UNREL_MESSAGES", "UnreliableRemoteEvent");
 
-const DIRECT_MESSAGES_REMOTE = ReplicatedInstance(workspace, "NETWORK_DIRECT_PACKETS", "RemoteEvent");
-const UNREL_DIRECT_MESSAGES_REMOTE = ReplicatedInstance(workspace, "NETWORK_DIRECT_UNRELIABLE_PACKETS", "UnreliableRemoteEvent");
+const DIRECT_MESSAGES_REMOTE = ReplicatedInstance(workspace, "DIR_MESSAGES", "RemoteEvent");
+const UNREL_DIRECT_MESSAGES_REMOTE = ReplicatedInstance(workspace, "UNREL_DIR_MESSAGES", "UnreliableRemoteEvent");
 
 const boundDirectCallbacks = new Map<string, Callback>();
 const writingDirectMessages = new Map<thread, { id: string, user: Player | undefined, unreliable: boolean }>();

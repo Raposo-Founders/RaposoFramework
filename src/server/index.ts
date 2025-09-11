@@ -1,6 +1,8 @@
 import BannerNotify from "@rbxts/banner-notify";
 import { ReplicatedStorage, StarterGui } from "@rbxts/services";
+import { defaultEnvironments } from "shared/defaultinsts";
 import { modelsFolder, modulesFolder, uiFolder } from "shared/folders";
+import ServerInstance from "shared/serverinst";
 import { BufferReader } from "shared/util/bufferreader";
 import { getInstanceFromPath } from "shared/util/instancepath";
 
@@ -33,7 +35,7 @@ import("shared/systems/sessionmngr").andThen((val) => _G.Systems["sessionmngr"] 
 _G.ClientEnv = undefined;
 _G.RaposoEnv = {
   folders: import("shared/folders").expect(),
-  sessions: import("shared/session").expect(),
+  sessions: import("shared/serverinst").expect(),
   network: import("shared/network").expect(),
   util: {
     BufferReader: BufferReader,
@@ -64,5 +66,15 @@ for (const inst of modulesFolder.GetChildren()) {
 
 // Misc & other shit
 BannerNotify.InitServer(); // Why the fuck does the server need to be initialized?
+
+defaultEnvironments.lifecycle.running = true;
+defaultEnvironments.entity.isServer = true;
+defaultEnvironments.server = new ServerInstance(
+  "default",
+  defaultEnvironments.world,
+  defaultEnvironments.network,
+  defaultEnvironments.entity,
+  defaultEnvironments.lifecycle,
+);
 
 ReplicatedStorage.SetAttribute("ServerRunning", true);

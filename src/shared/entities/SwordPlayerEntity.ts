@@ -2,19 +2,20 @@ import * as Services from "@rbxts/services";
 import { cacheFolder, modelsFolder } from "shared/folders";
 import { getInstanceDefinedValue } from "shared/gamevalues";
 import { NetworkManager } from "shared/network";
+import { createPlayermodelForEntity, getPlayermodelFromEntity } from "shared/playermodel";
+import { Playermodel } from "shared/playermodel/rig";
+import { CWorldSoundInstance } from "shared/systems/sound";
+import { BufferReader } from "shared/util/bufferreader";
 import { finalizeBufferCreation, startBufferCreation, writeBufferBool, writeBufferString, writeBufferU16, writeBufferU32, writeBufferU8, writeBufferVector } from "shared/util/bufferwriter";
 import Signal from "shared/util/signal";
+import { DoesInstanceExist } from "shared/util/utilfuncs";
+import { EntityManager, registerEntityClass } from ".";
 import BaseEntity from "./BaseEntity";
 import HealthEntity from "./HealthEntity";
 import PlayerEntity, { getPlayerEntityFromUserId, PlayerTeam } from "./PlayerEntity";
-import { createPlayermodelForEntity, getPlayermodelFromEntity } from "shared/playermodel";
-import { DoesInstanceExist } from "shared/util/utilfuncs";
-import { clientSharedEnv } from "shared/clientshared";
-import { BufferReader } from "shared/util/bufferreader";
-import { CWorldSoundInstance } from "shared/systems/sound";
-import { EntityManager, registerEntityClass } from ".";
-import CSessionInstance from "shared/session";
-import { Playermodel } from "shared/playermodel/rig";
+import { msg } from "shared/logger";
+import { defaultEnvironments } from "shared/defaultinsts";
+import ServerInstance from "shared/serverinst";
 
 // # Types
 declare global {
@@ -112,7 +113,7 @@ export class SwordPlayerEntity extends PlayerEntity {
     this.inheritanceList.add("SwordPlayerEntity");
 
     task.defer(() => {
-      if (!Services.RunService.IsClient() || this.environment.isServer) return;
+      if (this.environment.isServer) return;
 
       createPlayermodelForEntity(this).andThen(playermodel => {
         const hitboxPart = SWORD_MODEL.Clone();
@@ -142,7 +143,7 @@ export class SwordPlayerEntity extends PlayerEntity {
 
         this.instancesList.push(hitboxPart, hitboxMotor);
 
-        const unbindLifecycleUpdate = clientSharedEnv.lifecycle.BindTickrate(() => {
+        const unbindLifecycleUpdate = defaultEnvironments.lifecycle.BindTickrate(() => {
           hitboxMotor.C1 = this.gripPosition;
           hitboxPart.Transparency = this.isEquipped ? 0 : 1;
         });
@@ -152,7 +153,7 @@ export class SwordPlayerEntity extends PlayerEntity {
     });
   }
 
-  WriteStateBuffer(): buffer {
+  WriteStateBuffer() {
     startBufferCreation();
   
     writeBufferU8(this.health);
@@ -177,8 +178,6 @@ export class SwordPlayerEntity extends PlayerEntity {
 
     writeBufferBool(this.isEquipped);
     writeBufferU32(this.activationCount);
-  
-    return finalizeBufferCreation();
   }
 
   ApplyStateBuffer(state: buffer): void {
@@ -247,8 +246,8 @@ export class SwordPlayerEntity extends PlayerEntity {
 
   async Attack1() {
     if (!this.environment.isServer && !this.environment.isPlayback) {
-      clientSharedEnv.netportal.startWritingMessage(`${NETSWORD_ID}c_activate`, undefined, undefined);
-      clientSharedEnv.netportal.finishWritingMessage();
+      defaultEnvironments.network.startWritingMessage(`${NETSWORD_ID}c_activate`, undefined, undefined);
+      defaultEnvironments.network.finishWritingMessage();
 
       return;
     }
@@ -324,32 +323,31 @@ export class SwordPlayerEntity extends PlayerEntity {
 // # Bindings & misc
 registerEntityClass("SwordPlayerEntity", SwordPlayerEntity);
 
-CSessionInstance.sessionCreated.Connect(session => {
-
-  session.entityEnvironment.entityCreated.Connect(entity => {
+ServerInstance.serverCreated.Connect(server => {
+  server.entity.entityCreated.Connect(entity => {
     if (!entity.IsA("SwordPlayerEntity")) return;
 
     // Listen for state changes
     entity.stateChanged.Connect(() => {
-      session.networkManager.startWritingMessage(`${NETSWORD_ID}changed`, undefined, undefined);
+      server.network.startWritingMessage(`${NETSWORD_ID}changed`, undefined, undefined);
       writeBufferString(entity.id);
       writeBufferU8(entity.currentState);
-      session.networkManager.finishWritingMessage();
+      server.network.finishWritingMessage();
     });
   });
 
   // Activation requests
-  session.networkManager.listenPacket(`${NETSWORD_ID}c_activate`, (user) => {
+  server.network.listenPacket(`${NETSWORD_ID}c_activate`, (user) => {
     if (!user) return;
 
-    const entity = getPlayerEntityFromUserId(session.entityEnvironment, user.UserId);
+    const entity = getPlayerEntityFromUserId(server.entity, user.UserId);
     if (!entity || !entity.IsA("SwordPlayerEntity")) return;
 
     entity.Attack1();
   });
 
   // Listening for damage
-  session.networkManager.listenPacket(`${NETSWORD_ID}hit`, (user, bfr) => {
+  server.network.listenPacket(`${NETSWORD_ID}hit`, (user, bfr) => {
     if (!user) return;
 
     const reader = BufferReader(bfr);
@@ -357,8 +355,8 @@ CSessionInstance.sessionCreated.Connect(session => {
     const attackerId = reader.string();
     const victimId = reader.string();
 
-    const attackerEntity = session.entityEnvironment.entities.get(attackerId);
-    const victimEntity = session.entityEnvironment.entities.get(victimId);
+    const attackerEntity = server.entity.entities.get(attackerId);
+    const victimEntity = server.entity.entities.get(victimId);
     if (!attackerEntity?.IsA("SwordPlayerEntity")) return;
     if (!victimEntity?.IsA("HealthEntity")) return;
 
@@ -375,41 +373,39 @@ CSessionInstance.sessionCreated.Connect(session => {
   });
 
   // Server players replication
-  const unbindReplicationCallback = session.lifecycleInstance.BindTickrate(() => {
-    const entitiesList = session.entityEnvironment.getEntitiesThatIsA("SwordPlayerEntity");
+  server.lifecycle.BindTickrate(() => {
+    const entitiesList = server.entity.getEntitiesThatIsA("SwordPlayerEntity");
 
-    session.networkManager.startWritingMessage(`${NETSWORD_ID}entities_list`, undefined, undefined);
-    writeBufferEntitiesEntry(session.entityEnvironment);
-    session.networkManager.finishWritingMessage();
+    server.network.startWritingMessage(`${NETSWORD_ID}entities_list`);
+    writeBufferEntitiesEntry(server.entity);
+    server.network.finishWritingMessage();
 
     for (const ent of entitiesList) {
-      session.networkManager.startWritingMessage(`${NETSWORD_ID}replication`, undefined, undefined);
+      server.network.startWritingMessage(`${NETSWORD_ID}replication`);
       ent.WriteStateBuffer();
-      session.networkManager.finishWritingMessage();
+      server.network.finishWritingMessage();
     }
   });
 
   // Client state updating
-  session.networkManager.listenPacket(`${NETSWORD_ID}c_stateupd`, (user, bfr) => {
+  server.network.listenPacket(`${NETSWORD_ID}c_stateupd`, (user, bfr) => {
     if (!user) return;
 
     const reader = BufferReader(bfr);
     const entityId = reader.string();
 
-    const entity = session.entityEnvironment.entities.get(entityId);
+    const entity = server.entity.entities.get(entityId);
     if (!entity || !entity.IsA("SwordPlayerEntity") || entity.userid !== user.UserId) return;
 
     entity.ApplyStateBuffer(bfr);
   });
-
-  session.BindToClose(() => unbindReplicationCallback());
 });
 
 if (Services.RunService.IsClient()) {
   const entitiesInQueue = new Set<EntityId>();
 
   // Synchronizing server entities
-  clientSharedEnv.netportal.listenPacket(`${NETSWORD_ID}entities_list`, (_, bfr) => {
+  defaultEnvironments.network.listenPacket(`${NETSWORD_ID}entities_list`, (_, bfr) => {
     const listedServerEntities = new Array<string>();
 
     const reader = BufferReader(bfr);
@@ -422,49 +418,49 @@ if (Services.RunService.IsClient()) {
 
       if (entitiesInQueue.has(entityId)) continue;
 
-      const entity = clientSharedEnv.entityEnvironment.entities.get(entityId);
+      const entity = defaultEnvironments.entity.entities.get(entityId);
       if (entity) continue;
 
       entitiesInQueue.add(entityId);
 
-      clientSharedEnv.entityEnvironment.createEntity("SwordPlayerEntity", entityId)
+      defaultEnvironments.entity.createEntity("SwordPlayerEntity", entityId)
         .andThen(ent => {
           ent.hitboxTouched.Connect(target => {
             if (ent.userid === Services.Players.LocalPlayer.UserId) 
-              ClientHandleHitboxTouched(ent, target, clientSharedEnv.netportal);
+              ClientHandleHitboxTouched(ent, target, defaultEnvironments.network);
 
             if (ent.userid !== Services.Players.LocalPlayer.UserId && target.IsA("SwordPlayerEntity"))
-              ClientHandleHitboxTouched(target, ent, clientSharedEnv.netportal);
+              ClientHandleHitboxTouched(target, ent, defaultEnvironments.network);
           });
         }).finally(() => {
           entitiesInQueue.delete(entityId);
         });
     }
 
-    for (const ent of clientSharedEnv.entityEnvironment.getEntitiesThatIsA("SwordPlayerEntity")) {
+    for (const ent of defaultEnvironments.entity.getEntitiesThatIsA("SwordPlayerEntity")) {
       if (listedServerEntities.includes(ent.id) || entitiesInQueue.has(ent.id)) continue;
-      clientSharedEnv.entityEnvironment.killThisFucker(ent);
+      defaultEnvironments.entity.killThisFucker(ent);
     }
   });
 
   // Replication update
-  clientSharedEnv.netportal.listenPacket(`${NETSWORD_ID}replication`, (_, bfr) => {
+  defaultEnvironments.network.listenPacket(`${NETSWORD_ID}replication`, (_, bfr) => {
     const reader = BufferReader(bfr);
     const entityId = reader.string();
 
     if (entitiesInQueue.has(entityId)) return;
 
-    const targetEntity = clientSharedEnv.entityEnvironment.entities.get(entityId);
+    const targetEntity = defaultEnvironments.entity.entities.get(entityId);
     if (!targetEntity || !targetEntity.IsA("SwordPlayerEntity")) return;
 
     targetEntity.ApplyStateBuffer(bfr);
   });
 
   // Client state update
-  clientSharedEnv.lifecycle.BindTickrate(() => {
+  defaultEnvironments.lifecycle.BindTickrate(() => {
     let entity: SwordPlayerEntity | undefined;
     let playermodel: Playermodel | undefined;
-    for (const ent of clientSharedEnv.entityEnvironment.getEntitiesThatIsA("SwordPlayerEntity")) {
+    for (const ent of defaultEnvironments.entity.getEntitiesThatIsA("SwordPlayerEntity")) {
       if (ent.userid !== Services.Players.LocalPlayer.UserId) continue;
       entity = ent;
       playermodel = getPlayermodelFromEntity(ent.id);
@@ -477,19 +473,19 @@ if (Services.RunService.IsClient()) {
     entity.velocity = playermodel.rig.PrimaryPart?.AssemblyLinearVelocity ?? new Vector3();
     entity.grounded = playermodel.rig.Humanoid.FloorMaterial.Name !== "Air";
 
-    clientSharedEnv.netportal.startWritingMessage(`${NETSWORD_ID}c_stateupd`, undefined, undefined);
+    defaultEnvironments.network.startWritingMessage(`${NETSWORD_ID}c_stateupd`, undefined, undefined);
     entity.WriteStateBuffer();
-    clientSharedEnv.netportal.finishWritingMessage();
+    defaultEnvironments.network.finishWritingMessage();
   });
 
   // Sword / attack changes
-  clientSharedEnv.netportal.listenPacket(`${NETSWORD_ID}changed`, (_, bfr) => {
+  defaultEnvironments.network.listenPacket(`${NETSWORD_ID}changed`, (_, bfr) => {
     const reader = BufferReader(bfr);
 
     const entityId = reader.string();
     const newState = reader.u8();
 
-    const targetEntity = clientSharedEnv.entityEnvironment.entities.get(entityId);
+    const targetEntity = defaultEnvironments.entity.entities.get(entityId);
     if (!targetEntity || !targetEntity.IsA("SwordPlayerEntity")) return;
     if (targetEntity.currentState === newState) return;
 

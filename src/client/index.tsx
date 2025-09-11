@@ -1,13 +1,13 @@
 import BannerNotify from "@rbxts/banner-notify";
 import React from "@rbxts/react";
 import { ReplicatedStorage } from "@rbxts/services";
-import { clientSharedEnv } from "shared/clientshared";
 import { modulesFolder } from "shared/folders";
 import { CreateSoundGroup } from "shared/systems/sound";
 import { BufferReader } from "shared/util/bufferreader";
 import ConsoleWindow from "./UI/consolewindow";
 import { defaultRoot } from "./UI/default/values";
 import { getInstanceFromPath } from "shared/util/instancepath";
+import { defaultEnvironments } from "shared/defaultinsts";
 
 // # Functions
 
@@ -15,10 +15,10 @@ import { getInstanceFromPath } from "shared/util/instancepath";
 while (!ReplicatedStorage.GetAttribute("ServerRunning")) task.wait();
 
 _G.Systems = {};
-_G.ClientEnv = import("shared/clientshared").expect();
+_G.ClientEnv = import("shared/defaultinsts").expect();
 _G.RaposoEnv = {
   folders: import("shared/folders").expect(),
-  sessions: import("shared/session").expect(),
+  sessions: import("shared/serverinst").expect(),
   network: import("shared/network").expect(),
   util: {
     BufferReader: BufferReader,
@@ -26,11 +26,12 @@ _G.RaposoEnv = {
   }
 };
 
-clientSharedEnv.lifecycle.BindTickrate(() => clientSharedEnv.netportal.processQueuedPackets());
-clientSharedEnv.lifecycle.BindTickrate((_, dt) => {
-  for (const [, entity] of clientSharedEnv.entityEnvironment.entities) 
+defaultEnvironments.lifecycle.BindTickrate(() => defaultEnvironments.network.processQueuedPackets());
+defaultEnvironments.lifecycle.BindTickrate((_, dt) => {
+  for (const [, entity] of defaultEnvironments.entity.entities)
     task.spawn(() => entity.Think(dt));
 });
+defaultEnvironments.lifecycle.running = true;
 
 // # Init
 CreateSoundGroup("World");
@@ -52,8 +53,6 @@ import("shared/systems/sessionmngr").andThen((val) => _G.Systems["sessionmngr"] 
     require(inst);
   }
 }
-
-clientSharedEnv.lifecycle.running = true;
 
 // Start game-defined modules
 for (const inst of modulesFolder.GetChildren()) {

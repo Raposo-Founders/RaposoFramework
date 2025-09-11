@@ -1,8 +1,8 @@
 import * as Services from "@rbxts/services";
-import { clientSharedEnv } from "shared/clientshared";
 import PlayerEntity from "shared/entities/PlayerEntity";
 import { msg } from "shared/logger";
 import { Playermodel } from "./rig";
+import { defaultEnvironments } from "shared/defaultinsts";
 
 
 // # Constants & variables
@@ -125,7 +125,7 @@ export async function createPlayermodelForEntity(entity: PlayerEntity) {
     }
   });
 
-  const unbindConnection = clientSharedEnv.lifecycle.BindLateUpdate(() => {
+  const unbindConnection = defaultEnvironments.lifecycle.BindLateUpdate(() => {
     playermodel.rig.Humanoid.Health = entity.health;
     playermodel.rig.Humanoid.MaxHealth = entity.maxHealth;
 

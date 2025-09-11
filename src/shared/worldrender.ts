@@ -1,4 +1,5 @@
 import { mapStorageFolder } from "./folders";
+import Signal from "./util/signal";
 import { RandomString } from "./util/utilfuncs";
 
 // # Types
@@ -16,24 +17,34 @@ export default class WorldInstance {
   parts: Instance;
   objects: Instance;
 
+  mapChanged = new Signal<[name: string, inst: Instance]>();
+  private temporaryFolder = new Instance("Folder");
+
   constructor(mapName: string) {
-    const mapInstance = mapStorageFolder.FindFirstChild(mapName)?.Clone();
-    assert(mapInstance && mapInstance.IsA("Folder"), `Unknown map ${mapName} or invalid instance classname.`);
-
-    this.parts = mapInstance.WaitForChild("Parts");
-    this.objects = mapInstance.WaitForChild("Objects");
-    mapInstance.Parent = this.rootInstance;
-
-    this.rootInstance.Name = `world_${this.id}`;
-    // this.root_instance.Parent = workspace;
+    this.parts = this.temporaryFolder;
+    this.objects = this.temporaryFolder;
+    this.loadMap(mapName);
 
     spawnedWorlds.set(this.id, this);
   }
 
-  destroy() {
+  loadMap(mapName: string) {
+    const mapInstance = mapStorageFolder.FindFirstChild(mapName);
+    assert(mapInstance && mapInstance.IsA("Folder"), `Unknown map ${mapName} or invalid instance classname.`);
+
+    print(`Loading map "${mapName}..."`);
+
     this.rootInstance.Destroy();
-    spawnedWorlds.delete(this.id);
-    table.clear(this);
+    this.rootInstance = new Instance("Folder");
+    this.rootInstance.Name = `world_${this.id}`;
+
+    for (const inst of mapInstance.GetChildren())
+      inst.Clone().Parent = this.rootInstance;
+
+    this.parts = this.rootInstance.WaitForChild("Parts");
+    this.objects = this.rootInstance.WaitForChild("Objects");
+
+    this.mapChanged.Fire(mapName, this.rootInstance);
   }
 }
 
