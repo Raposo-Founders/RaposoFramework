@@ -1,6 +1,5 @@
 import * as Services from "@rbxts/services";
 import PlayerEntity from "shared/entities/PlayerEntity";
-import { msg } from "shared/logger";
 import { Playermodel } from "./rig";
 import { defaultEnvironments } from "shared/defaultinsts";
 
@@ -21,13 +20,13 @@ export async function fetchHumanoidDescription(userid: number) {
   while (description === undefined) {
     totalAttempts++;
     if (totalAttempts >= humanoidFetchDescriptionMaxAttempts) {
-      msg("EXCEPTION", `Failed to fetch HumanoidDescription ${userid} after ${humanoidFetchDescriptionMaxAttempts} attempts.`);
+      warn(`Failed to fetch HumanoidDescription ${userid} after ${humanoidFetchDescriptionMaxAttempts} attempts.`);
       break;
     }
 
     const [success, obj] = pcall(() => Services.Players.GetHumanoidDescriptionFromUserId(math.max(userid, 1)));
     if (!success) {
-      msg("WARN", `Failed to fetch HumanoidDescription, retrying in 5 seconds...\n${obj}`);
+      warn(`Failed to fetch HumanoidDescription, retrying in 5 seconds...\n${obj}`);
       task.wait(5);
       continue;
     }

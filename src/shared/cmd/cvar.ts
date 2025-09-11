@@ -1,5 +1,3 @@
-import { MESSAGE_OUT_SIGNAL } from "shared/logger";
-
 // # Types
 type ValidValueTypes = "string" | "number";
 
@@ -48,13 +46,13 @@ export function registerConsoleFunction< // Abandon all hope below, this is curs
 export function executeConsoleFunction(name: string, ...args: unknown[]) {
   const contextEnvironment: CommandContext = {
     Reply: (message) => {
-      MESSAGE_OUT_SIGNAL.Fire("INFO", `[${name}]: ${message}`);
+      print(`[${name}]: ${message}`);
     },
     Warn: (message) => {
-      MESSAGE_OUT_SIGNAL.Fire("WARN", `[${name}]: ${message}`);
+      warn(`[${name}]: ${message}`);
     },
     Error: (message) => {
-      MESSAGE_OUT_SIGNAL.Fire("EXCEPTION", `[${name}]: ${message}`);
+      warn("Error", `[${name}]: ${message}`);
     },
   };
 

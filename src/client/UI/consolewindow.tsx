@@ -1,10 +1,9 @@
 import Object from "@rbxts/object-utils";
 import React from "@rbxts/react";
 import ReactRoblox from "@rbxts/react-roblox";
-import { UserInputService } from "@rbxts/services";
+import { LogService, UserInputService } from "@rbxts/services";
 import { ExecuteCommand } from "shared/cmd";
 import { registeredCallbacks, createdCVars, registerConsoleFunction } from "shared/cmd/cvar";
-import { MESSAGE_OUT_SIGNAL } from "shared/logger";
 import Signal from "shared/util/signal";
 import { colorTable, uiPreferences } from "./default/values";
 import { BaseWindow, hideWindow, showWindow } from "./default/window";
@@ -339,15 +338,15 @@ UserInputService.InputBegan.Connect((input) => {
   setTextboxFocus.Fire(isWindowVisible);
 });
 
-MESSAGE_OUT_SIGNAL.Connect((logType, content) => {
+LogService.MessageOut.Connect((content, logType) => {
 
   let accentColor: Color3 | undefined;
 
-  switch (logType) {
-  case "WARN":
+  switch (logType.Name) {
+  case "MessageWarning":
     accentColor = new Color3(0.95, 0.95, 0);
     break;
-  case "EXCEPTION":
+  case "MessageError":
     accentColor = new Color3(1, 0.25, 0.25);
     break;
   }

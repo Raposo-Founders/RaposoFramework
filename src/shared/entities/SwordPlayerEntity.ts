@@ -1,21 +1,20 @@
 import * as Services from "@rbxts/services";
+import { defaultEnvironments } from "shared/defaultinsts";
 import { cacheFolder, modelsFolder } from "shared/folders";
 import { getInstanceDefinedValue } from "shared/gamevalues";
 import { NetworkManager } from "shared/network";
 import { createPlayermodelForEntity, getPlayermodelFromEntity } from "shared/playermodel";
 import { Playermodel } from "shared/playermodel/rig";
+import ServerInstance from "shared/serverinst";
 import { CWorldSoundInstance } from "shared/systems/sound";
 import { BufferReader } from "shared/util/bufferreader";
-import { finalizeBufferCreation, startBufferCreation, writeBufferBool, writeBufferString, writeBufferU16, writeBufferU32, writeBufferU8, writeBufferVector } from "shared/util/bufferwriter";
+import { startBufferCreation, writeBufferBool, writeBufferString, writeBufferU16, writeBufferU32, writeBufferU8, writeBufferVector } from "shared/util/bufferwriter";
 import Signal from "shared/util/signal";
 import { DoesInstanceExist } from "shared/util/utilfuncs";
 import { EntityManager, registerEntityClass } from ".";
 import BaseEntity from "./BaseEntity";
 import HealthEntity from "./HealthEntity";
 import PlayerEntity, { getPlayerEntityFromUserId, PlayerTeam } from "./PlayerEntity";
-import { msg } from "shared/logger";
-import { defaultEnvironments } from "shared/defaultinsts";
-import ServerInstance from "shared/serverinst";
 
 // # Types
 declare global {

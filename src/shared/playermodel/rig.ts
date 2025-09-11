@@ -233,7 +233,6 @@ class CharacterAnimationManager {
 
     if (!targetanim.IsPlaying) {
       targetanim.Play();
-      // print("Playing animation:", name);
     }
   }
 
@@ -243,8 +242,6 @@ class CharacterAnimationManager {
       warn(`Unknown animation: ${name}`);
       return;
     }
-
-    // print("Stopping animation:", name);
 
     targetanim.Stop(0.1);
   }

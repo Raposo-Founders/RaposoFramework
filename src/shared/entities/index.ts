@@ -1,6 +1,5 @@
 import { RunService } from "@rbxts/services";
 import { t } from "@rbxts/t";
-import { msg } from "shared/logger";
 import Signal from "shared/util/signal";
 import { RandomString } from "shared/util/utilfuncs";
 import WorldInstance from "shared/worldrender";
@@ -96,7 +95,7 @@ export class EntityManager {
     if (!t.table(entity) || !t.string(rawget(entity, "id") as EntityId))
       throw `This s### is an invalid entity. ${entity.classname} ${entity.id}`;
 
-    msg("INFO", `Killing entity ${entity.classname} ${entity.id}`);
+    print(`Killing entity ${entity.classname} ${entity.id}`);
 
     this.entities.delete(entity.id);
     this.entityDeleting.Fire(entity);
@@ -107,7 +106,7 @@ export class EntityManager {
       for (const callback of entity.deletionCallbacks) {
         const [success, message] = pcall(() => callback());
         if (!success)
-          msg("EXCEPTION", message);
+          warn(message);
       }
 
       // Fuckass hack :)
@@ -121,7 +120,7 @@ export class EntityManager {
           // This is the ugliest fucking thing I've ever seen
           const [success, message] = pcall(() => (obj as Map<string, unknown>).set(index, undefined));
           if (!success)
-            msg("EXCEPTION", "Failed when clearing object entity content.", message);
+            warn("Failed when clearing object entity content.", message);
         }
       };
 
