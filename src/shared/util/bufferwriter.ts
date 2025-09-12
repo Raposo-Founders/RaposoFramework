@@ -25,7 +25,7 @@ enum BufferType {
   vec,
 }
 
-const defaultStringSize = 16;
+const defaultStringSize = 2; // 16 bytes
 const bufferCreationThreads = new Map<thread, IBufferEntryInfo[]>();
 
 // # Functions
@@ -179,31 +179,31 @@ export function finalizeBufferCreation() {
   for (const element of bufferQueue) {
     switch (element.type) {
     case BufferType.u8:
-      currentSize += 8;
+      currentSize += 1;
       break;
     case BufferType.i8:
-      currentSize += 8;
+      currentSize += 1;
       break;
     case BufferType.u16:
-      currentSize += 16;
+      currentSize += 2;
       break;
     case BufferType.i16:
-      currentSize += 16;
+      currentSize += 2;
       break;
     case BufferType.u32:
-      currentSize += 32;
+      currentSize += 4;
       break;
     case BufferType.i32:
-      currentSize += 32;
-      break;
-    case BufferType.u64:
-      currentSize += 64;
+      currentSize += 4;
       break;
     case BufferType.f32:
-      currentSize += 32;
+      currentSize += 4;
+      break;
+    case BufferType.u64:
+      currentSize += 8;
       break;
     case BufferType.f64:
-      currentSize += 64;
+      currentSize += 8;
       break;
     case BufferType.str: {
       const stringSize = tostring(element.value).size();
@@ -211,10 +211,10 @@ export function finalizeBufferCreation() {
       break;
     }
     case BufferType.bool:
-      currentSize += 8;
+      currentSize += 1;
       break;
     case BufferType.vec:
-      currentSize += 32 * 3;
+      currentSize += 4 * 3;
       break;
     }
   }
@@ -225,44 +225,44 @@ export function finalizeBufferCreation() {
     switch (element.type) {
     case BufferType.u8:
       buffer.writeu8(bfr, currentOffset, element.value as number);
-      currentOffset += 8;
+      currentOffset += 1;
       break;
     case BufferType.i8:
       buffer.writei8(bfr, currentOffset, element.value as number);
-      currentOffset += 8;
+      currentOffset += 1;
       break;
     case BufferType.u16:
       buffer.writeu16(bfr, currentOffset, element.value as number);
-      currentOffset += 16;
+      currentOffset += 2;
       break;
     case BufferType.i16:
       buffer.writei16(bfr, currentOffset, element.value as number);
-      currentOffset += 16;
+      currentOffset += 2;
       break;
     case BufferType.u32:
       buffer.writeu32(bfr, currentOffset, element.value as number);
-      currentOffset += 32;
+      currentOffset += 4;
       break;
     case BufferType.i32:
       buffer.writei32(bfr, currentOffset, element.value as number);
-      currentOffset += 32;
+      currentOffset += 4;
       break;
     case BufferType.f32:
       buffer.writef32(bfr, currentOffset, element.value as number);
-      currentOffset += 32;
+      currentOffset += 4;
       break;
     case BufferType.u64: {
       const low = (element.value as number % 2 ^ 32);
       const high = math.floor(element.value as number / 2 ^ 32);
 
       buffer.writeu32(bfr, currentOffset, low);
-      buffer.writeu32(bfr, currentOffset + 32, high);
-      currentOffset += 64;
+      buffer.writeu32(bfr, currentOffset + 4, high);
+      currentOffset += 8;
       break;
     }
     case BufferType.f64:
       buffer.writef64(bfr, currentOffset, element.value as number);
-      currentOffset += 64;
+      currentOffset += 8;
       break;
     case BufferType.str: {
       const stringValue = tostring(element.value);
@@ -277,13 +277,13 @@ export function finalizeBufferCreation() {
     }
     case BufferType.bool:
       buffer.writeu8(bfr, currentOffset, element.value === true ? 255 : 0);
-      currentOffset += 8;
+      currentOffset += 1;
       break;
     case BufferType.vec: {
       const x = (element.value as vector).x;
       const y = (element.value as vector).y;
       const z = (element.value as vector).z;
-      const addOffset = 32;
+      const addOffset = 4;
 
       buffer.writef32(bfr, currentOffset, x);
       buffer.writef32(bfr, currentOffset + addOffset, y);

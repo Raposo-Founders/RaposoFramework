@@ -18,67 +18,67 @@ const bufferReadingStructure = {
   [ByteType["u8"]]: (b: buffer, offset: number, setOffset: Callback) => {
     const data = buffer.readu8(b, offset);
 
-    setOffset(offset + 8);
+    setOffset(offset + 1);
     return data;
   },
   [ByteType["i8"]]: (b: buffer, offset: number, setOffset: Callback) => {
     const data = buffer.readi8(b, offset);
 
-    setOffset(offset + 8);
+    setOffset(offset + 1);
     return data;
   },
   [ByteType["u16"]]: (b: buffer, offset: number, setOffset: Callback) => {
     const data = buffer.readu16(b, offset);
 
-    setOffset(offset + 16);
+    setOffset(offset + 2);
     return data;
   },
   [ByteType["i16"]]: (b: buffer, offset: number, setOffset: Callback) => {
     const data = buffer.readi16(b, offset);
 
-    setOffset(offset + 16);
+    setOffset(offset + 2);
     return data;
   },
   [ByteType["u32"]]: (b: buffer, offset: number, setOffset: Callback) => {
     const data = buffer.readu32(b, offset);
 
-    setOffset(offset + 32);
+    setOffset(offset + 4);
     return data;
   },
   [ByteType["i32"]]: (b: buffer, offset: number, setOffset: Callback) => {
     const data = buffer.readi32(b, offset);
 
-    setOffset(offset + 32);
+    setOffset(offset + 4);
     return data;
   },
   [ByteType["f32"]]: (b: buffer, offset: number, setOffset: Callback) => {
     const data = buffer.readf32(b, offset);
 
-    setOffset(offset + 32);
+    setOffset(offset + 4);
     return data;
   },
   [ByteType["u64"]]: (b: buffer, offset: number, setOffset: Callback) => {
     const low = buffer.readu32(b, offset);
-    const high = buffer.readu32(b, offset + 32);
+    const high = buffer.readu32(b, offset + 4);
 
-    setOffset(offset + 64);
+    setOffset(offset + 8);
     return high * 2^32 + low;
   },
   [ByteType["f64"]]: (b: buffer, offset: number, setOffset: Callback) => {
     const data = buffer.readf64(b, offset);
 
-    setOffset(offset + 64);
+    setOffset(offset + 8);
     return data;
   },
   [ByteType["bool"]]: (b: buffer, offset: number, setOffset: Callback) => {
     const data = buffer.readu8(b, offset) === 255;
 
-    setOffset(offset + 8);
+    setOffset(offset + 1);
     return data;
   },
   [ByteType["str"]]: (b: buffer, offset: number, setOffset: Callback) => {
     const size = buffer.readi16(b, offset);
-    offset += 16;
+    offset += 2;
 
     const data = buffer.readstring(b, offset, size);
 
@@ -87,11 +87,11 @@ const bufferReadingStructure = {
   },
   [ByteType["vec"]]: (b: buffer, offset: number, setOffset: Callback) => {
     const x = buffer.readf32(b, offset);
-    offset += 32;
+    offset += 4;
     const y = buffer.readf32(b, offset);
-    offset += 32;
+    offset += 4;
     const z = buffer.readf32(b, offset);
-    offset += 32;
+    offset += 4;
 
     const data = vector.create(x, y, z);
 
