@@ -1,19 +1,15 @@
 import { Players, UserInputService } from "@rbxts/services";
 import { defaultEnvironments } from "shared/defaultinsts";
+import { getLocalPlayerEntity } from "shared/util/localent";
 
 // # Constants & variables
 let swordEquipped = false;
 
 // # Functions
-function getLocalPlayerEntity() {
-  for (const ent of defaultEnvironments.entity.getEntitiesThatIsA("PlayerEntity"))
-    if (ent.GetUserFromController() === Players.LocalPlayer)
-      return ent;
-}
 
 // # Execution
 defaultEnvironments.lifecycle.BindUpdate(() => {
-  const localEntity = getLocalPlayerEntity();
+  const localEntity = getLocalPlayerEntity(defaultEnvironments.entity);
   if (!localEntity) return;
 
   if (localEntity.IsA("SwordPlayerEntity")) {

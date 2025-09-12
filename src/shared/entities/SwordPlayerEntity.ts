@@ -15,6 +15,7 @@ import { EntityManager, registerEntityClass } from ".";
 import BaseEntity from "./BaseEntity";
 import HealthEntity from "./HealthEntity";
 import PlayerEntity, { getPlayerEntityFromUserId, PlayerTeam } from "./PlayerEntity";
+import { getLocalPlayerEntity } from "shared/util/localent";
 
 // # Types
 declare global {
@@ -439,15 +440,9 @@ if (Services.RunService.IsClient()) {
 
   // Client state update
   defaultEnvironments.lifecycle.BindTickrate(() => {
-    let entity: SwordPlayerEntity | undefined;
-    let playermodel: Playermodel | undefined;
-    for (const ent of defaultEnvironments.entity.getEntitiesThatIsA("SwordPlayerEntity")) {
-      if (ent.GetUserFromController() !== Services.Players.LocalPlayer) continue;
-      entity = ent;
-      playermodel = getPlayermodelFromEntity(ent.id);
-      break;
-    }
-    if (!entity || !playermodel || !DoesInstanceExist(playermodel.rig)) return;
+    const entity = getLocalPlayerEntity(defaultEnvironments.entity);
+    const playermodel = entity ? getPlayermodelFromEntity(entity.id) : undefined;
+    if (!entity || !entity.IsA("SwordPlayerEntity") || !playermodel || !DoesInstanceExist(playermodel.rig)) return;
     if (entity.health <= 0) return;
 
     entity.origin = playermodel.GetPivot();
