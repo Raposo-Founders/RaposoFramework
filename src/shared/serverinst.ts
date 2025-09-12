@@ -1,10 +1,12 @@
-import { Players } from "@rbxts/services";
+import { HttpService, Players } from "@rbxts/services";
 import { EntityManager } from "./entities";
 import { LifecycleInstance } from "./lifecycle";
 import { NetworkManager } from "./network";
 import { writeBufferString } from "./util/bufferwriter";
 import Signal from "./util/signal";
 import WorldInstance from "./worldrender";
+import { gameValues } from "./gamevalues";
+import { RandomString } from "./util/utilfuncs";
 
 // # Class
 class ServerInstance {
@@ -16,7 +18,7 @@ class ServerInstance {
   private networkLifecycleDisconnect: Callback | undefined;
 
   readonly trackingPlayers = new Set<Player>();
-  readonly playerJoined = new Signal<[Player]>();
+  readonly playerJoined = new Signal<[user: Player, referenceId: string]>();
   readonly playerLeft = new Signal<[Player, string]>();
 
   constructor(
@@ -79,17 +81,23 @@ class ServerInstance {
   }
 
   InsertPlayer(player: Player) {
-    print(`${player.Name} has joined the server ${this.id}`);
+    // const referenceId = HttpService.GenerateGUID(false);
+    const referenceId = RandomString(10);
+
+    print(`${player.Name} (${referenceId}) has joined the server ${this.id}`);
+
+    player.SetAttribute(gameValues.usersessionid, referenceId);
 
     this.network.signedUsers.add(player);
     this.trackingPlayers.add(player);
-    this.playerJoined.Fire(player);
+    this.playerJoined.Fire(player, referenceId);
   }
 
   RemovePlayer(player: Player, disconnectreason = "") {
     if (!this.trackingPlayers.has(player)) return;
 
     print(`${player.Name} has left the server ${this.id}. (${disconnectreason})`);
+    player.SetAttribute(gameValues.usersessionid, undefined);
 
     this.network.startWritingMessage("server_disconnected", [player], []);
     writeBufferString(disconnectreason);

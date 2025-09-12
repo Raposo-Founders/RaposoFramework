@@ -4,6 +4,7 @@ import { finalizeBufferCreation, startBufferCreation, writeBufferBool, writeBuff
 import Signal from "shared/util/signal";
 import { EntityManager, registerEntityClass } from ".";
 import HealthEntity from "./HealthEntity";
+import { gameValues } from "shared/gamevalues";
 
 declare global {
   interface GameEntities {
@@ -21,9 +22,9 @@ export enum PlayerTeam {
 const positionDifferenceThreshold = 3;
 
 // # Functions
-export function getPlayerEntityFromUserId(environment: EntityManager, userid: number) {
+export function getPlayerEntityFromUserId(environment: EntityManager, controller: string) {
   for (const ent of environment.getEntitiesThatIsA("PlayerEntity"))
-    if (ent.userid === userid)
+    if (ent.controller === controller)
       return ent;
 }
 
@@ -44,7 +45,6 @@ export default class PlayerEntity extends HealthEntity {
   readonly teleportPlayermodelSignal = new Signal<[origin: CFrame]>();
 
   team = PlayerTeam.Spectators;
-  userid = 0;
 
   stats = {
     kills: 0,
@@ -53,9 +53,16 @@ export default class PlayerEntity extends HealthEntity {
     damage: 0,
   };
 
-  constructor() {
+  constructor(public controller: string) {
     super();
     this.inheritanceList.add("PlayerEntity");
+  }
+
+  GetUserFromController() {
+    for (const user of Players.GetPlayers()) {
+      if (user.GetAttribute(gameValues.usersessionid) !== this.controller) continue;
+      return user;
+    }
   }
 
   WriteStateBuffer(): void {
@@ -73,7 +80,7 @@ export default class PlayerEntity extends HealthEntity {
     writeBufferBool(this.grounded);
 
     writeBufferU8(this.team);
-    writeBufferString(tostring(this.userid));
+    writeBufferString(this.controller);
     writeBufferU16(this.stats.kills);
     writeBufferU16(this.stats.deaths);
     writeBufferU16(this.stats.ping);
@@ -94,7 +101,7 @@ export default class PlayerEntity extends HealthEntity {
     const grounded = reader.bool();
 
     const teamIndex = reader.u8();
-    const userId = tonumber(reader.string()) || 0;
+    const controllerId = reader.string();
     const kills = reader.u16();
     const deaths = reader.u16();
     const ping = reader.u16();
@@ -112,7 +119,7 @@ export default class PlayerEntity extends HealthEntity {
     }
 
     if (!this.environment.isServer)
-      if (this.environment.isPlayback || (this.userid === Players.LocalPlayer.UserId && pendingTeleport)) {
+      if (this.environment.isPlayback || (this.controller === Players.LocalPlayer.GetAttribute(gameValues.usersessionid) && pendingTeleport)) {
         this.origin = new CFrame(vectorPosition).mul(rotationCFrame);
         this.teleportPlayermodelSignal.Fire(this.origin);
       }
@@ -131,7 +138,7 @@ export default class PlayerEntity extends HealthEntity {
       this.stats.damage = damage;
 
       this.team = teamIndex;
-      this.userid = userId;
+      this.controller = controllerId;
     }
   }
 

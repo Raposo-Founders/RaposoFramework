@@ -17,7 +17,7 @@ const registeredEntityClassnames = new Set<keyof GameEntities>();
 const entitiesBuildList = new Map<string, new (...args: never[]) => BaseEntity>();
 
 // # Functions
-export function registerEntityClass(name: keyof GameEntities, builder?: new () => BaseEntity) {
+export function registerEntityClass(name: keyof GameEntities, builder?: new (...args: never[]) => BaseEntity) {
   assert(!registeredEntityClassnames.has(name), `Entity ${name} has already been registered.`);
 
   registeredEntityClassnames.add(name);

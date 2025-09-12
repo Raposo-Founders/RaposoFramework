@@ -2,6 +2,7 @@ import * as Services from "@rbxts/services";
 import PlayerEntity from "shared/entities/PlayerEntity";
 import { Playermodel } from "./rig";
 import { defaultEnvironments } from "shared/defaultinsts";
+import { gameValues } from "shared/gamevalues";
 
 
 // # Constants & variables
@@ -54,18 +55,16 @@ export function getPlayermodelFromEntity(entityId: EntityId) {
 export async function createPlayermodelForEntity(entity: PlayerEntity) {
   print("Creating character rig for entity:", entity.classname, entity.id);
 
-  const targetPlayer = Services.Players.GetPlayerByUserId(entity.userid);
-
   const playermodel = new Playermodel(entity.environment.world);
   playermodel.SetMaterial();
   playermodel.SetTransparency();
   playermodel.SetCollisionGroup("Players");
 
-  playermodel.rig.Humanoid.DisplayName = targetPlayer !== Services.Players.LocalPlayer ? `${targetPlayer?.Name || "BOT"}` : " ";
+  playermodel.rig.Humanoid.DisplayName = entity.classname;
   playermodel.rig.Humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.Viewer;
   playermodel.rig.Humanoid.HealthDisplayType = Enum.HumanoidHealthDisplayType.DisplayWhenDamaged;
   playermodel.rig.Humanoid.SetStateEnabled("Dead", false);
-  playermodel.rig.HumanoidRootPart.Anchored = targetPlayer !== Services.Players.LocalPlayer && targetPlayer !== undefined;
+  playermodel.rig.HumanoidRootPart.Anchored = true;
 
   for (const inst of playermodel.rig.GetChildren()) {
     if (!inst.IsA("BasePart")) continue;
@@ -88,7 +87,7 @@ export async function createPlayermodelForEntity(entity: PlayerEntity) {
       inst.AssemblyAngularVelocity = new Vector3();
     }
 
-    refreshPlayermodelAppearance(playermodel, entity.userid);
+    refreshPlayermodelAppearance(playermodel, entity.GetUserFromController()?.UserId);
   });
 
   entity.died.Connect(() => {
@@ -98,7 +97,7 @@ export async function createPlayermodelForEntity(entity: PlayerEntity) {
     playermodel.SetMaterial(Enum.Material.ForceField);
     playermodel.SetTransparency(0.5);
 
-    if (entity.userid !== Services.Players.LocalPlayer.UserId) {
+    if (entity.GetUserFromController() !== Services.Players.LocalPlayer) {
       playermodel.SetMaterial();
       playermodel.SetTransparency();
       playermodel.SetRigJointsEnabled(false);
@@ -129,7 +128,7 @@ export async function createPlayermodelForEntity(entity: PlayerEntity) {
     playermodel.rig.Humanoid.MaxHealth = entity.maxHealth;
 
     if (playermodel.rig.PrimaryPart)
-      playermodel.rig.PrimaryPart.Anchored = entity.userid !== Services.Players.LocalPlayer.UserId;
+      playermodel.rig.PrimaryPart.Anchored = entity.GetUserFromController() !== Services.Players.LocalPlayer;
 
     playermodel.animator.is_grounded = entity.grounded;
     playermodel.animator.Update();

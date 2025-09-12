@@ -7,7 +7,7 @@ let swordEquipped = false;
 // # Functions
 function getLocalPlayerEntity() {
   for (const ent of defaultEnvironments.entity.getEntitiesThatIsA("PlayerEntity"))
-    if (ent.userid === Players.LocalPlayer.UserId)
+    if (ent.GetUserFromController() === Players.LocalPlayer)
       return ent;
 }
 

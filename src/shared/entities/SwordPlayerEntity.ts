@@ -1,14 +1,14 @@
 import * as Services from "@rbxts/services";
 import { defaultEnvironments } from "shared/defaultinsts";
 import { cacheFolder, modelsFolder } from "shared/folders";
-import { getInstanceDefinedValue } from "shared/gamevalues";
+import { gameValues, getInstanceDefinedValue } from "shared/gamevalues";
 import { NetworkManager } from "shared/network";
 import { createPlayermodelForEntity, getPlayermodelFromEntity } from "shared/playermodel";
 import { Playermodel } from "shared/playermodel/rig";
 import ServerInstance from "shared/serverinst";
 import { CWorldSoundInstance } from "shared/systems/sound";
 import { BufferReader } from "shared/util/bufferreader";
-import { startBufferCreation, writeBufferBool, writeBufferString, writeBufferU16, writeBufferU32, writeBufferU8, writeBufferVector } from "shared/util/bufferwriter";
+import { writeBufferBool, writeBufferString, writeBufferU32, writeBufferU8 } from "shared/util/bufferwriter";
 import Signal from "shared/util/signal";
 import { DoesInstanceExist } from "shared/util/utilfuncs";
 import { EntityManager, registerEntityClass } from ".";
@@ -55,21 +55,12 @@ function CheckPlayers<T extends BaseEntity>(attacker: SwordPlayerEntity, victim:
   return true;
 }
 
-function writeBufferEntitiesEntry(environment: EntityManager) {
-  const entities = environment.getEntitiesThatIsA("SwordPlayerEntity");
-
-  writeBufferU8(entities.size()); // Yes... I know this limits only up to 255 entities, dickhead.
-
-  for (const ent of entities)
-    writeBufferString(ent.id);
-}
-
 function ClientHandleHitboxTouched(attacker: SwordPlayerEntity, victim: HealthEntity, network: NetworkManager) {
   if (!CheckPlayers(attacker, victim)) return;
 
   // If the attacker is another player
-  if (attacker.userid !== Services.Players.LocalPlayer.UserId) {
-    if (victim.IsA("PlayerEntity") && victim.userid === Services.Players.LocalPlayer.UserId) {
+  if (attacker.GetUserFromController() !== Services.Players.LocalPlayer) {
+    if (victim.IsA("PlayerEntity") && victim.GetUserFromController() === Services.Players.LocalPlayer) {
 
       network.startWritingMessage(`${NETWORK_ID}hit`, undefined, undefined);
       writeBufferU8(SWORD_HIT_INDEX.OTHER);
@@ -105,8 +96,8 @@ export class SwordPlayerEntity extends PlayerEntity {
   private gripPosition = new CFrame();
   private activationCount = 0;
 
-  constructor() {
-    super();
+  constructor(public controller: string) {
+    super(controller);
 
     this.inheritanceList.add("SwordPlayerEntity");
 
@@ -152,27 +143,7 @@ export class SwordPlayerEntity extends PlayerEntity {
   }
 
   WriteStateBuffer() {
-    startBufferCreation();
-  
-    writeBufferU8(this.health);
-    writeBufferU8(this.maxHealth);
-  
-    writeBufferVector(this.origin.Position.X, this.origin.Position.Y, this.origin.Position.Z);
-    {
-      const [rX, rY, rZ] = this.origin.ToEulerAnglesXYZ();
-      writeBufferVector(math.round(math.deg(rX)), math.round(math.deg(rY)), math.round(math.deg(rZ)));
-    }
-    writeBufferVector(this.size.X, this.size.Y, this.size.Z);
-    writeBufferVector(this.velocity.X, this.velocity.Y, this.velocity.Z);
-    writeBufferBool(this.pendingTeleport);
-    writeBufferBool(this.grounded);
-  
-    writeBufferU8(this.team);
-    writeBufferString(tostring(this.userid));
-    writeBufferU16(this.stats.kills);
-    writeBufferU16(this.stats.deaths);
-    writeBufferU16(this.stats.ping);
-    writeBufferU16(this.stats.damage);
+    super.WriteStateBuffer();
 
     writeBufferBool(this.isEquipped);
     writeBufferU32(this.activationCount);
@@ -204,7 +175,7 @@ export class SwordPlayerEntity extends PlayerEntity {
     const isEquipped = reader.bool();
     const activationCount = reader.u32();
 
-    if (this.environment.isServer || this.userid !== Services.Players.LocalPlayer.UserId)
+    if (this.environment.isServer || this.GetUserFromController() !== Services.Players.LocalPlayer)
       if (this.isEquipped !== isEquipped)
         if (isEquipped)
           this.Equip();
@@ -342,7 +313,7 @@ ServerInstance.serverCreated.Connect(server => {
   server.network.listenPacket(`${NETWORK_ID}c_activate`, (user) => {
     if (!user) return;
 
-    const entity = getPlayerEntityFromUserId(server.entity, user.UserId);
+    const entity = getPlayerEntityFromUserId(server.entity, tostring(user.GetAttribute(gameValues.usersessionid)));
     if (!entity || !entity.IsA("SwordPlayerEntity")) return;
 
     entity.Attack1();
@@ -363,13 +334,13 @@ ServerInstance.serverCreated.Connect(server => {
     if (!victimEntity?.IsA("HealthEntity")) return;
 
     if (hitIndex === SWORD_HIT_INDEX.LOCAL) {
-      if (attackerEntity.userid !== user.UserId) return;
+      if (attackerEntity.GetUserFromController() !== user) return;
 
       victimEntity.takeDamage(attackerEntity.currentState, attackerEntity);
       return;
     }
 
-    if (hitIndex === SWORD_HIT_INDEX.OTHER && victimEntity.IsA("PlayerEntity") && victimEntity.userid === user.UserId) {
+    if (hitIndex === SWORD_HIT_INDEX.OTHER && victimEntity.IsA("PlayerEntity") && victimEntity.GetUserFromController() === user) {
       victimEntity.takeDamage(attackerEntity.currentState, attackerEntity);
     }
   });
@@ -379,7 +350,11 @@ ServerInstance.serverCreated.Connect(server => {
     const entitiesList = server.entity.getEntitiesThatIsA("SwordPlayerEntity");
 
     server.network.startWritingMessage(`${NETWORK_ID}entities_list`);
-    writeBufferEntitiesEntry(server.entity);
+    writeBufferU8(entitiesList.size()); // Yes... I know this limits only up to 255 entities, dickhead.
+    for (const ent of entitiesList) {
+      writeBufferString(ent.id);
+      writeBufferString(ent.controller);
+    }
     server.network.finishWritingMessage();
 
     for (const ent of entitiesList) {
@@ -397,7 +372,7 @@ ServerInstance.serverCreated.Connect(server => {
     const entityId = reader.string();
 
     const entity = server.entity.entities.get(entityId);
-    if (!entity || !entity.IsA("SwordPlayerEntity") || entity.userid !== user.UserId) return;
+    if (!entity || !entity.IsA("SwordPlayerEntity") || entity.GetUserFromController() !== user) return;
 
     entity.ApplyStateBuffer(bfr);
   });
@@ -415,6 +390,7 @@ if (Services.RunService.IsClient()) {
 
     for (let i = 0; i < amount; i++) {
       const entityId = reader.string();
+      const controllerId = reader.string();
 
       listedServerEntities.push(entityId);
 
@@ -425,13 +401,13 @@ if (Services.RunService.IsClient()) {
 
       entitiesInQueue.add(entityId);
 
-      defaultEnvironments.entity.createEntity("SwordPlayerEntity", entityId)
+      defaultEnvironments.entity.createEntity("SwordPlayerEntity", entityId, controllerId)
         .andThen(ent => {
           ent.hitboxTouched.Connect(target => {
-            if (ent.userid === Services.Players.LocalPlayer.UserId) 
+            if (ent.GetUserFromController() === Services.Players.LocalPlayer) 
               ClientHandleHitboxTouched(ent, target, defaultEnvironments.network);
 
-            if (ent.userid !== Services.Players.LocalPlayer.UserId && target.IsA("SwordPlayerEntity"))
+            if (ent.GetUserFromController() !== Services.Players.LocalPlayer && target.IsA("SwordPlayerEntity"))
               ClientHandleHitboxTouched(target, ent, defaultEnvironments.network);
           });
         }).finally(() => {
@@ -463,7 +439,7 @@ if (Services.RunService.IsClient()) {
     let entity: SwordPlayerEntity | undefined;
     let playermodel: Playermodel | undefined;
     for (const ent of defaultEnvironments.entity.getEntitiesThatIsA("SwordPlayerEntity")) {
-      if (ent.userid !== Services.Players.LocalPlayer.UserId) continue;
+      if (ent.GetUserFromController() !== Services.Players.LocalPlayer) continue;
       entity = ent;
       playermodel = getPlayermodelFromEntity(ent.id);
       break;
