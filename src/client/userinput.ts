@@ -4,11 +4,12 @@ import { getLocalPlayerEntity } from "shared/util/localent";
 
 // # Constants & variables
 let swordEquipped = false;
+let autoclickerEnabled = false;
 
 // # Functions
 
 // # Execution
-defaultEnvironments.lifecycle.BindUpdate(() => {
+defaultEnvironments.lifecycle.BindTickrate(() => {
   const localEntity = getLocalPlayerEntity(defaultEnvironments.entity);
   if (!localEntity) return;
 
@@ -17,12 +18,24 @@ defaultEnvironments.lifecycle.BindUpdate(() => {
       localEntity.Equip();
     else
       localEntity.Unequip();
+
+    if (autoclickerEnabled)
+      localEntity.Attack1();
   }
 });
 
 UserInputService.InputBegan.Connect((input, busy) => {
   if (busy) return;
 
+  const localEntity = getLocalPlayerEntity(defaultEnvironments.entity);
+  if (!localEntity) return;
+
   if (input.KeyCode.Name === "One")
     swordEquipped = !swordEquipped;
+
+  if (input.KeyCode.Name === "R")
+    autoclickerEnabled = !autoclickerEnabled;
+
+  if ((input.UserInputType.Name === "MouseButton1" || input.UserInputType.Name === "Touch") && localEntity.IsA("SwordPlayerEntity"))
+    localEntity.Attack1();
 });

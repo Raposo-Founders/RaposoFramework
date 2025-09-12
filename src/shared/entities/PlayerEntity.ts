@@ -22,7 +22,7 @@ export enum PlayerTeam {
 const positionDifferenceThreshold = 3;
 
 // # Functions
-export function getPlayerEntityFromUserId(environment: EntityManager, controller: string) {
+export function getPlayerEntityFromController(environment: EntityManager, controller: string) {
   for (const ent of environment.getEntitiesThatIsA("PlayerEntity"))
     if (ent.controller === controller)
       return ent;

@@ -14,7 +14,7 @@ import { DoesInstanceExist } from "shared/util/utilfuncs";
 import { EntityManager, registerEntityClass } from ".";
 import BaseEntity from "./BaseEntity";
 import HealthEntity from "./HealthEntity";
-import PlayerEntity, { getPlayerEntityFromUserId, PlayerTeam } from "./PlayerEntity";
+import PlayerEntity, { getPlayerEntityFromController, PlayerTeam } from "./PlayerEntity";
 import { getLocalPlayerEntity } from "shared/util/localent";
 
 // # Types
@@ -316,7 +316,7 @@ ServerInstance.serverCreated.Connect(server => {
   server.network.listenPacket(`${NETWORK_ID}c_activate`, (user) => {
     if (!user) return;
 
-    const entity = getPlayerEntityFromUserId(server.entity, tostring(user.GetAttribute(gameValues.usersessionid)));
+    const entity = getPlayerEntityFromController(server.entity, tostring(user.GetAttribute(gameValues.usersessionid)));
     if (!entity || !entity.IsA("SwordPlayerEntity")) return;
 
     entity.Attack1();

@@ -120,7 +120,7 @@ export class NetworkManager {
 
       for (const callback of callbackList)
         task.spawn(() => {
-          callback(msg.sender, msg.content);
+          callback(Players.GetPlayerByUserId(msg.sender || 0), msg.content);
         });
     }
 
