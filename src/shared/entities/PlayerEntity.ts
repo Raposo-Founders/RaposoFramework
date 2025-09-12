@@ -1,10 +1,10 @@
 import { Players } from "@rbxts/services";
+import { gameValues } from "shared/gamevalues";
 import { BufferReader } from "shared/util/bufferreader";
-import { finalizeBufferCreation, startBufferCreation, writeBufferBool, writeBufferString, writeBufferU16, writeBufferU8, writeBufferVector } from "shared/util/bufferwriter";
+import { writeBufferBool, writeBufferString, writeBufferU16, writeBufferU64, writeBufferU8, writeBufferVector } from "shared/util/bufferwriter";
 import Signal from "shared/util/signal";
 import { EntityManager, registerEntityClass } from ".";
 import HealthEntity from "./HealthEntity";
-import { gameValues } from "shared/gamevalues";
 
 declare global {
   interface GameEntities {
@@ -33,7 +33,7 @@ export default class PlayerEntity extends HealthEntity {
   readonly classname: keyof GameEntities = "PlayerEntity";
 
   readonly spawned = new Signal<[origin: CFrame]>();
-  health = 100;
+  health = 0;
   maxHealth = 100;
 
   pendingTeleport = false;
@@ -53,7 +53,7 @@ export default class PlayerEntity extends HealthEntity {
     damage: 0,
   };
 
-  constructor(public controller: string) {
+  constructor(public controller: string, public appearanceId = 1) {
     super();
     this.inheritanceList.add("PlayerEntity");
   }
@@ -66,6 +66,7 @@ export default class PlayerEntity extends HealthEntity {
   }
 
   WriteStateBuffer(): void {
+    writeBufferString(this.id);
     writeBufferU8(this.health);
     writeBufferU8(this.maxHealth);
 
@@ -81,6 +82,7 @@ export default class PlayerEntity extends HealthEntity {
 
     writeBufferU8(this.team);
     writeBufferString(this.controller);
+    writeBufferU64(this.appearanceId);
     writeBufferU16(this.stats.kills);
     writeBufferU16(this.stats.deaths);
     writeBufferU16(this.stats.ping);
@@ -89,6 +91,7 @@ export default class PlayerEntity extends HealthEntity {
 
   ApplyStateBuffer(state: buffer): void {
     const reader = BufferReader(state);
+    reader.string(); // Entity ID (obvious)
 
     const health = reader.u8();
     const maxHealth = reader.u8();
@@ -102,6 +105,7 @@ export default class PlayerEntity extends HealthEntity {
 
     const teamIndex = reader.u8();
     const controllerId = reader.string();
+    const appearanceId = reader.u64();
     const kills = reader.u16();
     const deaths = reader.u16();
     const ping = reader.u16();
@@ -119,7 +123,7 @@ export default class PlayerEntity extends HealthEntity {
     }
 
     if (!this.environment.isServer)
-      if (this.environment.isPlayback || (this.controller === Players.LocalPlayer.GetAttribute(gameValues.usersessionid) && pendingTeleport)) {
+      if (this.environment.isPlayback || (this.GetUserFromController() === Players.LocalPlayer && pendingTeleport)) {
         this.origin = new CFrame(vectorPosition).mul(rotationCFrame);
         this.teleportPlayermodelSignal.Fire(this.origin);
       }
@@ -129,6 +133,11 @@ export default class PlayerEntity extends HealthEntity {
     this.grounded = grounded;
 
     if (this.environment.isPlayback || !this.environment.isServer) {
+      if (this.health !== health) {
+        if (this.health <= 0 && health > 0)
+          this.spawned.Fire(this.origin);
+      }
+
       this.health = health;
       this.maxHealth = maxHealth;
 
@@ -139,6 +148,7 @@ export default class PlayerEntity extends HealthEntity {
 
       this.team = teamIndex;
       this.controller = controllerId;
+      this.appearanceId = appearanceId;
     }
   }
 

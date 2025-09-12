@@ -8,7 +8,7 @@ import { Playermodel } from "shared/playermodel/rig";
 import ServerInstance from "shared/serverinst";
 import { CWorldSoundInstance } from "shared/systems/sound";
 import { BufferReader } from "shared/util/bufferreader";
-import { writeBufferBool, writeBufferString, writeBufferU32, writeBufferU8 } from "shared/util/bufferwriter";
+import { writeBufferBool, writeBufferString, writeBufferU32, writeBufferU64, writeBufferU8 } from "shared/util/bufferwriter";
 import Signal from "shared/util/signal";
 import { DoesInstanceExist } from "shared/util/utilfuncs";
 import { EntityManager, registerEntityClass } from ".";
@@ -96,8 +96,8 @@ export class SwordPlayerEntity extends PlayerEntity {
   private gripPosition = new CFrame();
   private activationCount = 0;
 
-  constructor(public controller: string) {
-    super(controller);
+  constructor(public controller: string, public appearanceId = 1) {
+    super(controller, appearanceId);
 
     this.inheritanceList.add("SwordPlayerEntity");
 
@@ -154,6 +154,7 @@ export class SwordPlayerEntity extends PlayerEntity {
     super.ApplyStateBuffer(state);
   
     /* Skip the original content from the PlayerEntity class */
+    reader.string();
     reader.u8();
     reader.u8();
 
@@ -166,6 +167,7 @@ export class SwordPlayerEntity extends PlayerEntity {
 
     reader.u8();
     reader.string();
+    reader.u64();
     reader.u16();
     reader.u16();
     reader.u16();
@@ -354,6 +356,7 @@ ServerInstance.serverCreated.Connect(server => {
     for (const ent of entitiesList) {
       writeBufferString(ent.id);
       writeBufferString(ent.controller);
+      writeBufferU64(ent.appearanceId);
     }
     server.network.finishWritingMessage();
 
@@ -391,9 +394,9 @@ if (Services.RunService.IsClient()) {
     for (let i = 0; i < amount; i++) {
       const entityId = reader.string();
       const controllerId = reader.string();
+      const appearanceId = reader.u64();
 
       listedServerEntities.push(entityId);
-
       if (entitiesInQueue.has(entityId)) continue;
 
       const entity = defaultEnvironments.entity.entities.get(entityId);
@@ -401,7 +404,7 @@ if (Services.RunService.IsClient()) {
 
       entitiesInQueue.add(entityId);
 
-      defaultEnvironments.entity.createEntity("SwordPlayerEntity", entityId, controllerId)
+      defaultEnvironments.entity.createEntity("SwordPlayerEntity", entityId, controllerId, appearanceId)
         .andThen(ent => {
           ent.hitboxTouched.Connect(target => {
             if (ent.GetUserFromController() === Services.Players.LocalPlayer) 

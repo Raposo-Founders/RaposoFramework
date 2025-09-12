@@ -126,6 +126,9 @@ export async function createPlayermodelForEntity(entity: PlayerEntity) {
   const unbindConnection = defaultEnvironments.lifecycle.BindLateUpdate(() => {
     playermodel.rig.Humanoid.Health = entity.health;
     playermodel.rig.Humanoid.MaxHealth = entity.maxHealth;
+    playermodel.rig.Humanoid.DisplayName = entity.GetUserFromController()?.Name || entity.classname;
+    playermodel.rig.Humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.Viewer;
+    playermodel.rig.Humanoid.HealthDisplayType = Enum.HumanoidHealthDisplayType.DisplayWhenDamaged;
 
     if (playermodel.rig.PrimaryPart)
       playermodel.rig.PrimaryPart.Anchored = entity.GetUserFromController() !== Services.Players.LocalPlayer;

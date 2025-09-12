@@ -1,6 +1,5 @@
 import { Players, RunService } from "@rbxts/services";
 import { defaultEnvironments } from "shared/defaultinsts";
-import { gameValues } from "shared/gamevalues";
 import { getPlayermodelFromEntity } from "shared/playermodel";
 import ServerInstance from "shared/serverinst";
 
@@ -11,10 +10,11 @@ import ServerInstance from "shared/serverinst";
 // # Execution
 ServerInstance.serverCreated.Connect(inst => {
   inst.playerJoined.Connect((user, referenceId) => {
-    inst.entity.createEntity("SwordPlayerEntity", `PlayerEnt_${user.UserId}`, referenceId).andThen(ent => {
+    inst.entity.createEntity("SwordPlayerEntity", `PlayerEnt_${user.UserId}`, referenceId, user.UserId).andThen(ent => {
       print(`Player entity created for user ${user.Name} with ID ${ent.id}.`);
 
-      ent.controller = referenceId;
+      task.wait(2);
+
       ent.Spawn(new CFrame(0, 100, 0));
     });
   });
@@ -56,6 +56,11 @@ if (RunService.IsClient()) {
     workspace.CurrentCamera!.CameraType = Enum.CameraType.Custom;
     Players.LocalPlayer.Character = playermodel.rig;
 
-    print("Finished setting local character!");
+    task.defer(() => {
+      task.wait(1);
+      warn(ent.appearanceId, ent.appearanceId === Players.LocalPlayer.UserId);
+      print("Finished setting local character!");
+    });
+
   });
 }
