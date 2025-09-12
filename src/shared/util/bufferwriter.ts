@@ -18,6 +18,7 @@ enum BufferType {
   u32,
   i32,
   f32,
+  u64,
   f64,
   str,
   bool,
@@ -112,6 +113,17 @@ export function writeBufferF32(value: number) {
   });
 }
 
+export function writeBufferU64(value: number) {
+  const thread = coroutine.running();
+  const bufferQueue = bufferCreationThreads.get(thread);
+  assert(bufferQueue, "No buffer creation spawned on the current thread.");
+
+  bufferQueue.push({
+    type: BufferType.u64,
+    value: value,
+  });
+}
+
 export function writeBufferF64(value: number) {
   const thread = coroutine.running();
   const bufferQueue = bufferCreationThreads.get(thread);
@@ -184,6 +196,9 @@ export function finalizeBufferCreation() {
     case BufferType.i32:
       currentSize += 32;
       break;
+    case BufferType.u64:
+      currentSize += 64;
+      break;
     case BufferType.f32:
       currentSize += 32;
       break;
@@ -236,6 +251,15 @@ export function finalizeBufferCreation() {
       buffer.writef32(bfr, currentOffset, element.value as number);
       currentOffset += 32;
       break;
+    case BufferType.u64: {
+      const low = (element.value as number % 2 ^ 32);
+      const high = math.floor(element.value as number / 2 ^ 32);
+
+      buffer.writeu32(bfr, currentOffset, low);
+      buffer.writeu32(bfr, currentOffset + 32, high);
+      currentOffset += 64;
+      break;
+    }
     case BufferType.f64:
       buffer.writef64(bfr, currentOffset, element.value as number);
       currentOffset += 64;

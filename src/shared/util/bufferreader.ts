@@ -7,6 +7,7 @@ enum ByteType {
   u32,
   i32,
   f32,
+  u64,
   f64,
   bool,
   str,
@@ -55,6 +56,13 @@ const bufferReadingStructure = {
 
     setOffset(offset + 32);
     return data;
+  },
+  [ByteType["u64"]]: (b: buffer, offset: number, setOffset: Callback) => {
+    const low = buffer.readu32(b, offset);
+    const high = buffer.readu32(b, offset + 32);
+
+    setOffset(offset + 64);
+    return high * 2^32 + low;
   },
   [ByteType["f64"]]: (b: buffer, offset: number, setOffset: Callback) => {
     const data = buffer.readf64(b, offset);
@@ -105,6 +113,7 @@ export function BufferReader(bfr: buffer) {
     u32: () => bufferReadingStructure[ByteType.u32](bfr, currentOffset, setOffset),
     i32: () => bufferReadingStructure[ByteType.i32](bfr, currentOffset, setOffset),
     f32: () => bufferReadingStructure[ByteType.f32](bfr, currentOffset, setOffset),
+    u64: () => bufferReadingStructure[ByteType.u64](bfr, currentOffset, setOffset),
     f64: () => bufferReadingStructure[ByteType.f64](bfr, currentOffset, setOffset),
     bool: () => bufferReadingStructure[ByteType.bool](bfr, currentOffset, setOffset),
     string: () => bufferReadingStructure[ByteType.str](bfr, currentOffset, setOffset),
