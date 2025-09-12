@@ -2,6 +2,8 @@ import { Players, RunService } from "@rbxts/services";
 import { defaultEnvironments } from "shared/defaultinsts";
 import { getPlayermodelFromEntity } from "shared/playermodel";
 import ServerInstance from "shared/serverinst";
+import { getLocalPlayerEntity } from "shared/util/localent";
+import { DoesInstanceExist } from "shared/util/utilfuncs";
 
 // # Constants & variables
 
@@ -38,10 +40,9 @@ if (RunService.IsClient()) {
 
     while (!controller) {
       totalAttempts++;
-      if (totalAttempts >= 20) {
+      if (totalAttempts >= 10) {
         controller = ent.GetUserFromController();
-
-        print("Timed out.", controller);
+        print("Controller fetching timed out.", controller);
         break;
       }
 
@@ -55,12 +56,16 @@ if (RunService.IsClient()) {
     workspace.CurrentCamera!.CameraSubject = playermodel.rig.Humanoid;
     workspace.CurrentCamera!.CameraType = Enum.CameraType.Custom;
     Players.LocalPlayer.Character = playermodel.rig;
+  });
 
-    task.defer(() => {
-      task.wait(1);
-      warn(ent.appearanceId, ent.appearanceId === Players.LocalPlayer.UserId);
-      print("Finished setting local character!");
-    });
+  defaultEnvironments.lifecycle.BindUpdate(() => {
+    const entity = getLocalPlayerEntity(defaultEnvironments.entity);
+    const playermodel = entity ? getPlayermodelFromEntity(entity.id) : undefined;
+    if (!entity || !entity.IsA("SwordPlayerEntity") || !playermodel || !DoesInstanceExist(playermodel.rig)) return;
+    if (entity.health <= 0) return;
 
+    entity.origin = playermodel.GetPivot();
+    entity.velocity = playermodel.rig.PrimaryPart?.AssemblyLinearVelocity ?? new Vector3();
+    entity.grounded = playermodel.rig.Humanoid.FloorMaterial.Name !== "Air";
   });
 }

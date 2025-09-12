@@ -445,10 +445,6 @@ if (Services.RunService.IsClient()) {
     if (!entity || !entity.IsA("SwordPlayerEntity") || !playermodel || !DoesInstanceExist(playermodel.rig)) return;
     if (entity.health <= 0) return;
 
-    entity.origin = playermodel.GetPivot();
-    entity.velocity = playermodel.rig.PrimaryPart?.AssemblyLinearVelocity ?? new Vector3();
-    entity.grounded = playermodel.rig.Humanoid.FloorMaterial.Name !== "Air";
-
     defaultEnvironments.network.startWritingMessage(`${NETWORK_ID}c_stateupd`, undefined, undefined);
     entity.WriteStateBuffer();
     defaultEnvironments.network.finishWritingMessage();
