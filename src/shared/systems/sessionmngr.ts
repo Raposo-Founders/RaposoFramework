@@ -4,7 +4,7 @@ import { registerConsoleFunction } from "shared/cmd/cvar";
 import { finishDirectMessage, listenDirectMessage, NetworkManager, startDirectMessage } from "shared/network";
 import ServerInstance from "shared/serverinst";
 import { BufferReader } from "shared/util/bufferreader";
-import { writeBufferString, writeBufferU8 } from "shared/util/bufferwriter";
+import { finalizeBufferCreation, writeBufferString, writeBufferU64, writeBufferU8 } from "shared/util/bufferwriter";
 import WorldInstance from "shared/worldrender";
 import { EntityManager } from "shared/entities";
 import { LifecycleInstance } from "shared/lifecycle";
@@ -13,6 +13,12 @@ import { LifecycleInstance } from "shared/lifecycle";
 interface ConnectionQueueInfo {
   sessionId: string;
   nextCallId: SessionConnectionIds,
+}
+
+interface ServerListingInfo {
+  sessionId: string;
+  currentMap: string;
+  players: Player[];
 }
 
 // # Constants & variables
@@ -34,6 +40,7 @@ const playersConnectionQueue = new Map<Player, ConnectionQueueInfo>();
 
 let canConnect = true;
 let currentConnectionThread: thread | undefined;
+let currentServerListFetchThread: thread | undefined;
 
 // # Functions
 export function ClientConnectToServerSession(sessionId: string) {
@@ -120,6 +127,20 @@ export function ClientCreateLocalSession() {
     task.wait(1);
     serverInst.InsertPlayer(Players.LocalPlayer);
   });
+}
+
+export function FetchServers() {
+  assert(RunService.IsClient(), "Function can only be called from the client.");
+  assert(!currentServerListFetchThread, "Function on cooldown.");
+
+  currentServerListFetchThread = coroutine.running();
+
+  startDirectMessage("game_getservers");
+  finishDirectMessage();
+
+  const [serversInfo] = coroutine.yield() as LuaTuple<[ServerListingInfo[]]>;
+
+  return serversInfo;
 }
 
 // # Execution
@@ -241,4 +262,54 @@ if (RunService.IsClient())
     warn("Disconnected from session. Reason:", reason);
 
     defaultEnvironments.entity.murderAllFuckers();
+  });
+
+// Fetching server list
+if (RunService.IsServer())
+  listenDirectMessage("game_getservers", (sender, bfr) => {
+    if (!sender) return;
+
+    startDirectMessage("game_getservers_reply", sender, false);
+    writeBufferU8(ServerInstance.runningInstances.size());
+    for (const [serverId, inst] of ServerInstance.runningInstances) {
+      writeBufferString(serverId);
+      writeBufferString(inst.world.currentMap);
+
+      writeBufferU8(inst.trackingPlayers.size());
+      for (const user of inst.trackingPlayers)
+        writeBufferU64(user.UserId);
+    }
+    finishDirectMessage();
+  });
+
+// Receiving server list
+if (RunService.IsClient())
+  listenDirectMessage("game_getservers_reply", (sender, bfr) => {
+    const reader = BufferReader(bfr);
+    const serverList: ServerListingInfo[] = [];
+    const serversAmount = reader.u8();
+
+    for (let i = 0; i < serversAmount; i++) {
+      const serverId = reader.string();
+      const currentMap = reader.string();
+      const playersAmount = reader.u8();
+
+      const players: Player[] = [];
+
+      for (let i = 0; i < playersAmount; i++) {
+        const user = Players.GetPlayerByUserId(reader.u64());
+        if (!user) continue;
+
+        players.push(user);
+      }
+
+      serverList.push({
+        sessionId: serverId,
+        currentMap: currentMap,
+        players: players,
+      });
+    }
+
+    if (currentServerListFetchThread)
+      coroutine.resume(currentServerListFetchThread, serverList);
   });

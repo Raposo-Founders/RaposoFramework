@@ -20,19 +20,19 @@ export default class WorldInstance {
   mapChanged = new Signal<[name: string, inst: Instance]>();
   private temporaryFolder = new Instance("Folder");
 
-  constructor(mapName: string) {
+  constructor(public currentMap: string) {
     this.parts = this.temporaryFolder;
     this.objects = this.temporaryFolder;
-    this.loadMap(mapName);
+    this.loadMap(currentMap);
 
     spawnedWorlds.set(this.id, this);
   }
 
-  loadMap(mapName: string) {
-    const mapInstance = mapStorageFolder.FindFirstChild(mapName);
-    assert(mapInstance && mapInstance.IsA("Folder"), `Unknown map ${mapName} or invalid instance classname.`);
+  loadMap(name: string) {
+    const mapInstance = mapStorageFolder.FindFirstChild(name);
+    assert(mapInstance && mapInstance.IsA("Folder"), `Unknown map ${name} or invalid instance classname.`);
 
-    print(`Loading map "${mapName}..."`);
+    print(`Loading map "${name}..."`);
 
     this.rootInstance.Destroy();
     this.rootInstance = new Instance("Folder");
@@ -43,8 +43,9 @@ export default class WorldInstance {
 
     this.parts = this.rootInstance.WaitForChild("Parts");
     this.objects = this.rootInstance.WaitForChild("Objects");
+    this.currentMap = name;
 
-    this.mapChanged.Fire(mapName, this.rootInstance);
+    this.mapChanged.Fire(name, this.rootInstance);
   }
 }
 
