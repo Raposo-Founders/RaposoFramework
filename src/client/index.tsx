@@ -8,6 +8,7 @@ import ConsoleWindow from "./UI/consolewindow";
 import { defaultRoot } from "./UI/default/values";
 import { getInstanceFromPath } from "shared/util/instancepath";
 import { defaultEnvironments } from "shared/defaultinsts";
+import { MainMenu } from "./UI/mainmenu";
 
 // # Functions
 
@@ -69,5 +70,6 @@ for (const inst of modulesFolder.GetChildren()) {
 // Misc & other shit
 BannerNotify.InitClient();
 
-// ### TEST ###
+// Build interface
 defaultRoot.render(<ConsoleWindow />);
+defaultRoot.render(<MainMenu />);
