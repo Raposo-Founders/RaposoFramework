@@ -10,6 +10,8 @@ import { getInstanceFromPath } from "shared/util/instancepath";
 import { defaultEnvironments } from "shared/defaultinsts";
 import { MainMenu } from "./UI/mainmenu";
 import conch from "shared/conch_pkg";
+import { listenDirectMessage } from "shared/network";
+import { gameValues } from "shared/gamevalues";
 
 // # Functions
 
@@ -73,6 +75,13 @@ for (const inst of modulesFolder.GetChildren()) {
 
 // Misc & other shit
 BannerNotify.InitClient();
+
+listenDirectMessage(gameValues.cmdnetinfo, (_, bfr) => {
+  const reader = BufferReader(bfr);
+  const message = reader.string();
+
+  conch.log("normal", message);
+});
 
 // Build interface
 defaultRoot.render(<ConsoleWindow />);

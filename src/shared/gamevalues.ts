@@ -11,6 +11,8 @@ export const gameValues = {
 
   adminattr: "HasAdminPower",
   modattr: "MasModerationPower",
+
+  cmdnetinfo: "DBG-SVCMD-OUT",
   cmdprefix: ":",
 } as const;
 
