@@ -16,6 +16,9 @@ import conch from "shared/conch_pkg";
 // # Bindings & misc
 while (!ReplicatedStorage.GetAttribute("ServerRunning")) task.wait();
 
+conch.initiate_default_lifecycle();
+conch.ui.bind_to(Enum.KeyCode.F2);
+
 _G.Systems = {};
 _G.ClientEnv = import("shared/defaultinsts").expect();
 _G.RaposoEnv = {
@@ -70,9 +73,6 @@ for (const inst of modulesFolder.GetChildren()) {
 
 // Misc & other shit
 BannerNotify.InitClient();
-
-conch.initiate_default_lifecycle();
-conch.ui.bind_to(Enum.KeyCode.F2);
 
 // Build interface
 defaultRoot.render(<ConsoleWindow />);

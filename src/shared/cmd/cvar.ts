@@ -1,15 +1,18 @@
+import conch from "shared/conch_pkg";
+import { args, Type } from "shared/conch_pkg/conch";
+
 // # Types
-type ValidValueTypes = "string" | "number";
-
-interface CommandArgument<N extends true | false> {
-  name: string,
-  number?: N,
-}
-
 interface CommandContext {
   Reply: (message: string) => void;
   Warn: (message: string) => void;
   Error: (message: string) => void;
+}
+
+interface RegisteredCommandInfo {
+  name: string;
+  description: string;
+  args: Type[];
+  callback: Callback;
 }
 
 // # Constants & variables
@@ -21,24 +24,29 @@ export enum cvarFlags {
 }
 
 export const createdCVars = new Map<string, CCVar<unknown>>();
-export const registeredCallbacks = new Set<string>();
-export const registeredCallbackArgs = new Map<string, CommandArgument<true | false>[]>();
-
-const builtCallbacks = new Map<string, Callback>();
+export const registeredCallbacks = new Map<string, RegisteredCommandInfo>();
 
 // # Functions
 export function registerConsoleFunction< // Abandon all hope below, this is cursed 💀
-  T extends CommandArgument<true | false>[],
-  A extends { [K in keyof T]: T[K] extends CommandArgument<infer N> ? (N extends true ? number : string) : never},
+  T extends Type[],
+  A extends { [K in keyof T]: T[K] extends Type<infer N> ? N : never},
   C extends (ctx: CommandContext, ...args: A) => (string | undefined | void)
-  >(name: string[], ...checkTypes: T) {
-  for (const element of name)
-    registeredCallbackArgs.set(element, checkTypes);
-
+  >(name: string[], checkTypes: T, description = "") {
   return (callback: C) => {
     for (const element of name) {
-      builtCallbacks.set(element, callback);
-      registeredCallbacks.add(element);
+      registeredCallbacks.set(element, {
+        name: element,
+        description: description,
+        args: checkTypes,
+        callback: callback,
+      });
+
+      conch.register(element, {
+        permissions: [],
+        description: description,
+        arguments: () => $tuple(...checkTypes),
+        callback: (...args) => executeConsoleFunction(element, ...args),
+      });
     }
   };
 }
@@ -56,14 +64,14 @@ export function executeConsoleFunction(name: string, ...args: unknown[]) {
     },
   };
 
-  builtCallbacks.get(name)?.(contextEnvironment, ...args);
+  registeredCallbacks.get(name)?.callback(contextEnvironment, ...args);
 }
 
 // # Classes
 export class CCVar<T> {
   private currentValue: T;
 
-  readonly type: ValidValueTypes;
+  readonly type: "string" | "number";
 
   constructor(readonly name: string, private defaultValue: T, readonly flags: cvarFlags[]) {
     assert(!createdCVars.has(name), `Duplicate CVar ${name}.`);

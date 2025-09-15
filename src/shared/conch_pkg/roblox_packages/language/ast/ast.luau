@@ -123,22 +123,14 @@ export type ExpressionLambda = {
 }
 
 export type FunctionBody = {
-	read arguments: Delimited<
-		"|",
-		Separated<Token<"identifier"> | false>,
-		"|"
-	>,
+	read arguments: Delimited<"|", Separated<Token<"identifier"> | false>, "|">,
 	read block: Delimited<"{", Block, "}">?,
 	read span: Span,
 }
 
 export type ExpressionVector = {
 	read kind: "vector",
-	read contents: Delimited<
-		"[",
-		Separated<Expression? | ExpressionCommand>,
-		"]"
-	>,
+	read contents: Delimited<"[", Separated<Expression? | ExpressionCommand>, "]">,
 	read span: Span,
 }
 
@@ -253,10 +245,7 @@ export type TableFieldNoKey = {
 	read span: Span,
 }
 
-export type TableField =
-	| TableFieldNoKey
-	| TableFieldExpressionKey
-	| TableFieldNameKey
+export type TableField = | TableFieldNoKey | TableFieldExpressionKey | TableFieldNameKey
 
 export type ExpressionTable = {
 	read kind: "table",

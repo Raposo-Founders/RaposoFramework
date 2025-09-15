@@ -1,29 +1,33 @@
-local ast = require "./ast"
+local ast = require("./ast")
 
 type Node = {
 	read span: vector,
 }
 
-export type Scope = {
-	up: Scope?,
-	root: true,
-	vars: { [string]: unknown },
-} | {
-	up: Scope,
-	root: false,
-	vars: { [string]: unknown },
-}
+export type Scope =
+	{
+		up: Scope?,
+		root: true,
+		vars: { [string]: unknown },
+	}
+	| {
+		up: Scope,
+		root: false,
+		vars: { [string]: unknown },
+	}
 
-export type Trace = | {
-	read fn: (...any) -> (),
-	read fn_name: string?,
-	read origin: "luau",
-} | {
-	read fn: (...any) -> (),
-	read fn_name: string?,
-	read origin: "conch",
-	read line: number,
-}
+export type Trace =
+	| {
+		read fn: (...any) -> (),
+		read fn_name: string?,
+		read origin: "luau",
+	}
+	| {
+		read fn: (...any) -> (),
+		read fn_name: string?,
+		read origin: "conch",
+		read line: number,
+	}
 
 export type ExecutionState = {
 	globals: { [string]: unknown },
@@ -34,22 +38,18 @@ export type ExecutionState = {
 
 type Expression = ast.Expression | ast.ExpressionCommand
 
-export type ExecutionResult = {
-	ok: true,
-	values: nil | { unknown },
-} | {
-	ok: false,
-	err: string,
-}
+export type ExecutionResult =
+	{
+		ok: true,
+		values: nil | { unknown },
+	}
+	| {
+		ok: false,
+		err: string,
+	}
 
-local using_machine: { [thread]: ExecutionState } = setmetatable(
-	{},
-	{ __mode = "k" }
-)
-local conch_functions: { [string]: string | true } = setmetatable(
-	{},
-	{ __mode = "k" }
-)
+local using_machine: { [thread]: ExecutionState } = setmetatable({}, { __mode = "k" })
+local conch_functions: { [string]: string | true } = setmetatable({}, { __mode = "k" })
 
 local PATTERN_REMOVE_TRACE = "^.+:%d+:%s*"
 
@@ -76,28 +76,17 @@ local function get_stack_trace_info(trace: Trace)
 	end
 end
 
-local function push_conch_trace(
-	state: ExecutionState,
-	fn: (...any) -> (),
-	fn_name: string?,
-	line: number
-)
-	table.insert(
-		state.trace,
-		{ fn = fn, fn_name = fn_name, origin = "conch", line = line }
-	)
+local function push_conch_trace(state: ExecutionState, fn: (...any) -> (), fn_name: string?, line: number)
+	table.insert(state.trace, { fn = fn, fn_name = fn_name, origin = "conch", line = line })
 end
 
-local function push_luau_trace(
-	state: ExecutionState,
-	fn: (...any) -> (),
-	fn_name: string?,
-	line: number
-)
+local function push_luau_trace(state: ExecutionState, fn: (...any) -> (), fn_name: string?, line: number)
 	table.insert(state.trace, { fn = fn, fn_name = fn_name, origin = "luau" })
 end
 
-local function pop_trace(state: ExecutionState) table.remove(state.trace) end
+local function pop_trace(state: ExecutionState)
+	table.remove(state.trace)
+end
 
 local function reset_state(state: ExecutionState)
 	table.clear(state.trace)
@@ -120,25 +109,21 @@ local function throw(state: ExecutionState, node: Node, why: string): never
 
 	reset_state(state)
 
-	error(
-		`{why} at {node.span.x}:{node.span.y}\n{table.concat(stack_trace, "\n")}`,
-		0
-	)
+	error(`{why} at {node.span.x}:{node.span.y}\n{table.concat(stack_trace, "\n")}`, 0)
 end
 
 local evaluate_expression: (state: ExecutionState, Expression) -> ...unknown
 local visit_block: (state: ExecutionState, ast.Block) -> ()
 -- local evaluate_command: (state: ExecutionState, node: ast.Command) -> ...unknown
 
-local function read_variable(
-	state: ExecutionState,
-	var: string
-): (Scope?, unknown)
+local function read_variable(state: ExecutionState, var: string): (Scope?, unknown)
 	local active = state.scope
 
 	while active do
 		local value = active.vars[var]
-		if value then return active, value end
+		if value then
+			return active, value
+		end
 		active = active.up
 	end
 
@@ -152,13 +137,10 @@ end
 
 -- proxy functions for operations so that in the case of an error it'll throw the state
 -- but not the actual execution
-local function index<Object, Key>(
-	state: ExecutionState,
-	node: Node,
-	object: Object,
-	key: Key
-): unknown
-	local ok, value = pcall(function() return (object :: any)[key] end)
+local function index<Object, Key>(state: ExecutionState, node: Node, object: Object, key: Key): unknown
+	local ok, value = pcall(function()
+		return (object :: any)[key]
+	end)
 
 	if not ok then
 		throw(state, node, `could not index {typeof(object)} with {key}`)
@@ -169,18 +151,15 @@ end
 local function call(state: ExecutionState, node: Node, fn: any, ...: any)
 	if conch_functions[fn] then
 		local name = conch_functions[fn]
-		push_conch_trace(
-			state,
-			fn,
-			if name == true then nil else name,
-			node.span.z
-		)
+		push_conch_trace(state, fn, if name == true then nil else name, node.span.z)
 		local result = table.pack(fn(...))
 		pop_trace(state)
 		return result
 	end
 
-	local ok, values = pcall(function(...) return table.pack(fn(...)) end, ...)
+	local ok, values = pcall(function(...)
+		return table.pack(fn(...))
+	end, ...)
 
 	push_luau_trace(state, fn, nil, node.span.z)
 	if not ok then
@@ -207,10 +186,7 @@ local slash_characters: { [string]: string } = {
 --[=[
 Converts tokens into a value
 ]=]
-local function get_value<T>(
-	state: ExecutionState,
-	token: ast.Token<ast.TokenKind>
-): unknown
+local function get_value<T>(state: ExecutionState, token: ast.Token<ast.TokenKind>): unknown
 	if token.kind == "number" then
 		local n = tonumber(token.text)
 		if not n then
@@ -220,15 +196,11 @@ local function get_value<T>(
 	elseif token.kind == "string" then
 		local text = string.sub(token.text, 2, -2)
 
-		text = string.gsub(
-			text,
-			"\\([0-9][0-9]?[0-9]?)",
-			function(value: string)
-				local code = tonumber(value)
-				assert(code)
-				return string.char(code)
-			end
-		)
+		text = string.gsub(text, "\\([0-9][0-9]?[0-9]?)", function(value: string)
+			local code = tonumber(value)
+			assert(code)
+			return string.char(code)
+		end)
 
 		for key, value in slash_characters do
 			text = string.gsub(text, `\\{key}`, value)
@@ -293,20 +265,11 @@ local function evaluate_var(state: ExecutionState, node: ast.Var): unknown
 	return value
 end
 
-local function evaluate_command(
-	state: ExecutionState,
-	node: ast.Command
-): { n: number, [number]: unknown }
+local function evaluate_command(state: ExecutionState, node: ast.Command): { n: number, [number]: unknown }
 	local arguments = {}
 
 	for idx, argument in node.arguments do
-		table.move(
-			{ evaluate_expression(state, argument) },
-			1,
-			8000,
-			idx,
-			arguments
-		)
+		table.move({ evaluate_expression(state, argument) }, 1, 8000, idx, arguments)
 	end
 
 	local command = evaluate_var(state, node.var)
@@ -314,10 +277,7 @@ local function evaluate_command(
 	return call(state, node, command, unpack(arguments))
 end
 
-local function evaluate_table(
-	state: ExecutionState,
-	node: ast.ExpressionTable
-): { [any]: any }
+local function evaluate_table(state: ExecutionState, node: ast.ExpressionTable): { [any]: any }
 	local t = {}
 	local idx = 1
 
@@ -325,18 +285,28 @@ local function evaluate_table(
 		local token = field.value
 
 		if token.kind == "expression_key" then
-			if not token.key then return throw(state, field, "no key") end
-			if not token.key.value then return throw(state, field, "no key") end
-			if not token.value then return throw(state, field, "no value") end
+			if not token.key then
+				return throw(state, field, "no key")
+			end
+			if not token.key.value then
+				return throw(state, field, "no key")
+			end
+			if not token.value then
+				return throw(state, field, "no value")
+			end
 			local key = evaluate_expression(state, token.key.value)
 			local value = evaluate_expression(state, token.value)
 
 			t[key] = value
 		elseif token.kind == "name_key" then
-			if not token.value then return throw(state, field, "no value") end
+			if not token.value then
+				return throw(state, field, "no value")
+			end
 			t[token.name.text] = evaluate_expression(state, token.value)
 		elseif token.kind == "nokey" then
-			if not token.value then return throw(state, field, "no value") end
+			if not token.value then
+				return throw(state, field, "no value")
+			end
 			t[idx] = evaluate_expression(state, token.value)
 			idx += 1
 		end
@@ -358,18 +328,11 @@ local function wrap_op(
 	if ok then
 		return result
 	else
-		return throw(
-			state,
-			node,
-			`attempt to {op} on {typeof(a)} and {typeof(b)}`
-		)
+		return throw(state, node, `attempt to {op} on {typeof(a)} and {typeof(b)}`)
 	end
 end
 
-local function evaluate_binary(
-	state: ExecutionState,
-	node: ast.ExpressionBinary
-): unknown
+local function evaluate_binary(state: ExecutionState, node: ast.ExpressionBinary): unknown
 	if not node.left then
 		return throw(state, node, "missing lhs expression")
 	end
@@ -381,154 +344,78 @@ local function evaluate_binary(
 	local operator = node.operator.kind
 
 	if operator == "!=" then
-		return wrap_op(
-			state,
-			node,
-			"compare !=",
-			left,
-			right,
-			function(a, b) return a ~= b end
-		)
+		return wrap_op(state, node, "compare !=", left, right, function(a, b)
+			return a ~= b
+		end)
 	elseif operator == "%" then
-		return wrap_op(
-			state,
-			node,
-			"get modulo of",
-			left,
-			right,
-			function(a, b) return a % b end
-		)
+		return wrap_op(state, node, "get modulo of", left, right, function(a, b)
+			return a % b
+		end)
 	elseif operator == "*" then
-		return wrap_op(
-			state,
-			node,
-			"multiply",
-			left,
-			right,
-			function(a, b) return a * b end
-		)
+		return wrap_op(state, node, "multiply", left, right, function(a, b)
+			return a * b
+		end)
 	elseif operator == "+" then
-		return wrap_op(
-			state,
-			node,
-			"add",
-			left,
-			right,
-			function(a, b) return a + b end
-		)
+		return wrap_op(state, node, "add", left, right, function(a, b)
+			return a + b
+		end)
 	elseif operator == "-" then
-		return wrap_op(
-			state,
-			node,
-			"subtract",
-			left,
-			right,
-			function(a, b) return a - b end
-		)
+		return wrap_op(state, node, "subtract", left, right, function(a, b)
+			return a - b
+		end)
 	elseif operator == ".." then
-		return wrap_op(
-			state,
-			node,
-			"concatenate",
-			left,
-			right,
-			function(a, b) return a .. b end
-		)
+		return wrap_op(state, node, "concatenate", left, right, function(a, b)
+			return a .. b
+		end)
 	elseif operator == "/" then
-		return wrap_op(
-			state,
-			node,
-			"divide",
-			left,
-			right,
-			function(a, b) return a / b end
-		)
+		return wrap_op(state, node, "divide", left, right, function(a, b)
+			return a / b
+		end)
 	elseif operator == "//" then
-		return wrap_op(
-			state,
-			node,
-			"idivide",
-			left,
-			right,
-			function(a, b) return a // b end
-		)
+		return wrap_op(state, node, "idivide", left, right, function(a, b)
+			return a // b
+		end)
 	elseif operator == "<" then
-		return wrap_op(
-			state,
-			node,
-			"compare <",
-			left,
-			right,
-			function(a, b) return a < b end
-		)
+		return wrap_op(state, node, "compare <", left, right, function(a, b)
+			return a < b
+		end)
 	elseif operator == "<=" then
-		return wrap_op(
-			state,
-			node,
-			"compare <=",
-			left,
-			right,
-			function(a, b) return a <= b end
-		)
+		return wrap_op(state, node, "compare <=", left, right, function(a, b)
+			return a <= b
+		end)
 	elseif operator == "==" then
-		return wrap_op(
-			state,
-			node,
-			"compare ==",
-			left,
-			right,
-			function(a, b) return a == b end
-		)
+		return wrap_op(state, node, "compare ==", left, right, function(a, b)
+			return a == b
+		end)
 	elseif operator == ">" then
-		return wrap_op(
-			state,
-			node,
-			"compare >",
-			left,
-			right,
-			function(a, b) return a > b end
-		)
+		return wrap_op(state, node, "compare >", left, right, function(a, b)
+			return a > b
+		end)
 	elseif operator == ">=" then
-		return wrap_op(
-			state,
-			node,
-			"compare >=",
-			left,
-			right,
-			function(a, b) return a >= b end
-		)
+		return wrap_op(state, node, "compare >=", left, right, function(a, b)
+			return a >= b
+		end)
 	elseif operator == "^" then
-		return wrap_op(
-			state,
-			node,
-			"get the power",
-			left,
-			right,
-			function(a, b) return a ^ b end
-		)
+		return wrap_op(state, node, "get the power", left, right, function(a, b)
+			return a ^ b
+		end)
 	elseif operator == "and" then
 		return left and right
 	elseif operator == "or" then
 		return left or right
 	elseif operator == "~=" then
-		return wrap_op(
-			state,
-			node,
-			"compare ~=",
-			left,
-			right,
-			function(a, b) return a ~= b end
-		)
+		return wrap_op(state, node, "compare ~=", left, right, function(a, b)
+			return a ~= b
+		end)
 	else
 		return throw(state, node, `unsupported operator {operator}`)
 	end
 end
 
-local function evaluate_unary(
-	state: ExecutionState,
-	node: ast.ExpressionUnary
-): unknown
-	if not node.value then return throw(state, node, "missing expression") end
+local function evaluate_unary(state: ExecutionState, node: ast.ExpressionUnary): unknown
+	if not node.value then
+		return throw(state, node, "missing expression")
+	end
 	local value: any = evaluate_expression(state, node.value)
 
 	if node.operator.kind == "!" then
@@ -540,10 +427,7 @@ local function evaluate_unary(
 	end
 end
 
-local function evaluate_lambda(
-	state: ExecutionState,
-	node: ast.ExpressionLambda
-)
+local function evaluate_lambda(state: ExecutionState, node: ast.ExpressionLambda)
 	local original_scope = {
 		vars = state.scope.vars,
 		root = true,
@@ -559,11 +443,15 @@ local function evaluate_lambda(
 
 		for i, arg in node.body.arguments.value do
 			local value = select(i, ...)
-			if not arg.value then continue end
+			if not arg.value then
+				continue
+			end
 			scope.vars[arg.value.text] = value
 		end
 
-		if not node.body.block then return throw(state, node, "no block") end
+		if not node.body.block then
+			return throw(state, node, "no block")
+		end
 
 		local calling_machine = using_machine[coroutine.running()]
 		local state: ExecutionState = {
@@ -580,8 +468,7 @@ local function evaluate_lambda(
 
 			if lstat.kind ~= "return" then
 				if calling_machine then
-					calling_machine.last_statement =
-						{ scope = scope, node = lstat }
+					calling_machine.last_statement = { scope = scope, node = lstat }
 				end
 				return
 			end
@@ -590,7 +477,9 @@ local function evaluate_lambda(
 
 			for idx, value in lstat.values do
 				local node = value.value
-				if not node then continue end
+				if not node then
+					continue
+				end
 				values[idx] = evaluate_expression(state, node)
 			end
 
@@ -604,10 +493,7 @@ local function evaluate_lambda(
 	return conch_guest_fn
 end
 
-function evaluate_expression(
-	state: ExecutionState,
-	node: ast.Expression | ast.ExpressionCommand
-): ...unknown
+function evaluate_expression(state: ExecutionState, node: ast.Expression | ast.ExpressionCommand): ...unknown
 	if node.kind == "binary" then
 		return evaluate_binary(state, node)
 	elseif node.kind == "boolean" then
@@ -664,10 +550,14 @@ local function visit_stat_for(state: ExecutionState, node: ast.For): unknown
 	local value_node = node.expression and node.expression.value
 	local body_node = node.body
 
-	if not value_node then return throw(state, node, "missing expression") end
+	if not value_node then
+		return throw(state, node, "missing expression")
+	end
 	local value: any = evaluate_expression(state, value_node)
 
-	if not body_node then return throw(state, node, "missing body") end
+	if not body_node then
+		return throw(state, node, "missing body")
+	end
 	local body = evaluate_expression(state, body_node)
 
 	push_conch_trace(state, body :: any, nil, node.span.z)
@@ -697,7 +587,9 @@ local function visit_stat_while(state: ExecutionState, node: ast.While): unknown
 	if not condition_node then
 		return throw(state, node, "missing condition")
 	end
-	if not body_node then return throw(state, node, "missing body") end
+	if not body_node then
+		return throw(state, node, "missing body")
+	end
 
 	while evaluate_expression(state, condition_node) do
 		visit_block(state, body_node)
@@ -717,11 +609,10 @@ local function visit_stat_while(state: ExecutionState, node: ast.While): unknown
 	return nil
 end
 
-local function visit_stat_assign(
-	state: ExecutionState,
-	node: ast.Assign
-): unknown
-	if not node.value then return throw(state, node, "missing value") end
+local function visit_stat_assign(state: ExecutionState, node: ast.Assign): unknown
+	if not node.value then
+		return throw(state, node, "missing value")
+	end
 
 	local key = node.identifier.text
 	local value = evaluate_expression(state, node.value)
@@ -738,8 +629,12 @@ local function visit_stat_if(state: ExecutionState, node: ast.If)
 	local function evaluate_branch(branch: ast.IfBranch): boolean
 		local condition = branch.condition and branch.condition.value
 		local body = branch.block and branch.block.value
-		if not condition then return throw(state, node, "missing condition") end
-		if not body then return throw(state, node, "missing body") end
+		if not condition then
+			return throw(state, node, "missing condition")
+		end
+		if not body then
+			return throw(state, node, "missing body")
+		end
 
 		if evaluate_expression(state, condition) then
 			visit_block(state, body)
@@ -749,14 +644,20 @@ local function visit_stat_if(state: ExecutionState, node: ast.If)
 		return false
 	end
 
-	if evaluate_branch(node.first_branch) then return end
+	if evaluate_branch(node.first_branch) then
+		return
+	end
 
 	for _, branch in node.branches do
-		if evaluate_branch(branch.branch) then return end
+		if evaluate_branch(branch.branch) then
+			return
+		end
 	end
 
 	if node.else_branch then
-		if not node.else_branch.block then return end
+		if not node.else_branch.block then
+			return
+		end
 		visit_block(state, node.else_branch.block.value)
 	end
 end
@@ -785,12 +686,18 @@ function visit_block(state: ExecutionState, node: ast.Block)
 			visit_stat_while(state, stat)
 		end
 
-		if state.last_statement then break end
+		if state.last_statement then
+			break
+		end
 	end
 
-	if node.last_statement then visit_lstat(state, node.last_statement) end
+	if node.last_statement then
+		visit_lstat(state, node.last_statement)
+	end
 
-	if not state.scope.up then return end
+	if not state.scope.up then
+		return
+	end
 	state.scope = state.scope.up
 end
 
@@ -828,14 +735,20 @@ local function execute(state: ExecutionState, ast: ast.Ast): ExecutionResult
 	local lstat = state.last_statement
 	state.last_statement = nil
 
-	if not lstat then return result_ok end
-	if lstat.node.kind ~= "return" then return result_ok end
+	if not lstat then
+		return result_ok
+	end
+	if lstat.node.kind ~= "return" then
+		return result_ok
+	end
 
 	result_ok.values = table.create(#lstat.node.values, nil :: unknown)
 	assert(result_ok.values)
 
 	for idx, value in lstat.node.values do
-		if not value.value then continue end
+		if not value.value then
+			continue
+		end
 
 		ok, err = pcall(evaluate_expression, state, value.value)
 		if not ok then

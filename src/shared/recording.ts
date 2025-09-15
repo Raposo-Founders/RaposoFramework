@@ -5,6 +5,7 @@ import { ExecuteCommand } from "./cmd";
 import { UserInputService } from "@rbxts/services";
 import { finalizeBufferCreation, startBufferCreation } from "./util/bufferwriter";
 import { defaultEnvironments } from "./defaultinsts";
+import conch from "./conch_pkg";
 
 // # Types
 interface I_EntitySnapshotContent {
@@ -189,7 +190,7 @@ export class CReplayPlayer {
 }
 
 // # Bindings & misc
-registerConsoleFunction(["record"], { name: "name" })((ctx, name) => {
+registerConsoleFunction(["record"], [conch.args.string("Name")], "Records a replay from the current session.")((ctx, name) => {
   const stopRecordingCallback = RecordEnvironment(defaultEnvironments.entity, defaultEnvironments.lifecycle);
 
   ctx.Reply(`Recording replay ${name}...`);
@@ -203,9 +204,9 @@ registerConsoleFunction(["record"], { name: "name" })((ctx, name) => {
   };
 });
 
-registerConsoleFunction(["stop"])(() => stopRecordingConnection?.());
+registerConsoleFunction(["stop"], [], "Stops the current recording started by the `record` command.")(() => stopRecordingConnection?.());
 
-registerConsoleFunction(["playdemo"], { name: "name" })((ctx, name) => {
+registerConsoleFunction(["playdemo"], [conch.args.string("Name")], "Play a session recording.")((ctx, name) => {
   ExecuteCommand("disconnect").expect(); // Ugly ass hack.
 
   const targetSnapshots = savedReplays.get(tostring(name));

@@ -97,15 +97,15 @@ export function MainMenu() {
 }
 
 // # Bindings & misc
-registerConsoleFunction(["mainmenu_open"])(() => {
+registerConsoleFunction(["mainmenu_open"], [])(() => {
   isVisible = true;
   MAINMENU_VISIBILITY_CHANGED.Fire(isVisible);
 });
-registerConsoleFunction(["mainmenu_close"])(() => {
+registerConsoleFunction(["mainmenu_close"], [])(() => {
   isVisible = false;
   MAINMENU_VISIBILITY_CHANGED.Fire(isVisible);
 });
-registerConsoleFunction(["mainmenu_toggle"])(() => {
+registerConsoleFunction(["mainmenu_toggle"], [])(() => {
   isVisible = !isVisible;
   MAINMENU_VISIBILITY_CHANGED.Fire(isVisible);
 });

@@ -24,6 +24,8 @@ function CleanUpWorkspace() {
 }
 
 // # Initialize
+conch.initiate_default_lifecycle();
+
 for (const inst of StarterGui.GetChildren()) {
   inst.Parent = uiFolder;
 }
@@ -78,7 +80,5 @@ defaultEnvironments.server = new ServerInstance(
   defaultEnvironments.entity,
   defaultEnvironments.lifecycle,
 );
-
-conch.initiate_default_lifecycle();
 
 ReplicatedStorage.SetAttribute("ServerRunning", true);

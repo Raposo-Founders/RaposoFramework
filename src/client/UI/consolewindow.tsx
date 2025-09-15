@@ -100,9 +100,9 @@ function GetCommandSuggestions(input: string) {
     suggestionList.push(varName);
   }
 
-  for (const cmdName of registeredCallbacks) {
-    if (!cmdName.match(input)[0]) continue;
-    suggestionList.push(cmdName);
+  for (const [name] of registeredCallbacks) {
+    if (!name.match(input)[0]) continue;
+    suggestionList.push(name);
   }
 
   return suggestionList;
@@ -308,7 +308,7 @@ export default function ConsoleWindow() {
 }
 
 // # Bindings & misc
-registerConsoleFunction(["clear", "cls"])(() => clearLogs());
+registerConsoleFunction(["cls"], [], "Clears the console.")(() => clearLogs());
 
 UserInputService.InputBegan.Connect((input, busy) => {
   if (!isTextboxFocused) return;

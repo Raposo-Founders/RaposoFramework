@@ -8,6 +8,7 @@ import { finalizeBufferCreation, writeBufferString, writeBufferU64, writeBufferU
 import WorldInstance from "shared/worldrender";
 import { EntityManager } from "shared/entities";
 import { LifecycleInstance } from "shared/lifecycle";
+import conch from "shared/conch_pkg";
 
 // # Interfaces & types
 interface ConnectionQueueInfo {
@@ -144,14 +145,14 @@ export function FetchServers() {
 }
 
 // # Execution
-registerConsoleFunction(["disconnect", "dc"])((ctx) => {
+registerConsoleFunction(["disconnect", "dc"], [], "Disconnects from the current session.")((ctx) => {
   ctx.Reply("Disconnecting from session...");
 
   defaultEnvironments.network.startWritingMessage("disconnect_request", undefined, undefined);
   defaultEnvironments.network.finishWritingMessage();
 });
 
-registerConsoleFunction(["connect"], { name: "sessionId", number: false })((ctx, sessionId) => {
+registerConsoleFunction(["connect"], [conch.args.string("ServerId")], "Join the current server's session.")((ctx, sessionId) => {
   ctx.Reply(`Connecting to session: ${sessionId}...`);
 
   if (sessionId === "local")

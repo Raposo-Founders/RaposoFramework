@@ -1,6 +1,7 @@
-import type { AnalysisArgument, AnalysisResult } from "@rbxts/conch-language";
+import type { AnalysisArgument, AnalysisResult } from "../roblox_packages/language";
 
 export type Type<T = unknown> = {
+  convert: (val: unknown) => T;
 	readonly __brand_Type: T,
 };
 export type TypeCtor<T = unknown> = (name?: string, description?: string) => Type<T>;
@@ -47,21 +48,21 @@ export function execute(src: string): void;
  * 
  * @description This doesn't add any analysis of any sort. This should only be reserved for temporary commands.
  */
-export function register_quick(name: string, fn: (...args: any[]) => unknown, ...permissions: string[]): void;
+export function register_quick(name: string, fn: (...args: unknown[]) => unknown, ...permissions: string[]): void;
 /**
  * Registers a new command.
  * 
  * @description Registers a given command with the provided description. This command is only visible to players who have the required permissions.
  */
-export function register<const T extends Type[], const V extends VarargType>(
-	name: string,
-	props: {
-		description?: string,
-		permissions: string[],
-		arguments: () => LuaTuple<[...T, V]>,
-		callback: (...arguments: [...InferTypes<T>, ...InferVarargType<V>]) => unknown,
-	}
-): void;
+// export function register<const T extends Type[], const V extends VarargType>(
+// 	name: string,
+// 	props: {
+// 		description?: string,
+// 		permissions: string[],
+// 		arguments: () => LuaTuple<[...T, V]>,
+// 		callback: (...arguments: [...InferTypes<T>, ...InferVarargType<V>]) => unknown,
+// 	}
+// ): void;
 /**
  * Registers a new command.
  * 
@@ -109,15 +110,15 @@ export function register<const T extends Type>(
  * 
  * @description Registers a given command with the provided description. This command is only visible to players who have the required permissions.
  */
-export function register<const T extends OverloadType>(
-	name: string,
-	props: {
-		description?: string,
-		permissions: string[],
-		arguments: () => T,
-		callback: (...arguments: T extends OverloadType<infer O> ? InferTypes<O[number]['arguments']> : never) => unknown,
-	}
-): void;
+// export function register<const T extends OverloadType>(
+// 	name: string,
+// 	props: {
+// 		description?: string,
+// 		permissions: string[],
+// 		arguments: () => T,
+// 		callback: (...arguments: T extends OverloadType<infer O> ? InferTypes<O[number]['arguments']> : never) => unknown,
+// 	}
+// ): void;
 /**
  * Registers the `license`, `print`, `info`, `warn` and `error` commands.
  */
@@ -210,7 +211,7 @@ export namespace args {
 	export function overload<const T extends Overload[]>(overloads: T): OverloadType<T>;
 	export function literal<const T>(literal: T, name?: string, description?: string): Type<T>;
 
-	export const any: TypeCtor<any>;
+	export const any: TypeCtor<never>;
 	export const string: TypeCtor<string>;
 	export const strings: TypeCtor<string[]>;
 	export const number: TypeCtor<number>;

@@ -1,6 +1,7 @@
-import { Players, RunService, TextChatService } from "@rbxts/services";
-import { createdCVars, registeredCallbacks, cvarFlags, registeredCallbackArgs, executeConsoleFunction } from "./cvar";
+import { LogService, Players, RunService, TextChatService } from "@rbxts/services";
+import { createdCVars, registeredCallbacks, cvarFlags, executeConsoleFunction } from "./cvar";
 import { gameValues } from "shared/gamevalues";
+import conch from "shared/conch_pkg";
 
 // # Constants & variables
 
@@ -27,7 +28,7 @@ export async function ExecuteCommand(content: string) {
 
   const name = args.shift() ?? "";
   const targetVariable = createdCVars.get(name);
-  const targetCallbackArgs = registeredCallbackArgs.get(name);
+  const targetCallback = registeredCallbacks.get(name);
 
   if (targetVariable) {
     const value1 = args.shift();
@@ -58,30 +59,22 @@ export async function ExecuteCommand(content: string) {
   }
 
   if (registeredCallbacks.has(name)) {
-    if (targetCallbackArgs) {
-      const passingArguments = new Array<string | number>();
+    if (targetCallback) {
+      const passingArguments: unknown[] = [];
 
-      for (let index = 0; index < targetCallbackArgs.size(); index++) {
+      for (let index = 0; index < targetCallback.args.size(); index++) {
         const stringArgument = args[index];
         if (!stringArgument) break;
 
-        const targetArgumentInfo = targetCallbackArgs[index];
+        const targetArgumentInfo = targetCallback.args[index];
         if (!targetArgumentInfo) break;
 
-        if (targetArgumentInfo.number) {
-          const toNumber = tonumber(stringArgument);
-          if (!toNumber) break;
-
-          passingArguments.push(toNumber);
-          continue;
-        }
-
-        passingArguments.push(stringArgument);
+        passingArguments[index] = targetArgumentInfo.convert(stringArgument);
       }
 
-      if (passingArguments.size() < targetCallbackArgs.size()) {
-        const missingArgumentsAmount = targetCallbackArgs.size() - passingArguments.size();
-        return `Missing command arguments, got: ${missingArgumentsAmount}, required: ${targetCallbackArgs.size()}.`;
+      if (passingArguments.size() < targetCallback.args.size()) {
+        const missingArgumentsAmount = targetCallback.args.size() - passingArguments.size();
+        return `Missing command arguments, got: ${missingArgumentsAmount}, required: ${targetCallback.args.size()}.`;
       }
 
       print("Executing command:", name, "...");
@@ -113,3 +106,7 @@ if (RunService.IsClient()) {
     }
   });
 }
+
+LogService.MessageOut.Connect((message, msgType) => {
+  conch.log("normal", `${msgType.Name.gsub("Message", "")[0]} - ${message}`);
+});
