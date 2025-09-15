@@ -270,15 +270,26 @@ local function enum_new<T>(options: { T }, name: string?, description: string?)
 	return enum_map(map, name, description)
 end
 
-local function convert_arg_to_player(arg: string | number | "@s" | Player): Player
+local function convert_arg_to_player(arg: string | number | "me" | Player): Player
 	local ctx = context.get_command_context()
-	if arg == "@s" then
-		return ctx and ctx.executor.player or error("not executed by a player")
+	if arg == "me" then
+		return if ctx then ctx.executor.player else error("Not executed by a player")
 	elseif typeof(arg) == "number" then
-		local player = assert(Players:GetPlayerByUserId(arg), `player with id {arg} is not in this server`)
+		local player = assert(Players:GetPlayerByUserId(arg), `Player with id {arg} is not in this server`)
 		return player
 	elseif typeof(arg) == "string" then
-		local player = assert(Players:FindFirstChild(arg) :: Player, `player "{arg}" is not valid`)
+		local player: Player
+
+		for _, user: Player in Players:GetPlayers() do
+			if not user.Name:match(arg) then
+				continue
+			end
+			player = user
+			break
+		end
+
+		assert(player :: Player, `Player "{arg}" is not valid`)
+
 		return player
 	elseif typeof(arg) == "Instance" and arg:IsA("Player") then
 		return arg
@@ -287,8 +298,8 @@ local function convert_arg_to_player(arg: string | number | "@s" | Player): Play
 	end
 end
 
-local function convert_arg_to_players(arg: string | number | "@s" | "@a" | { any } | Player)
-	if arg == "@a" then
+local function convert_arg_to_players(arg: string | number | "me" | "all" | { any } | Player)
+	if arg == "all" then
 		return Players:GetPlayers()
 	elseif typeof(arg) == "table" then
 		local copy = table.clone(arg)
