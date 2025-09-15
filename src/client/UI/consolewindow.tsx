@@ -170,10 +170,7 @@ export default function ConsoleWindow() {
 
         logEntry([`> ${content}`]);
 
-        ExecuteCommand(content).andThen(reply => {
-          if (!reply) return;
-          logEntry([reply]);
-        });
+        ExecuteCommand(content);
 
         task.wait();
         task.wait(); // Double trouble :)

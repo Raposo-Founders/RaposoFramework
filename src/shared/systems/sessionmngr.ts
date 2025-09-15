@@ -1,14 +1,14 @@
 import { Players, RunService } from "@rbxts/services";
-import { clientSessionConnected, clientSessionDisconnected, defaultEnvironments } from "shared/defaultinsts";
 import { registerConsoleFunction } from "shared/cmd/cvar";
+import conch from "shared/conch_pkg";
+import { clientSessionConnected, clientSessionDisconnected, defaultEnvironments } from "shared/defaultinsts";
+import { EntityManager } from "shared/entities";
+import { LifecycleInstance } from "shared/lifecycle";
 import { finishDirectMessage, listenDirectMessage, NetworkManager, startDirectMessage } from "shared/network";
 import ServerInstance from "shared/serverinst";
 import { BufferReader } from "shared/util/bufferreader";
-import { finalizeBufferCreation, writeBufferString, writeBufferU64, writeBufferU8 } from "shared/util/bufferwriter";
+import { writeBufferString, writeBufferU64, writeBufferU8 } from "shared/util/bufferwriter";
 import WorldInstance from "shared/worldrender";
-import { EntityManager } from "shared/entities";
-import { LifecycleInstance } from "shared/lifecycle";
-import conch from "shared/conch_pkg";
 
 // # Interfaces & types
 interface ConnectionQueueInfo {
@@ -159,6 +159,10 @@ registerConsoleFunction(["connect"], [conch.args.string("ServerId")], "Join the 
     ClientCreateLocalSession();
   else
     ClientConnectToServerSession(sessionId);
+});
+
+registerConsoleFunction(["kick"], [conch.args.player(), conch.args.strings("Reason", "Reason for kicking the player.")])((context, player, reason) => {
+  warn("WIP", player, reason);
 });
 
 // Connection requests

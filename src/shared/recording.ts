@@ -207,7 +207,7 @@ registerConsoleFunction(["record"], [conch.args.string("Name")], "Records a repl
 registerConsoleFunction(["stop"], [], "Stops the current recording started by the `record` command.")(() => stopRecordingConnection?.());
 
 registerConsoleFunction(["playdemo"], [conch.args.string("Name")], "Play a session recording.")((ctx, name) => {
-  ExecuteCommand("disconnect").expect(); // Ugly ass hack.
+  ExecuteCommand("disconnect"); // Ugly ass hack.
 
   const targetSnapshots = savedReplays.get(tostring(name));
   if (!targetSnapshots) {

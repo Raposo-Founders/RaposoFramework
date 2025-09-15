@@ -20,7 +20,7 @@ function FormatCommandString(text: string) {
   return text.gsub("^%s+", "")[0].gsub("%s+$", "")[0];
 }
 
-export async function ExecuteCommand(content: string) {
+export function ExecuteCommand(content: string) {
   assert(RunService.IsClient(), "Function can only be called from the client.");
 
   const args = FormatCommandString(content).split(" ");
@@ -58,32 +58,8 @@ export async function ExecuteCommand(content: string) {
     return;
   }
 
-  if (registeredCallbacks.has(name)) {
-    if (targetCallback) {
-      const passingArguments: unknown[] = [];
-
-      for (let index = 0; index < targetCallback.args.size(); index++) {
-        const stringArgument = args[index];
-        if (!stringArgument) break;
-
-        const targetArgumentInfo = targetCallback.args[index];
-        if (!targetArgumentInfo) break;
-
-        passingArguments[index] = targetArgumentInfo.convert(stringArgument);
-      }
-
-      if (passingArguments.size() < targetCallback.args.size()) {
-        const missingArgumentsAmount = targetCallback.args.size() - passingArguments.size();
-        return `Missing command arguments, got: ${missingArgumentsAmount}, required: ${targetCallback.args.size()}.`;
-      }
-
-      print("Executing command:", name, "...");
-      executeConsoleFunction(name, ...passingArguments);
-      return;
-    }
-
-    print("Executing command:", name, "...");
-    executeConsoleFunction(name, ...args);
+  if (targetCallback) {
+    conch.execute(content);
     return;
   }
 
@@ -100,7 +76,7 @@ if (RunService.IsClient()) {
 
     const split = content.split(gameValues.cmdprefix);
     for (const argument of split) {
-      ExecuteCommand(argument).expect();
+      ExecuteCommand(argument);
       task.wait();
       task.wait(); // Double trouble :)
     }
