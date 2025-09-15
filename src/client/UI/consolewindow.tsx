@@ -328,7 +328,7 @@ UserInputService.InputBegan.Connect((input, busy) => {
 });
 
 UserInputService.InputBegan.Connect((input) => {
-  if (input.KeyCode.Name !== "F2") return;
+  if (input.KeyCode.Name !== "Insert") return;
 
   if (isWindowVisible)
     hideWindow("console");

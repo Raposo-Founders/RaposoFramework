@@ -1,10 +1,11 @@
 import BannerNotify from "@rbxts/banner-notify";
 import { ReplicatedStorage, StarterGui } from "@rbxts/services";
 import { defaultEnvironments } from "shared/defaultinsts";
-import { modelsFolder, modulesFolder, uiFolder } from "shared/folders";
+import { modulesFolder, uiFolder } from "shared/folders";
 import ServerInstance from "shared/serverinst";
 import { BufferReader } from "shared/util/bufferreader";
 import { getInstanceFromPath } from "shared/util/instancepath";
+import conch from "shared/conch_pkg";
 
 // # Constants & variables
 
@@ -22,6 +23,7 @@ function CleanUpWorkspace() {
   }
 }
 
+// # Initialize
 for (const inst of StarterGui.GetChildren()) {
   inst.Parent = uiFolder;
 }
@@ -76,5 +78,7 @@ defaultEnvironments.server = new ServerInstance(
   defaultEnvironments.entity,
   defaultEnvironments.lifecycle,
 );
+
+conch.initiate_default_lifecycle();
 
 ReplicatedStorage.SetAttribute("ServerRunning", true);

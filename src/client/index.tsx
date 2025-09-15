@@ -9,6 +9,7 @@ import { defaultRoot } from "./UI/default/values";
 import { getInstanceFromPath } from "shared/util/instancepath";
 import { defaultEnvironments } from "shared/defaultinsts";
 import { MainMenu } from "./UI/mainmenu";
+import conch from "shared/conch_pkg";
 
 // # Functions
 
@@ -69,6 +70,9 @@ for (const inst of modulesFolder.GetChildren()) {
 
 // Misc & other shit
 BannerNotify.InitClient();
+
+conch.initiate_default_lifecycle();
+conch.ui.bind_to(Enum.KeyCode.F2);
 
 // Build interface
 defaultRoot.render(<ConsoleWindow />);
