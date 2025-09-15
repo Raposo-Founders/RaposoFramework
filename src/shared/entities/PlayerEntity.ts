@@ -158,7 +158,25 @@ export default class PlayerEntity extends HealthEntity {
       
   }
 
-  Spawn(origin: CFrame) {
+  Spawn(origin?: CFrame) {
+
+    // Get the target spawn for the current team
+    if (!origin) {
+      const availableSpawns: BasePart[] = [];
+
+      for (const inst of this.environment.world.objects.GetChildren()) {
+        if (!inst.IsA("BasePart") || inst.Name !== `info_player_${PlayerTeam[this.team].lower()}`) continue;
+        availableSpawns.push(inst);
+      }
+
+      availableSpawns.sort((a, b) => {
+        return (tonumber(a.GetAttribute("LastUsedTime")) || 0) < (tonumber(b.GetAttribute("LastUsedTime")) || 0);
+      });
+
+      origin = availableSpawns[0].CFrame;
+      availableSpawns[0].SetAttribute("LastUsedTime", time());
+    }
+
     this.maxHealth = 100;
     this.health = this.maxHealth;
 
