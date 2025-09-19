@@ -90,6 +90,8 @@ export default class PlayerEntity extends HealthEntity {
   }
 
   ApplyStateBuffer(state: buffer): void {
+    const isLocalPlayer = this.GetUserFromController() === Players.LocalPlayer;
+
     const reader = BufferReader(state);
     reader.string(); // Entity ID (obvious)
 
@@ -115,15 +117,19 @@ export default class PlayerEntity extends HealthEntity {
     const rotationCFrame = CFrame.Angles(math.rad(rotation.y), math.rad(rotation.x), math.rad(rotation.z));
 
     if (this.environment.isServer && !this.environment.isPlayback) {
-      const fixedPosition = vectorPosition.mul(new Vector3(1, 0, 1));
-      const differenceMagnitute = fixedPosition.sub(new Vector3(position.x, 0, position.z)).Magnitude;
+      const requestedPosition = new Vector2(position.x, position.z);
+      const currentPosition = new Vector2(this.origin.Position.X, this.origin.Position.Z);
+      const differenceMagnitute = requestedPosition.sub(currentPosition).Magnitude;
 
-      if (differenceMagnitute <= positionDifferenceThreshold)
+      if (differenceMagnitute <= positionDifferenceThreshold) {
         this.origin = new CFrame(vectorPosition).mul(rotationCFrame);
+        this.pendingTeleport = false;
+      }
     }
 
+    // Client - Update position
     if (!this.environment.isServer)
-      if (this.environment.isPlayback || (this.GetUserFromController() === Players.LocalPlayer && pendingTeleport)) {
+      if (this.environment.isPlayback || (isLocalPlayer && pendingTeleport) || !isLocalPlayer) {
         this.origin = new CFrame(vectorPosition).mul(rotationCFrame);
         this.teleportPlayermodelSignal.Fire(this.origin);
       }

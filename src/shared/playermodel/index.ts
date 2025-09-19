@@ -2,8 +2,7 @@ import * as Services from "@rbxts/services";
 import PlayerEntity from "shared/entities/PlayerEntity";
 import { Playermodel } from "./rig";
 import { defaultEnvironments } from "shared/defaultinsts";
-import { gameValues } from "shared/gamevalues";
-
+import { TICKRATE } from "shared/lifecycle";
 
 // # Constants & variables
 const entityPlayermodels = new Map<EntityId, Playermodel>();
@@ -121,6 +120,29 @@ export async function createPlayermodelForEntity(entity: PlayerEntity) {
         );
       }
     }
+  });
+
+  entity.teleportPlayermodelSignal.Connect(origin => {
+    const currentTween = tweeningPlayermodels.get(entity.id);
+    if (currentTween) {
+      const currentPivot = playermodel.GetPivot();
+
+      currentTween.Cancel();
+      currentTween.Destroy();
+      tweeningPlayermodels.delete(entity.id);
+
+      playermodel.PivotTo(currentPivot);
+    }
+
+    const newTween = Services.TweenService.Create(
+      playermodel.rig.PrimaryPart!,
+      new TweenInfo(TICKRATE, Enum.EasingStyle.Linear),
+      { CFrame: origin }
+    );
+
+    tweeningPlayermodels.set(entity.id, newTween);
+    newTween.Completed.Once(() => tweeningPlayermodels.delete(entity.id));
+    newTween.Play();
   });
 
   const unbindConnection = defaultEnvironments.lifecycle.BindLateUpdate(() => {
