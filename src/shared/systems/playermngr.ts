@@ -31,7 +31,7 @@ const ADMIN_ROLES: string[] = [
 // # Execution
 ServerInstance.serverCreated.Connect(inst => {
   inst.playerJoined.Connect((user, referenceId) => {
-    user.SetAttribute(gameValues.adminattr, ADMIN_ROLES.includes(user.GetRoleInGroup(TARGET_GROUP)));
+    user.SetAttribute(gameValues.adminattr, ADMIN_ROLES.includes(user.GetRoleInGroup(TARGET_GROUP).upper()));
     user.SetAttribute(gameValues.modattr, user.GetAttribute(gameValues.adminattr));
 
     inst.entity.createEntity("SwordPlayerEntity", `PlayerEnt_${user.UserId}`, referenceId, user.UserId).andThen(ent => {
