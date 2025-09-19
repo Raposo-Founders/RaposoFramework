@@ -83,6 +83,6 @@ if (RunService.IsClient()) {
   });
 }
 
-LogService.MessageOut.Connect((message, msgType) => {
-  conch.log("normal", `${msgType.Name.gsub("Message", "")[0]} - ${message}`);
-});
+// LogService.MessageOut.Connect((message, msgType) => {
+//   conch.log("normal", `${msgType.Name.gsub("Message", "")[0]} - ${message}`);
+// });

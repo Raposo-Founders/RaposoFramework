@@ -1,6 +1,6 @@
 import BannerNotify from "@rbxts/banner-notify";
 import React from "@rbxts/react";
-import { ReplicatedStorage } from "@rbxts/services";
+import { Chat, ReplicatedStorage, StarterGui } from "@rbxts/services";
 import { modulesFolder } from "shared/folders";
 import { CreateSoundGroup } from "shared/systems/sound";
 import { BufferReader } from "shared/util/bufferreader";
@@ -12,11 +12,14 @@ import { MainMenu } from "./UI/mainmenu";
 import conch from "shared/conch_pkg";
 import { listenDirectMessage } from "shared/network";
 import { gameValues } from "shared/gamevalues";
+import { ChatBar, ChatButton } from "./UI/chatui";
 
 // # Functions
 
 // # Bindings & misc
 while (!ReplicatedStorage.GetAttribute("ServerRunning")) task.wait();
+
+StarterGui.SetCoreGuiEnabled("All", false);
 
 conch.initiate_default_lifecycle();
 conch.ui.bind_to(Enum.KeyCode.F2);
@@ -51,6 +54,7 @@ import("shared/recording");
 import("shared/systems/sound").andThen((val) => _G.Systems["sound"] = val);
 import("shared/systems/playermngr").andThen((val) => _G.Systems["playermngr"] = val);
 import("shared/systems/sessionmngr").andThen((val) => _G.Systems["sessionmngr"] = val);
+import("shared/systems/chatmngr").andThen((val) => _G.Systems["chatmngr"] = val);
 
 import("client/userinput");
 
@@ -84,5 +88,14 @@ listenDirectMessage(gameValues.cmdnetinfo, (_, bfr) => {
 });
 
 // Build interface
-defaultRoot.render(<ConsoleWindow />);
-defaultRoot.render(<MainMenu />);
+// Shared UI
+defaultRoot.render(<>
+  <ConsoleWindow />
+  <MainMenu />
+  <ChatBar />
+</>);
+
+// Mobile UI
+defaultRoot.render(<>
+  <ChatButton />
+</>);

@@ -1,0 +1,128 @@
+import React from "@rbxts/react";
+import { UserInputService } from "@rbxts/services";
+import { sendMessage } from "shared/systems/chatmngr";
+import Signal from "shared/util/signal";
+import { TintButton } from "../default/tintbtn";
+
+// # Constants & variables
+const KEYCODE = Enum.KeyCode.Slash;
+
+const toggleChatVisibility = new Signal<[visible?: boolean]>();
+
+// # Functions
+export function ChatBar() {
+  const reference = React.createRef<TextBox>();
+
+  React.useEffect(() => {
+    if (!reference.current) return;
+
+    toggleChatVisibility.Connect(visible => {
+      if (!reference.current) return;
+
+      if (visible === undefined)
+        reference.current.Visible = !reference.current.Visible;
+      else
+        reference.current.Visible = visible;
+    });
+  });
+
+  return (
+    <textbox
+      CursorPosition={-1}
+      FontFace={new Font("rbxasset://fonts/families/BuilderSans.json", Enum.FontWeight.Medium)}
+      Text={""}
+      TextColor3={Color3.fromHex("#000000")}
+      TextTransparency={0.1}
+      TextScaled={true}
+      AnchorPoint={new Vector2(0.5, 0.5)}
+      AutomaticSize={"X"}
+      BackgroundColor3={Color3.fromHex("#FFFFFF")}
+      BackgroundTransparency={0.1}
+      BorderSizePixel={0}
+      Position={UDim2.fromScale(0.5, 0.25)}
+      Size={UDim2.fromOffset(0, 30)}
+      ref={reference}
+      Visible={false}
+      Event={{
+        FocusLost: (inst, enterPressed) => {
+          toggleChatVisibility.Fire(false);
+
+          if (!enterPressed) return;
+
+          const text = inst.Text;
+
+          inst.Text = "";
+          inst.CursorPosition = -1;
+
+          sendMessage(text);
+        },
+      }}
+      Change={{
+        Visible: (rbx) => {
+          if (rbx.Visible)
+            rbx.CaptureFocus();
+          else
+            rbx.ReleaseFocus();
+        },
+      }}
+    >
+      <uipadding
+        PaddingBottom={new UDim(0, 5)}
+        PaddingLeft={new UDim(0, 5)}
+        PaddingRight={new UDim(0, 5)}
+        PaddingTop={new UDim(0, 5)}
+      />
+
+      <uisizeconstraint
+        MinSize={new Vector2(100, 0)}
+      />
+
+      <uicorner
+        CornerRadius={new UDim(0, 12)}
+      />
+      <imagelabel
+        Image={"rbxasset://textures/ui/InGameChat/Caret.png"}
+        ImageColor3={Color3.fromHex("#FAFAFA")}
+        ImageTransparency={0.1}
+        AnchorPoint={new Vector2(0.5, 0)}
+        BackgroundTransparency={1}
+        LayoutOrder={2}
+        Position={new UDim2(0.5, 0, 1, 5)}
+        Size={UDim2.fromOffset(18, 60)}
+      />
+    </textbox>
+  );
+}
+
+export function ChatButton() {
+  const [visibleBinding, SetVisible] = React.createBinding(true);
+
+  toggleChatVisibility.Connect(vis => {
+    let buttonVisible = !vis;
+
+    if (buttonVisible && UserInputService.PreferredInput.Name !== "Touch")
+      buttonVisible = false;
+
+    SetVisible(buttonVisible);
+  });
+
+  UserInputService.InputBegan.Connect(() => {
+    if (UserInputService.PreferredInput.Name !== "Touch" && visibleBinding.getValue())
+      SetVisible(false);
+  });
+
+  return <TintButton
+    Text="Chat"
+    Callback={() => toggleChatVisibility.Fire(true)}
+    Size={UDim2.fromOffset(80, 40)}
+    Position={new UDim2(0, 20, 0.5, 0)}
+    Visible={visibleBinding}
+  />;
+}
+
+// # Bindings & misc
+UserInputService.InputBegan.Connect((input, busy) => {
+  if (busy || input.KeyCode !== KEYCODE) return;
+
+  toggleChatVisibility.Fire();
+});

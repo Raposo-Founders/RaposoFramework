@@ -1,4 +1,4 @@
-import { Players, RunService } from "@rbxts/services";
+import { Players, RunService, TextChatService } from "@rbxts/services";
 import { registerConsoleFunction } from "shared/cmd/cvar";
 import conch from "shared/conch_pkg";
 import { clientSessionConnected, clientSessionDisconnected, defaultEnvironments } from "shared/defaultinsts";
@@ -85,6 +85,8 @@ export function ClientConnectToServerSession(sessionId: string) {
 
   canConnect = true;
   currentConnectionThread = undefined;
+
+  (TextChatService.WaitForChild("ChatInputBarConfiguration") as ChatInputBarConfiguration).TargetTextChannel = TextChatService.WaitForChild(sessionId) as TextChannel;
 
   warn("Finished connection to server!");
 }
