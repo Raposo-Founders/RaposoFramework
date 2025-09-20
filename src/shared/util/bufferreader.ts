@@ -86,16 +86,14 @@ const bufferReadingStructure = {
     return data;
   },
   [ByteType["vec"]]: (b: buffer, offset: number, setOffset: Callback) => {
-    const x = buffer.readf32(b, offset);
-    offset += 4;
-    const y = buffer.readf32(b, offset);
-    offset += 4;
-    const z = buffer.readf32(b, offset);
-    offset += 4;
+    const addOffset = 4;
 
+    const x = buffer.readf32(b, offset);
+    const y = buffer.readf32(b, offset + addOffset);
+    const z = buffer.readf32(b, offset + (addOffset * 2));
     const data = vector.create(x, y, z);
 
-    setOffset(offset);
+    setOffset(offset + (addOffset * 3));
     return data;
   },
 };
