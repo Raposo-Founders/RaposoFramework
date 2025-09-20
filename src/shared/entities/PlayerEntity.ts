@@ -72,7 +72,7 @@ export default class PlayerEntity extends HealthEntity {
 
     writeBufferVector(this.origin.Position.X, this.origin.Position.Y, this.origin.Position.Z);
     {
-      const [rX, rY, rZ] = this.origin.ToEulerAnglesXYZ();
+      const [rY, rX, rZ] = this.origin.ToOrientation();
       writeBufferVector(math.round(math.deg(rX)), math.round(math.deg(rY)), math.round(math.deg(rZ)));
     }
     writeBufferVector(this.size.X, this.size.Y, this.size.Z);

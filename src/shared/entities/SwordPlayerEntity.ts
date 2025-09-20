@@ -385,7 +385,7 @@ ServerInstance.serverCreated.Connect(server => {
 if (Services.RunService.IsClient()) {
   const entitiesInQueue = new Set<EntityId>();
 
-  // Synchronizing server entities
+  // Creating entities
   defaultEnvironments.network.listenPacket(`${NETWORK_ID}entities_list`, (_, bfr) => {
     const listedServerEntities = new Array<string>();
 
