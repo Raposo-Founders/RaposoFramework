@@ -37,10 +37,29 @@ ServerInstance.serverCreated.Connect(inst => {
     inst.entity.createEntity("SwordPlayerEntity", `PlayerEnt_${user.UserId}`, referenceId, user.UserId).andThen(ent => {
       print(`Player entity created for user ${user.Name} with ID ${ent.id}.`);
 
+      ent.died.Connect(() => {
+        task.wait(Players.RespawnTime);
+        ent.Spawn();
+      });
+
       task.wait(2);
 
-      ent.Spawn(new CFrame(0, 100, 0));
+      ent.Spawn(new CFrame(0, 5, 0));
     });
+
+    if (RunService.IsStudio()) {
+      task.wait(2);
+      inst.entity.createEntity("SwordPlayerEntity", undefined, RandomString(3), user.UserId).andThen(ent => {
+
+        ent.died.Connect(() => {
+          task.wait(Players.RespawnTime);
+          ent.Spawn(ent.origin);
+        });
+
+        ent.team = PlayerTeam.Raiders;
+        ent.Spawn(new CFrame(0, 5, 0));
+      });
+    }
   });
 
   inst.network.listenPacket("team", (sender, bfr) => {
