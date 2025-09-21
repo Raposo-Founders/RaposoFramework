@@ -14,7 +14,6 @@ declare global {
 interface BaseCharacterModelInfo extends Model {
   Head: Part;
   Torso: Part;
-  Highlight: Highlight;
   ["Right Arm"]: Part;
   ["Left Arm"]: Part;
   HumanoidRootPart: Part;
@@ -70,11 +69,6 @@ export class Playermodel {
     this.SetCollisionGroup("Players");
 
     this.animator = new CharacterAnimationManager(this.rig);
-
-    const highlight = new Instance("Highlight");
-    highlight.Parent = this.rig;
-    highlight.FillTransparency = 1;
-    highlight.DepthMode = Enum.HighlightDepthMode.Occluded;
 
     // const animatorModule = vendorFolder.WaitForChild("PlayerHumanoidAnimator").Clone() as ModuleScript;
     // animatorModule.Parent = this._rigmodel;
@@ -157,14 +151,6 @@ export class Playermodel {
 
       inst.Transparency = amount;
     }
-  }
-
-  SetOulineColor(color: Color3) {
-    this.rig.Highlight.OutlineColor = color;
-  }
-
-  SetOutlineTransparency(value: number) {
-    this.rig.Highlight.OutlineTransparency = value;
   }
 
   async SetDescription(desc = defaultDescription) {
