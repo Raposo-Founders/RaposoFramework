@@ -4,18 +4,17 @@ import { cacheFolder, modelsFolder } from "shared/folders";
 import { gameValues, getInstanceDefinedValue } from "shared/gamevalues";
 import { NetworkManager } from "shared/network";
 import { createPlayermodelForEntity, getPlayermodelFromEntity } from "shared/playermodel";
-import { Playermodel } from "shared/playermodel/rig";
 import ServerInstance from "shared/serverinst";
 import { CWorldSoundInstance } from "shared/systems/sound";
 import { BufferReader } from "shared/util/bufferreader";
 import { writeBufferBool, writeBufferString, writeBufferU32, writeBufferU64, writeBufferU8 } from "shared/util/bufferwriter";
+import { getLocalPlayerEntity } from "shared/util/localent";
 import Signal from "shared/util/signal";
 import { DoesInstanceExist } from "shared/util/utilfuncs";
-import { EntityManager, registerEntityClass } from ".";
+import { registerEntityClass } from ".";
 import BaseEntity from "./BaseEntity";
 import HealthEntity from "./HealthEntity";
 import PlayerEntity, { getPlayerEntityFromController, PlayerTeam } from "./PlayerEntity";
-import { getLocalPlayerEntity } from "shared/util/localent";
 
 // # Types
 declare global {
@@ -125,10 +124,32 @@ export class SwordPlayerEntity extends PlayerEntity {
           const relatedEntities = this.environment.getEntitiesFromInstance(other);
           if (relatedEntities.size() <= 0) return;
 
+          let displayHitIndicator = false;
+
           for (const ent of relatedEntities) {
             if (!ent.IsA("HealthEntity") || ent.id === this.id) continue;
             this.hitboxTouched.Fire(ent);
+            displayHitIndicator = true;
           }
+
+          if (displayHitIndicator)
+            task.spawn(() => {
+              const highlight = new Instance("Highlight");
+              highlight.FillTransparency = 0;
+              highlight.OutlineTransparency = 1;
+              highlight.Adornee = other;
+              highlight.Parent = cacheFolder;
+              highlight.FillColor = new Color3(1, 0, 0);
+              highlight.DepthMode = Enum.HighlightDepthMode.Occluded;
+
+              const tween = Services.TweenService.Create(highlight, new TweenInfo(0.25, Enum.EasingStyle.Linear), { FillTransparency: 1 });
+              tween.Completed.Once(() => {
+                highlight.Destroy();
+                tween.Destroy();
+              });
+              tween.Play();
+            });
+
         }));
 
         this.instancesList.push(hitboxPart, hitboxMotor);
