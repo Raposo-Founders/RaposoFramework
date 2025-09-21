@@ -1,7 +1,6 @@
 import { Players, RunService } from "@rbxts/services";
 import { registerConsoleFunction } from "shared/cmd/cvar";
 import conch from "shared/conch_pkg";
-import { Type, VarargType } from "shared/conch_pkg/conch";
 import { defaultEnvironments } from "shared/defaultinsts";
 import PlayerEntity, { PlayerTeam } from "shared/entities/PlayerEntity";
 import { gameValues } from "shared/gamevalues";
@@ -9,9 +8,9 @@ import { finishDirectMessage, startDirectMessage } from "shared/network";
 import { getPlayermodelFromEntity } from "shared/playermodel";
 import ServerInstance from "shared/serverinst";
 import { BufferReader } from "shared/util/bufferreader";
-import { writeBufferString, writeBufferU8 } from "shared/util/bufferwriter";
+import { writeBufferString, writeBufferU32, writeBufferU8 } from "shared/util/bufferwriter";
 import { getLocalPlayerEntity } from "shared/util/localent";
-import { DoesInstanceExist } from "shared/util/utilfuncs";
+import { DoesInstanceExist, RandomString } from "shared/util/utilfuncs";
 
 // # Constants & variables
 const TARGET_GROUP = 7203437 as const;
@@ -79,7 +78,7 @@ ServerInstance.serverCreated.Connect(inst => {
     }
 
     // Check to see if the sender is just someone with tempmod
-    if (!sender.GetAttribute(gameValues.adminattr) && sender.GetAttribute(gameValues.modattr)) {
+    if (!sender.GetAttribute(gameValues.adminattr) || team === PlayerTeam.Defenders) {
 
       // Block the action if the target player is from the defenders team
       if (targetEntity.team === PlayerTeam.Defenders) {
@@ -97,6 +96,43 @@ ServerInstance.serverCreated.Connect(inst => {
 
     startDirectMessage(gameValues.cmdnetinfo, sender);
     writeBufferString(`Changed ${targetEntity.GetUserFromController()}'s team to ${PlayerTeam[team]}.`);
+    finishDirectMessage();
+  });
+
+  inst.network.listenPacket("damage", (sender, bfr) => {
+    if (!sender || !sender.GetAttribute(gameValues.modattr)) return;
+
+    const reader = BufferReader(bfr);
+    const entityId = reader.string();
+    const amount = reader.u32();
+
+    const targetEntity = inst.entity.entities.get(entityId);
+    if (!targetEntity || !targetEntity.IsA("PlayerEntity")) {
+      startDirectMessage(gameValues.cmdnetinfo, sender);
+      writeBufferString(`Invalid player entity ${entityId}`);
+      finishDirectMessage();
+
+      return;
+    }
+
+    // Check to see if the sender is just someone with tempmod
+    if (!sender.GetAttribute(gameValues.adminattr)) {
+
+      // Block the action if the target player is from the defenders team
+      if (targetEntity.team === PlayerTeam.Defenders) {
+        startDirectMessage(gameValues.cmdnetinfo, sender);
+        // writeBufferString("Moderators can't switch players off the Defenders team."); // Formal?
+        writeBufferString("Moderators can't mess with the Defenders' team."); // :)
+        finishDirectMessage();
+
+        return;
+      }
+    }
+
+    targetEntity.takeDamage(amount);
+
+    startDirectMessage(gameValues.cmdnetinfo, sender);
+    writeBufferString(`Damaged ${targetEntity.GetUserFromController()} by ${amount} points.`);
     finishDirectMessage();
   });
 });
@@ -120,8 +156,21 @@ registerConsoleFunction(["team"], [conch.args.player(), conch.args.string()], "C
   writeBufferString(targetEntity.id);
   writeBufferU8(targetTeamId);
   defaultEnvironments.network.finishWritingMessage();
+});
 
-  ctx.Reply("Finished executing.");
+registerConsoleFunction(["damage", "dmg"], [conch.args.player(), conch.args.number()], "Damages a player")((ctx, user, amount) => {
+  let targetEntity: PlayerEntity | undefined;
+  for (const ent of defaultEnvironments.entity.getEntitiesThatIsA("PlayerEntity")) {
+    if (ent.GetUserFromController() !== user) continue;
+    targetEntity = ent;
+    break;
+  }
+  assert(targetEntity, "Player has no entity.");
+
+  defaultEnvironments.network.startWritingMessage("damage");
+  writeBufferString(targetEntity.id);
+  writeBufferU32(amount as number);
+  defaultEnvironments.network.finishWritingMessage();
 });
 
 if (RunService.IsClient()) {
