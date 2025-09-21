@@ -89,13 +89,6 @@ listenDirectMessage(gameValues.cmdnetinfo, (_, bfr) => {
 
 // Build interface
 // Shared UI
-defaultRoot.render(<>
-  <ConsoleWindow />
-  <MainMenu />
-  <ChatBar />
-</>);
-
-// Mobile UI
-defaultRoot.render(<>
-  <ChatButton />
-</>);
+defaultRoot.render(<ConsoleWindow />);
+defaultRoot.render(<MainMenu />);
+defaultRoot.render(<><ChatBar /><ChatButton /></>);
