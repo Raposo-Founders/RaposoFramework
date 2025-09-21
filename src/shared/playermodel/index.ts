@@ -3,6 +3,7 @@ import PlayerEntity from "shared/entities/PlayerEntity";
 import { Playermodel } from "./rig";
 import { defaultEnvironments } from "shared/defaultinsts";
 import { TICKRATE } from "shared/lifecycle";
+import { createHealthBarForEntity } from "./healthbar";
 
 // # Constants & variables
 const entityPlayermodels = new Map<EntityId, Playermodel>();
@@ -59,9 +60,8 @@ export async function createPlayermodelForEntity(entity: PlayerEntity) {
   playermodel.SetTransparency();
   playermodel.SetCollisionGroup("Players");
 
-  playermodel.rig.Humanoid.DisplayName = entity.classname;
-  playermodel.rig.Humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.Viewer;
-  playermodel.rig.Humanoid.HealthDisplayType = Enum.HumanoidHealthDisplayType.DisplayWhenDamaged;
+  playermodel.rig.Humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None;
+  playermodel.rig.Humanoid.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff;
   playermodel.rig.Humanoid.SetStateEnabled("Dead", false);
   playermodel.rig.HumanoidRootPart.Anchored = true;
 
@@ -148,9 +148,6 @@ export async function createPlayermodelForEntity(entity: PlayerEntity) {
   const unbindConnection = defaultEnvironments.lifecycle.BindLateUpdate(() => {
     playermodel.rig.Humanoid.Health = entity.health;
     playermodel.rig.Humanoid.MaxHealth = entity.maxHealth;
-    playermodel.rig.Humanoid.DisplayName = entity.GetUserFromController()?.Name || entity.classname;
-    playermodel.rig.Humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.Viewer;
-    playermodel.rig.Humanoid.HealthDisplayType = Enum.HumanoidHealthDisplayType.DisplayWhenDamaged;
 
     if (playermodel.rig.PrimaryPart)
       playermodel.rig.PrimaryPart.Anchored = entity.GetUserFromController() !== Services.Players.LocalPlayer;
@@ -172,6 +169,8 @@ export async function createPlayermodelForEntity(entity: PlayerEntity) {
   });
 
   entityPlayermodels.set(entity.id, playermodel);
+
+  task.spawn(() => createHealthBarForEntity(entity));
 
   return playermodel;
 }
