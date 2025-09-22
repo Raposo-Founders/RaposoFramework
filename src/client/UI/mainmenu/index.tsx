@@ -17,18 +17,16 @@ let isVisible = false;
 // # Functions
 function Master(props: React.PropsWithChildren) {
   const reference = React.createRef<Frame>();
+  const [masterVisibleBinding, setMasterVisible] = React.createBinding(true);
 
-  React.useEffect(() => {
-    if (!reference.current) return;
-
-    MAINMENU_VISIBILITY_CHANGED.Connect(visible => reference.current!.Visible = visible);
-  });
+  MAINMENU_VISIBILITY_CHANGED.Connect(visible => setMasterVisible(visible));
 
   return <frame
     AnchorPoint={new Vector2(0.5, 0.5)}
     Position={new UDim2(0.5, 0, 0.5, 0)}
     Size={new UDim2(0.75, 0, 0.75, 0)}
     BackgroundTransparency={1}
+    Visible={masterVisibleBinding}
     ref={reference}
   >
     <uiaspectratioconstraint AspectRatio={1.778} /* 16:9 */ />
@@ -97,15 +95,15 @@ export function MainMenu() {
 }
 
 // # Bindings & misc
-registerConsoleFunction(["mainmenu_open"], [])(() => {
-  isVisible = true;
-  MAINMENU_VISIBILITY_CHANGED.Fire(isVisible);
+registerConsoleFunction(["mainmenu_open"], [])(() =>{
+  MAINMENU_VISIBILITY_CHANGED.Fire(true); 
 });
 registerConsoleFunction(["mainmenu_close"], [])(() => {
-  isVisible = false;
-  MAINMENU_VISIBILITY_CHANGED.Fire(isVisible);
+  MAINMENU_VISIBILITY_CHANGED.Fire(false);
 });
 registerConsoleFunction(["mainmenu_toggle"], [])(() => {
   isVisible = !isVisible;
   MAINMENU_VISIBILITY_CHANGED.Fire(isVisible);
 });
+
+MAINMENU_VISIBILITY_CHANGED.Connect(vis => isVisible = vis);

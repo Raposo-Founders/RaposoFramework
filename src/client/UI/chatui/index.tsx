@@ -12,6 +12,7 @@ const toggleChatVisibility = new Signal<[visible?: boolean]>();
 // # Functions
 export function ChatBar() {
   const reference = React.createRef<TextBox>();
+  const [visibilityBindings, setVisible] = React.createBinding(false);
 
   React.useEffect(() => {
     if (!reference.current) return;
@@ -25,6 +26,8 @@ export function ChatBar() {
         reference.current.Visible = visible;
     });
   });
+
+  toggleChatVisibility.Connect(visible => setVisible(visible !== undefined ? visible : !visibilityBindings.getValue()));
 
   return (
     <textbox
@@ -95,20 +98,20 @@ export function ChatBar() {
 }
 
 export function ChatButton() {
-  const [visibleBinding, SetVisible] = React.createBinding(true);
+  const [visibleBinding, setButtonVisible] = React.createBinding(true);
 
   toggleChatVisibility.Connect(vis => {
     let buttonVisible = !vis;
 
-    if (buttonVisible && UserInputService.PreferredInput.Name !== "Touch")
+    if (buttonVisible && !UserInputService.TouchEnabled)
       buttonVisible = false;
 
-    SetVisible(buttonVisible);
+    setButtonVisible(buttonVisible);
   });
 
   UserInputService.InputBegan.Connect(() => {
-    if (UserInputService.PreferredInput.Name !== "Touch" && visibleBinding.getValue())
-      SetVisible(false);
+    if (!UserInputService.TouchEnabled && visibleBinding.getValue())
+      setButtonVisible(false);
   });
 
   return <TintButton

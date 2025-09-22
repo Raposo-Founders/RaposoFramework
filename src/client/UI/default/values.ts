@@ -3,6 +3,7 @@ import { Players } from "@rbxts/services";
 import Vide from "@rbxts/vide";
 
 export const defaultScreenGui = Vide.create("ScreenGui")({
+  Name: "React Default",
   Parent: Players.LocalPlayer.WaitForChild("PlayerGui"),
   Enabled: true,
   ResetOnSpawn: false,

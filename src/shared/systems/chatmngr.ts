@@ -88,7 +88,6 @@ if (RunService.IsClient())
 
 if (RunService.IsClient()) {
   UserInputService.InputBegan.Connect(() => {
-    StarterGui.SetCoreGuiEnabled("Chat", true);
     inputBarConfig.Enabled = UserInputService.PreferredInput === Enum.PreferredInput.Touch;
   });
 }
