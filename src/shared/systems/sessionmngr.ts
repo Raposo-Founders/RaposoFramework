@@ -1,6 +1,5 @@
 import { Players, RunService, TextChatService } from "@rbxts/services";
-import { registerConsoleFunction } from "shared/cmd/cvar";
-import conch from "shared/conch_pkg";
+import { ConsoleFunctionCallback } from "shared/cmd/cvar";
 import { clientSessionConnected, clientSessionDisconnected, defaultEnvironments } from "shared/defaultinsts";
 import { EntityManager } from "shared/entities";
 import { LifecycleInstance } from "shared/lifecycle";
@@ -147,25 +146,26 @@ export function FetchServers() {
 }
 
 // # Execution
-registerConsoleFunction(["disconnect", "dc"], [], "Disconnects from the current session.")((ctx) => {
-  ctx.Reply("Disconnecting from session...");
+new ConsoleFunctionCallback(["disconnect", "dc"], [])
+  .setDescription("Disconnects from the current session.")
+  .setCallback((ctx) => {
+    ctx.Reply("Disconnecting from session...");
 
-  defaultEnvironments.network.startWritingMessage("disconnect_request", undefined, undefined);
-  defaultEnvironments.network.finishWritingMessage();
-});
+    defaultEnvironments.network.startWritingMessage("disconnect_request", undefined, undefined);
+    defaultEnvironments.network.finishWritingMessage();
+  });
 
-registerConsoleFunction(["connect"], [conch.args.string("ServerId")], "Join the current server's session.")((ctx, sessionId) => {
-  ctx.Reply(`Connecting to session: ${sessionId}...`);
+new ConsoleFunctionCallback(["connect"], [{ name: "id", type: "string" }])
+  .setDescription("Attempts to connect to a multiplayer session.")
+  .setCallback((ctx) => {
+    const sessionId = ctx.getArgument("id", "string").value;
 
-  if (sessionId === "local")
-    ClientCreateLocalSession();
-  else
-    ClientConnectToServerSession(sessionId);
-});
-
-registerConsoleFunction(["kick"], [conch.args.player(), conch.args.strings("Reason", "Reason for kicking the player.")])((context, player, reason) => {
-  warn("WIP", player, reason);
-});
+    ctx.Reply(`Connecting to session: ${sessionId}...`);
+    if (sessionId === "local")
+      ClientCreateLocalSession();
+    else
+      ClientConnectToServerSession(sessionId);
+  });
 
 // Connection requests
 if (RunService.IsServer())

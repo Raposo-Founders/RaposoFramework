@@ -9,10 +9,11 @@ import { defaultRoot } from "./UI/default/values";
 import { getInstanceFromPath } from "shared/util/instancepath";
 import { defaultEnvironments } from "shared/defaultinsts";
 import { MainMenu } from "./UI/mainmenu";
-import conch from "shared/conch_pkg";
 import { listenDirectMessage } from "shared/network";
 import { gameValues } from "shared/gamevalues";
 import { ChatBar, ChatButton } from "./UI/chatui";
+import { CommandLine } from "./UI/cmdline";
+import { RaposoConsole } from "shared/cmd";
 
 // # Functions
 
@@ -20,9 +21,6 @@ import { ChatBar, ChatButton } from "./UI/chatui";
 while (!ReplicatedStorage.GetAttribute("ServerRunning")) task.wait();
 
 StarterGui.SetCoreGuiEnabled("All", false);
-
-conch.initiate_default_lifecycle();
-conch.ui.bind_to(Enum.KeyCode.F2);
 
 _G.Systems = {};
 _G.ClientEnv = import("shared/defaultinsts").expect();
@@ -84,7 +82,7 @@ listenDirectMessage(gameValues.cmdnetinfo, (_, bfr) => {
   const reader = BufferReader(bfr);
   const message = reader.string();
 
-  conch.log("normal", message);
+  RaposoConsole.info(message);
 });
 
 // Build interface
@@ -92,5 +90,6 @@ listenDirectMessage(gameValues.cmdnetinfo, (_, bfr) => {
 defaultRoot.render(<>
   <MainMenu />
   <ConsoleWindow />
+  <CommandLine />
   <ChatBar /><ChatButton />
 </>);

@@ -1,9 +1,11 @@
-import { LogService, Players, RunService, TextChatService } from "@rbxts/services";
-import { createdCVars, registeredCallbacks, cvarFlags, executeConsoleFunction } from "./cvar";
+import { HttpService, Players, RunService, TextChatService } from "@rbxts/services";
 import { gameValues } from "shared/gamevalues";
-import conch from "shared/conch_pkg";
+import { ConsoleFunctionCallback, createdCVars, cvarFlags } from "./cvar";
+import Signal from "shared/util/signal";
+import { t } from "@rbxts/t";
 
 // # Constants & variables
+export const CONSOLE_OUT = new Signal<[Level: "warn" | "error" | "info", message: string]>();
 
 // # Functions
 export function GetCVarFromName(name: string) {
@@ -20,7 +22,7 @@ function FormatCommandString(text: string) {
   return text.gsub("^%s+", "")[0].gsub("%s+$", "")[0];
 }
 
-export function ExecuteCommand(content: string) {
+export async function ExecuteCommand(content: string) {
   assert(RunService.IsClient(), "Function can only be called from the client.");
 
   const args = FormatCommandString(content).split(" ");
@@ -28,7 +30,13 @@ export function ExecuteCommand(content: string) {
 
   const name = args.shift() ?? "";
   const targetVariable = createdCVars.get(name);
-  const targetCallback = registeredCallbacks.get(name);
+  let targetCallback: ConsoleFunctionCallback | undefined;
+
+  for (const consoleFunc of ConsoleFunctionCallback.list) {
+    if (!consoleFunc.names.includes(name)) continue;
+    targetCallback = consoleFunc;
+    break;
+  }
 
   if (targetVariable) {
     const value1 = args.shift();
@@ -59,11 +67,36 @@ export function ExecuteCommand(content: string) {
   }
 
   if (targetCallback) {
-    conch.execute(content);
+    targetCallback.execute(args);
     return;
   }
 
   warn(`Unknown command "${content}".`);
+}
+
+function concatString(content: unknown[]) {
+  let finalString = "";
+
+  for (const element of content)
+    if (t.table(element))
+      finalString += `${HttpService.JSONEncode(element)} `;
+    else
+      finalString += `${tostring(element)} `;
+
+  return finalString;
+}
+
+// # Namespace
+export namespace RaposoConsole {
+  export function info(...content: string[]) {
+    CONSOLE_OUT.Fire("info", concatString(content));
+  }
+  export function warn(...content: string[]) {
+    CONSOLE_OUT.Fire("warn", concatString(content));
+  }
+  export function err(...content: string[]) {
+    CONSOLE_OUT.Fire("error", concatString(content));
+  }
 }
 
 // # Bindings & misc

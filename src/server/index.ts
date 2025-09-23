@@ -5,7 +5,6 @@ import { modulesFolder, uiFolder } from "shared/folders";
 import ServerInstance from "shared/serverinst";
 import { BufferReader } from "shared/util/bufferreader";
 import { getInstanceFromPath } from "shared/util/instancepath";
-import conch from "shared/conch_pkg";
 
 // # Constants & variables
 
@@ -24,8 +23,6 @@ function CleanUpWorkspace() {
 }
 
 // # Initialize
-conch.initiate_default_lifecycle();
-
 for (const inst of StarterGui.GetChildren()) {
   inst.Parent = uiFolder;
 }

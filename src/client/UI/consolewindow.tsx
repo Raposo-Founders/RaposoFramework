@@ -3,7 +3,7 @@ import React from "@rbxts/react";
 import ReactRoblox from "@rbxts/react-roblox";
 import { LogService, UserInputService } from "@rbxts/services";
 import { ExecuteCommand } from "shared/cmd";
-import { registeredCallbacks, createdCVars, registerConsoleFunction } from "shared/cmd/cvar";
+import { ConsoleFunctionCallback, createdCVars } from "shared/cmd/cvar";
 import Signal from "shared/util/signal";
 import { colorTable, uiPreferences } from "./default/values";
 import { BaseWindow, hideWindow, showWindow } from "./default/window";
@@ -100,9 +100,11 @@ function GetCommandSuggestions(input: string) {
     suggestionList.push(varName);
   }
 
-  for (const [name] of registeredCallbacks) {
-    if (!name.match(input)[0]) continue;
-    suggestionList.push(name);
+  for (const cmd of ConsoleFunctionCallback.list) {
+    for (const name of cmd.names) {
+      if (!name.match(input)[0]) continue;
+      suggestionList.push(name);
+    }
   }
 
   return suggestionList;
@@ -305,7 +307,7 @@ export default function ConsoleWindow() {
 }
 
 // # Bindings & misc
-registerConsoleFunction(["cls"], [], "Clears the console.")(() => clearLogs());
+// registerConsoleFunction(["cls"], [], "Clears the console.")(() => clearLogs());
 
 UserInputService.InputBegan.Connect((input, busy) => {
   if (!isTextboxFocused) return;

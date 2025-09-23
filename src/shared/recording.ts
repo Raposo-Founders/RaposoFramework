@@ -1,11 +1,10 @@
+import { UserInputService } from "@rbxts/services";
+import { ExecuteCommand } from "./cmd";
+import { defaultEnvironments } from "./defaultinsts";
 import { EntityManager } from "./entities";
 import { LifecycleInstance } from "./lifecycle";
-import { registerConsoleFunction } from "./cmd/cvar";
-import { ExecuteCommand } from "./cmd";
-import { UserInputService } from "@rbxts/services";
 import { finalizeBufferCreation, startBufferCreation } from "./util/bufferwriter";
-import { defaultEnvironments } from "./defaultinsts";
-import conch from "./conch_pkg";
+import { ConsoleFunctionCallback } from "./cmd/cvar";
 
 // # Types
 interface I_EntitySnapshotContent {
@@ -190,53 +189,62 @@ export class CReplayPlayer {
 }
 
 // # Bindings & misc
-registerConsoleFunction(["record"], [conch.args.string("Name")], "Records a replay from the current session.")((ctx, name) => {
-  const stopRecordingCallback = RecordEnvironment(defaultEnvironments.entity, defaultEnvironments.lifecycle);
+new ConsoleFunctionCallback(["record", "rec"], [{ name: "name", type: "string" }])
+  .setDescription("Records a replay file from the current session.")
+  .setCallback((ctx) => {
+    const stopRecordingCallback = RecordEnvironment(defaultEnvironments.entity, defaultEnvironments.lifecycle);
+    const filename = ctx.getArgument("name", "string").value;
 
-  ctx.Reply(`Recording replay ${name}...`);
+    ctx.Reply(`Recording replay ${filename}...`);
 
-  stopRecordingConnection = () => {
-    stopRecordingConnection = undefined;
-    const replay = stopRecordingCallback();
+    stopRecordingConnection = () => {
+      stopRecordingConnection = undefined;
+      const replay = stopRecordingCallback();
 
-    savedReplays.set(tostring(name), replay);
-    ctx.Reply(`Stopped recording ${name}. ${replay.size()} total frames.`);
-  };
-});
-
-registerConsoleFunction(["stop"], [], "Stops the current recording started by the `record` command.")(() => stopRecordingConnection?.());
-
-registerConsoleFunction(["playdemo"], [conch.args.string("Name")], "Play a session recording.")((ctx, name) => {
-  ExecuteCommand("disconnect"); // Ugly ass hack.
-
-  const targetSnapshots = savedReplays.get(tostring(name));
-  if (!targetSnapshots) {
-    ctx.Error(`Unknown replay ${name}.`);
-    return;
-  }
-
-  defaultEnvironments.lifecycle.YieldForTicks(20);
-  defaultEnvironments.entity.isPlayback = true;
-
-  const player = new CReplayPlayer(defaultEnvironments.entity, defaultEnvironments.lifecycle, targetSnapshots);
-
-  UserInputService.InputBegan.Connect((input, busy) => {
-    if (busy) return;
-
-    if (input.KeyCode.Name === "KeypadEight") {
-      player.playing = !player.playing;
-      print("Playing:", player.playing);
-    }
-
-    if (input.KeyCode.Name === "KeypadSeven") {
-      player.speed -= 0.25;
-      print("Replay speed:", player.speed);
-    }
-
-    if (input.KeyCode.Name === "KeypadNine") {
-      player.speed += 0.25;
-      print("Replay speed:", player.speed);
-    }
+      savedReplays.set(tostring(filename), replay);
+      ctx.Reply(`Stopped recording ${filename}. ${replay.size()} total frames.`);
+    };
   });
-});
+
+new ConsoleFunctionCallback(["stop"], [])
+  .setDescription("Stops the current recording started by the `record` command.")
+  .setCallback((ctx) => stopRecordingConnection?.());
+
+new ConsoleFunctionCallback(["playdemo"], [{ name: "filename", type: "string" }])
+  .setDescription("Play a session replay.")
+  .setCallback((ctx) => {
+    const name = ctx.getArgument("filename", "string");
+
+    ExecuteCommand("disconnect"); // Ugly ass hack.
+
+    const targetSnapshots = savedReplays.get(tostring(name));
+    if (!targetSnapshots) {
+      ctx.Error(`Unknown replay ${name}.`);
+      return;
+    }
+
+    defaultEnvironments.lifecycle.YieldForTicks(20);
+    defaultEnvironments.entity.isPlayback = true;
+
+    const player = new CReplayPlayer(defaultEnvironments.entity, defaultEnvironments.lifecycle, targetSnapshots);
+
+    UserInputService.InputBegan.Connect((input, busy) => {
+      if (busy) return;
+
+      if (input.KeyCode.Name === "KeypadEight") {
+        player.playing = !player.playing;
+        print("Playing:", player.playing);
+      }
+
+      if (input.KeyCode.Name === "KeypadSeven") {
+        player.speed -= 0.25;
+        print("Replay speed:", player.speed);
+      }
+
+      if (input.KeyCode.Name === "KeypadNine") {
+        player.speed += 0.25;
+        print("Replay speed:", player.speed);
+      }
+    });
+  });
 

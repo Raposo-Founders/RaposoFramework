@@ -1,6 +1,5 @@
 import { Players, RunService } from "@rbxts/services";
-import { registerConsoleFunction } from "shared/cmd/cvar";
-import conch from "shared/conch_pkg";
+import { ConsoleFunctionCallback } from "shared/cmd/cvar";
 import { defaultEnvironments } from "shared/defaultinsts";
 import PlayerEntity, { PlayerTeam } from "shared/entities/PlayerEntity";
 import { gameValues } from "shared/gamevalues";
@@ -137,41 +136,33 @@ ServerInstance.serverCreated.Connect(inst => {
   });
 });
 
-registerConsoleFunction(["team"], [conch.args.player(), conch.args.string()], "Changes a player's team")((ctx, user, team) => {
-  let targetEntity: PlayerEntity | undefined;
-  for (const ent of defaultEnvironments.entity.getEntitiesThatIsA("PlayerEntity")) {
-    if (ent.GetUserFromController() !== user) continue;
-    targetEntity = ent;
-    break;
-  }
-  assert(targetEntity, "Player has no entity.");
+new ConsoleFunctionCallback(["team"], [{ name: "player", type: "player" }, { name: "team", type: "team" }])
+  .setDescription("Changes a player's team")
+  .setCallback((ctx) => {
+    const playerEntity = ctx.getArgument("player", "player").value[0];
+    const team = ctx.getArgument("team", "team").value;
 
-  let targetTeamId = PlayerTeam.Spectators;
+    assert(playerEntity, `Invalid player entity.`);
 
-  if (("defenders").match((team as string).lower())[0]) targetTeamId = PlayerTeam.Defenders;
-  if (("raiders").match((team as string).lower())[0]) targetTeamId = PlayerTeam.Raiders;
-  if (("spectators").match((team as string).lower())[0]) targetTeamId = PlayerTeam.Spectators;
+    defaultEnvironments.network.startWritingMessage("team");
+    writeBufferString(playerEntity.id);
+    writeBufferU8(PlayerTeam[team]);
+    defaultEnvironments.network.finishWritingMessage();
+  });
 
-  defaultEnvironments.network.startWritingMessage("team");
-  writeBufferString(targetEntity.id);
-  writeBufferU8(targetTeamId);
-  defaultEnvironments.network.finishWritingMessage();
-});
+new ConsoleFunctionCallback(["damage", "dmg"], [{ name: "player", type: "player" }, { name: "amount", type: "number" }])
+  .setDescription("Damages a player")
+  .setCallback((ctx) => {
+    const targetEntity = ctx.getArgument("player", "player").value;
+    const amount = ctx.getArgument("amount", "number").value;
 
-registerConsoleFunction(["damage", "dmg"], [conch.args.player(), conch.args.number()], "Damages a player")((ctx, user, amount) => {
-  let targetEntity: PlayerEntity | undefined;
-  for (const ent of defaultEnvironments.entity.getEntitiesThatIsA("PlayerEntity")) {
-    if (ent.GetUserFromController() !== user) continue;
-    targetEntity = ent;
-    break;
-  }
-  assert(targetEntity, "Player has no entity.");
+    assert(targetEntity[0], "Invalid player entity.");
 
-  defaultEnvironments.network.startWritingMessage("damage");
-  writeBufferString(targetEntity.id);
-  writeBufferU32(amount as number);
-  defaultEnvironments.network.finishWritingMessage();
-});
+    defaultEnvironments.network.startWritingMessage("damage");
+    writeBufferString(targetEntity[0].id);
+    writeBufferU32(amount as number);
+    defaultEnvironments.network.finishWritingMessage();
+  });
 
 if (RunService.IsClient()) {
   defaultEnvironments.entity.entityCreated.Connect(ent => {

@@ -3,8 +3,8 @@ import { MarketplaceService } from "@rbxts/services";
 import { uiPreferences } from "../default/values";
 import { Tab, TabButton, TabsButtonList, TabContentFrame } from "./tabs";
 import { PlayMenu } from "./playmenu";
-import { registerConsoleFunction } from "shared/cmd/cvar";
 import Signal from "shared/util/signal";
+import { ConsoleFunctionCallback } from "shared/cmd/cvar";
 
 // # Constants & variables
 export const MAINMENU_VISIBILITY_CHANGED = new Signal<[boolean]>();
@@ -95,13 +95,9 @@ export function MainMenu() {
 }
 
 // # Bindings & misc
-registerConsoleFunction(["mainmenu_open"], [])(() =>{
-  MAINMENU_VISIBILITY_CHANGED.Fire(true); 
-});
-registerConsoleFunction(["mainmenu_close"], [])(() => {
-  MAINMENU_VISIBILITY_CHANGED.Fire(false);
-});
-registerConsoleFunction(["mainmenu_toggle"], [])(() => {
+new ConsoleFunctionCallback(["mainmenu_open"], []).setCallback(() => MAINMENU_VISIBILITY_CHANGED.Fire(true));
+new ConsoleFunctionCallback(["mainmenu_close"], []).setCallback(() => MAINMENU_VISIBILITY_CHANGED.Fire(false));
+new ConsoleFunctionCallback(["mainmenu_toggle"], []).setCallback(() => {
   isVisible = !isVisible;
   MAINMENU_VISIBILITY_CHANGED.Fire(isVisible);
 });

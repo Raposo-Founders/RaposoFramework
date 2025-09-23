@@ -1,18 +1,34 @@
-import conch from "shared/conch_pkg";
-import { args, Type } from "shared/conch_pkg/conch";
+import { defaultEnvironments } from "shared/defaultinsts";
+import PlayerEntity, { PlayerTeam } from "shared/entities/PlayerEntity";
 
 // # Types
 interface CommandContext {
   Reply: (message: string) => void;
   Warn: (message: string) => void;
   Error: (message: string) => void;
+
+  getArgument: <T extends CONFUNC_TYPES>(name: string, expectedType: T) => CFunctionArgument<T>;
 }
 
-interface RegisteredCommandInfo {
+type CONFUNC_TYPES = "string" | "strings" | "number" | "team" | "player";
+type CONFUNC_TYPES_Converted = string | string[] | number | keyof typeof PlayerTeam | PlayerEntity[];
+
+type ___ConvertFuncType<T extends CONFUNC_TYPES> =
+  T extends "string" ? string :
+  T extends "number" ? number :
+  T extends "strings" ? string[] :
+  T extends "team" ? keyof typeof PlayerTeam :
+  T extends "player" ? PlayerEntity[] : never;
+
+interface CFunctionArgumentDefinition<T extends CONFUNC_TYPES> {
   name: string;
-  description: string;
-  args: Type[];
-  callback: Callback;
+  description?: string;
+  type: T;
+}
+
+interface CFunctionArgument<T extends CONFUNC_TYPES> {
+  name: string;
+  value: ___ConvertFuncType<T>;
 }
 
 // # Constants & variables
@@ -24,47 +40,47 @@ export enum cvarFlags {
 }
 
 export const createdCVars = new Map<string, CCVar<unknown>>();
-export const registeredCallbacks = new Map<string, RegisteredCommandInfo>();
 
 // # Functions
-export function registerConsoleFunction< // Abandon all hope below, this is cursed 💀
-  T extends Type[],
-  A extends { [K in keyof T]: T[K] extends Type<infer N> ? N : never},
-  C extends (ctx: CommandContext, ...args: A) => (string | undefined | void)
-  >(name: string[], checkTypes: T, description = "") {
-  return (callback: C) => {
-    for (const element of name) {
-      registeredCallbacks.set(element, {
-        name: element,
-        description: description,
-        args: checkTypes,
-        callback: callback,
-      });
+export function convertConsoleArgumentType(argumenttype: CONFUNC_TYPES, values: string[]): CONFUNC_TYPES_Converted {
+  if (argumenttype === "string")
+    return tostring(values.shift());
 
-      conch.register(element, {
-        permissions: [],
-        description: description,
-        arguments: () => $tuple(...checkTypes),
-        callback: (...args) => executeConsoleFunction(element, ...args),
-      });
+  if (argumenttype === "number")
+    return tonumber(tostring(values.shift())) || -1;
+
+  if (argumenttype === "team") {
+
+    const value = tostring(values.shift());
+    let targetTeamId = PlayerTeam.Spectators;
+
+    if (("defenders").match((value).lower())[0]) targetTeamId = PlayerTeam.Defenders;
+    if (("raiders").match((value).lower())[0]) targetTeamId = PlayerTeam.Raiders;
+    if (("spectators").match((value).lower())[0]) targetTeamId = PlayerTeam.Spectators;
+
+    return PlayerTeam[targetTeamId];
+  }
+
+  if (argumenttype === "player") {
+    const value = tostring(values.shift());
+    const foundPlayers: PlayerEntity[] = [];
+
+    for (const playerEntity of defaultEnvironments.entity.getEntitiesThatIsA("PlayerEntity")) {
+      const controller = playerEntity.GetUserFromController();
+      if (!controller) continue;
+      if (controller.Name.sub(value.size()) !== value || playerEntity.id.sub(value.size()) !== value) continue;
+
+      foundPlayers.push(playerEntity);
+      break;
     }
-  };
-}
 
-export function executeConsoleFunction(name: string, ...args: unknown[]) {
-  const contextEnvironment: CommandContext = {
-    Reply: (message) => {
-      print(`[${name}]: ${message}`);
-    },
-    Warn: (message) => {
-      warn(`[${name}]: ${message}`);
-    },
-    Error: (message) => {
-      warn("Error", `[${name}]: ${message}`);
-    },
-  };
+    return foundPlayers;
+  }
 
-  registeredCallbacks.get(name)?.callback(contextEnvironment, ...args);
+  // Returning the "values" table itself
+  const clonedObj = table.clone(values);
+  values.clear();
+  return clonedObj;
 }
 
 // # Classes
@@ -97,3 +113,71 @@ export class CCVar<T> {
     this.currentValue = this.defaultValue;
   }
 }
+
+export class ConsoleFunctionCallback {
+  static list = new Array<ConsoleFunctionCallback>();
+
+  private callback: Callback | undefined;
+  description = "";
+
+  constructor(
+    public readonly names: string[],
+    public readonly args: CFunctionArgumentDefinition<CONFUNC_TYPES>[],
+  ) {
+    ConsoleFunctionCallback.list.push(this);
+  }
+
+  setCallback(callback: (ctx: CommandContext) => void) {
+    this.callback = callback;
+
+    return this;
+  }
+
+  setDescription(description = "") {
+    this.description = description;
+    return this;
+  }
+
+  execute(args: string[]) {
+    if (!this.callback) {
+      warn(`No callback has been set for command ${this.names[0]}, ignoring call...`);
+      return;
+    }
+
+    const convertedArguments = new Map<string, CFunctionArgument<never>>();
+
+    print("Executing console command:", this.names[0], "with args:", args);
+
+    for (let i = 0; i < this.args.size(); i++) {
+      const element = this.args[i];
+      convertedArguments.set(element.name, { name: element.name, value: convertConsoleArgumentType(element.type, args) as never });
+    }
+
+    const contextEnvironment: CommandContext = {
+      Reply: (message) => {
+        print(`<${this.names[0]}> ${message}`);
+      },
+      Warn: (message) => {
+        warn(`<${this.names[0]}> ${message}`);
+      },
+      Error: (message) => {
+        warn(`<${this.names[0]}> [error] ${message}`);
+      },
+
+      getArgument: (name, expectedType) => {
+        const target = convertedArguments.get(name) as CFunctionArgument<typeof expectedType> | undefined;
+        if (!target) throw `Invalid command argument: ${name}`;
+
+        return target;
+      },
+    };
+
+    this.callback(contextEnvironment);
+  }
+}
+
+const test = new ConsoleFunctionCallback(["testyield", "ty"], [{ name: "time", type: "number" }]);
+test.setCallback((ctx) => {
+  const timeAmount = ctx.getArgument("time", "number");
+  
+});
