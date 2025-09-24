@@ -24,10 +24,15 @@ declare global {
 }
 
 // # Constants & variables
+// enum SwordState {
+//   Idle = 5,
+//   Swing = 10,
+//   Lunge = 30,
+// }
 enum SwordState {
-  Idle = 5,
-  Swing = 10,
-  Lunge = 30,
+  Idle = 2,
+  Swing = 5,
+  Lunge = 15,
 }
 
 enum SWORD_HIT_INDEX {
@@ -55,8 +60,25 @@ function CheckPlayers<T extends BaseEntity>(attacker: SwordPlayerEntity, victim:
   return true;
 }
 
-function ClientHandleHitboxTouched(attacker: SwordPlayerEntity, victim: HealthEntity, network: NetworkManager) {
+function ClientHandleHitboxTouched(attacker: SwordPlayerEntity, victim: HealthEntity, part: BasePart, network: NetworkManager) {
   if (!CheckPlayers(attacker, victim)) return;
+
+  task.spawn(() => {
+    const highlight = new Instance("Highlight");
+    highlight.FillTransparency = 0;
+    highlight.OutlineTransparency = 1;
+    highlight.Adornee = part;
+    highlight.Parent = cacheFolder;
+    highlight.FillColor = new Color3(1, 0, 0);
+    highlight.DepthMode = Enum.HighlightDepthMode.Occluded;
+
+    const tween = Services.TweenService.Create(highlight, new TweenInfo(0.25, Enum.EasingStyle.Linear), { FillTransparency: 1 });
+    tween.Completed.Once(() => {
+      highlight.Destroy();
+      tween.Destroy();
+    });
+    tween.Play();
+  });
 
   // If the attacker is another player
   if (attacker.GetUserFromController() !== Services.Players.LocalPlayer) {
@@ -85,7 +107,7 @@ export class SwordPlayerEntity extends PlayerEntity {
 
   hitDetectionEnabled = true;
   currentState = SwordState.Idle;
-  hitboxTouched = new Signal<[target: HealthEntity]>();
+  hitboxTouched = new Signal<[target: HealthEntity, part: BasePart]>();
   stateChanged = new Signal<[newState: SwordState]>();
 
   private canAttack = true;
@@ -116,6 +138,7 @@ export class SwordPlayerEntity extends PlayerEntity {
         hitboxMotor.C0 = new CFrame(0, -1, -1.5).mul(CFrame.Angles(0, math.rad(180), math.rad(-90)));
 
         this.connectionsList.push(hitboxPart.Touched.Connect(other => {
+          if (this.environment.isPlayback) return;
           if (!this.isEquipped) return;
           if (!DoesInstanceExist(playermodel.rig)) return;
           if (other.IsDescendantOf(this.environment.world.parts)) return;
@@ -124,31 +147,10 @@ export class SwordPlayerEntity extends PlayerEntity {
           const relatedEntities = this.environment.getEntitiesFromInstance(other);
           if (relatedEntities.size() <= 0) return;
 
-          let displayHitIndicator = false;
-
           for (const ent of relatedEntities) {
             if (!ent.IsA("HealthEntity") || ent.id === this.id) continue;
-            this.hitboxTouched.Fire(ent);
-            displayHitIndicator = true;
+            this.hitboxTouched.Fire(ent, other);
           }
-
-          if (displayHitIndicator)
-            task.spawn(() => {
-              const highlight = new Instance("Highlight");
-              highlight.FillTransparency = 0;
-              highlight.OutlineTransparency = 1;
-              highlight.Adornee = other;
-              highlight.Parent = cacheFolder;
-              highlight.FillColor = new Color3(1, 0, 0);
-              highlight.DepthMode = Enum.HighlightDepthMode.Occluded;
-
-              const tween = Services.TweenService.Create(highlight, new TweenInfo(0.25, Enum.EasingStyle.Linear), { FillTransparency: 1 });
-              tween.Completed.Once(() => {
-                highlight.Destroy();
-                tween.Destroy();
-              });
-              tween.Play();
-            });
 
         }));
 
@@ -428,12 +430,12 @@ if (Services.RunService.IsClient()) {
 
       defaultEnvironments.entity.createEntity("SwordPlayerEntity", entityId, controllerId, appearanceId)
         .andThen(ent => {
-          ent.hitboxTouched.Connect(target => {
+          ent.hitboxTouched.Connect((target, other) => {
             if (ent.GetUserFromController() === Services.Players.LocalPlayer) 
-              ClientHandleHitboxTouched(ent, target, defaultEnvironments.network);
+              ClientHandleHitboxTouched(ent, target, other, defaultEnvironments.network);
 
             if (ent.GetUserFromController() !== Services.Players.LocalPlayer && target.IsA("SwordPlayerEntity"))
-              ClientHandleHitboxTouched(target, ent, defaultEnvironments.network);
+              ClientHandleHitboxTouched(target, ent, other, defaultEnvironments.network);
           });
         }).finally(() => {
           entitiesInQueue.delete(entityId);
