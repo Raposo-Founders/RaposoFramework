@@ -2,7 +2,7 @@ import React, { PropsWithChildren } from "@rbxts/react";
 import ReactRoblox from "@rbxts/react-roblox";
 import { LogService, UserInputService } from "@rbxts/services";
 import { ExecuteCommand } from "shared/cmd";
-import { ConsoleFunctionCallback } from "shared/cmd/cvar";
+import { CCVar, ConsoleFunctionCallback, createdCVars } from "shared/cmd/cvar";
 import { defaultEnvironments } from "shared/defaultinsts";
 import Signal from "shared/util/signal";
 
@@ -15,6 +15,7 @@ const CLEAR_ALL_OUTPUT = new Signal();
 
 const [masterVisible, setMasterVisible] = React.createBinding(true);
 const [commandLineEditable, setEditable] = React.createBinding(true);
+const textChanged = new Signal<[newText: string]>();
 
 
 // # Functions
@@ -77,6 +78,9 @@ function InputBar() {
         Size={UDim2.fromScale(1, 1)}
         ref={textboxRef}
         TextEditable={commandLineEditable}
+        Change={{
+          Text: (rbx) => textChanged.Fire(rbx.TextEditable ? rbx.Text : ""),
+        }}
         Event={{
           FocusLost: (rbx, enterPressed) => {
             if (!enterPressed) return;
@@ -110,9 +114,9 @@ function InputBar() {
 
             ExecuteCommand(text).finally(() => {
               task.cancel(thread1);
+              setEditable(true);
               rbx.Text = "";
               rbx.CursorPosition = -1;
-              setEditable(true);
               defaultEnvironments.lifecycle.YieldForTicks(1);
               rbx.CaptureFocus();
             });
@@ -131,6 +135,174 @@ function InputBar() {
         ])}
         Rotation={90}
       />
+    </frame>
+  );
+}
+
+function SuggestionsFrame() {
+  const [suggestionsVisibleBinding, SetSuggestionsVisible] = React.createBinding(false);
+
+  const referenceParent = React.createRef<Frame>();
+  let root: ReactRoblox.Root | undefined;
+
+  React.useEffect(() => {
+    if (!referenceParent.current) return;
+    root = ReactRoblox.createRoot(referenceParent.current, { "hydrate": true });
+  });
+
+  textChanged.Connect((newText) => {
+    const fetchedFunctionSuggestions: ConsoleFunctionCallback[] = [];
+    const fetchedVariablesSuggestions: CCVar<unknown>[] = [];
+    const renderElements: React.Element[] = [];
+
+    if (newText === "") {
+      root?.unmount();
+      return;
+    }
+
+    newText = newText.split(" ")[0];
+
+    for (const callbackInfo of ConsoleFunctionCallback.list) {
+      let isValid = false;
+
+      for (const name of callbackInfo.names) {
+        if (name.sub(0, newText.size()) !== newText) continue;
+        isValid = true;
+      }
+
+      if (isValid)
+        fetchedFunctionSuggestions.push(callbackInfo);
+    }
+
+    for (const [name, variableInfo] of createdCVars) {
+      if (name.sub(0, newText.size()) !== newText) continue;
+      fetchedVariablesSuggestions.push(variableInfo);
+    }
+
+    // print(`"${newText}"`);
+    // print("Valid callbacks:", fetchedFunctionSuggestions);
+    // print("Valid variables:", fetchedVariablesSuggestions);
+    SetSuggestionsVisible(fetchedFunctionSuggestions.size() > 0 || fetchedVariablesSuggestions.size() > 0);
+
+    for (const info of fetchedFunctionSuggestions) {
+      const argumentsElement: React.Element[] = [];
+
+      for (const arg of info.args) {
+        argumentsElement.push(<textlabel
+          FontFace={new Font("rbxassetid://16658246179")}
+          Text={`<${arg.name} (${arg.type})>`}
+          TextColor3={Color3.fromHex("#FFFFFF")}
+          TextSize={18}
+          TextTransparency={0.5}
+          TextWrapped={true}
+          AutomaticSize={"XY"}
+          BackgroundTransparency={1}
+          LayoutOrder={argumentsElement.size() + 1}
+          Size={UDim2.fromScale(0, 1)}
+        >
+          <uipadding
+            PaddingBottom={new UDim(0, 4)}
+            PaddingTop={new UDim(0, 4)}
+          />
+        </textlabel>);
+      }
+
+      renderElements.push(
+        <textbutton
+          FontFace={new Font("rbxasset://fonts/families/SourceSansPro.json")}
+          Text={""}
+          TextColor3={Color3.fromHex("#000000")}
+          TextSize={14}
+          BackgroundColor3={Color3.fromHex("#323232")}
+          BorderColor3={Color3.fromHex("#000000")}
+          BorderSizePixel={0}
+          Size={new UDim2(1, 0, 0, 30)}
+          Event={{
+            Activated: () => warn("TODO: Suggestion completion"),
+          }}
+        >
+          <frame // Left side content
+            BackgroundTransparency={1}
+            Size={UDim2.fromScale(1, 1)}
+          >
+            <uilistlayout
+              Padding={new UDim(0, 5)}
+              FillDirection={"Horizontal"}
+              SortOrder={"LayoutOrder"}
+            />
+
+            <imagelabel // Icon
+              BackgroundTransparency={1}
+              Size={UDim2.fromScale(1, 1)}
+              LayoutOrder={-2}
+            >
+              <uiaspectratioconstraint />
+            </imagelabel>
+
+            <textlabel // Name
+              FontFace={new Font("rbxassetid://16658246179")}
+              Text={info.names[0]}
+              TextColor3={Color3.fromHex("#FFFFFF")}
+              TextSize={20}
+              TextWrapped={true}
+              TextXAlignment={"Left"}
+              AutomaticSize={"XY"}
+              BackgroundTransparency={1}
+              Size={UDim2.fromScale(0, 1)}
+              LayoutOrder={-1}
+            >
+              <uipadding
+                PaddingBottom={new UDim(0, 4)}
+                PaddingTop={new UDim(0, 4)}
+              />
+            </textlabel>
+
+            {argumentsElement}
+          </frame>
+          <uicorner
+            CornerRadius={new UDim(0, 4)}
+          />
+          <uistroke
+            ApplyStrokeMode={"Border"}
+            Color={Color3.fromHex("#FFFFFF")}
+            Transparency={0.75}
+          />
+        </textbutton>
+      );
+
+      root?.unmount();
+      root?.render(<>{renderElements}</>);
+    }
+  });
+
+  return (
+    <frame
+      AutomaticSize={"Y"}
+      BackgroundColor3={Color3.fromHex("#000000")}
+      BackgroundTransparency={0.5}
+      BorderSizePixel={0}
+      Size={UDim2.fromScale(1, 0)}
+      Visible={suggestionsVisibleBinding}
+      ref={referenceParent}
+    >
+      <uistroke
+        ApplyStrokeMode={"Border"}
+        Color={Color3.fromHex("#FFFFFF")}
+        Transparency={0.75}
+      />
+
+      <uipadding
+        PaddingBottom={new UDim(0, 4)}
+        PaddingLeft={new UDim(0, 4)}
+        PaddingRight={new UDim(0, 4)}
+        PaddingTop={new UDim(0, 4)}
+      />
+
+      <uilistlayout
+        Padding={new UDim(0, 5)}
+        SortOrder={"LayoutOrder"}
+      />
+      <uicorner />
     </frame>
   );
 }
@@ -245,6 +417,7 @@ function CommandLineMasterFrame(props: PropsWithChildren) {
 export function CommandLine() {
   return <CommandLineMasterFrame>
     <InputBar />
+    <SuggestionsFrame />
     <LogsFrame />
   </CommandLineMasterFrame>;
 }
@@ -261,3 +434,12 @@ new ConsoleFunctionCallback(["testyield", "shit"], [{ name: "time", type: "numbe
     ctx.Reply(`Yielding for ${timeAmount} seconds!`);
     task.wait(10);
   });
+
+new ConsoleFunctionCallback(["clear", "cls"], [])
+  .setDescription("Clears the console output.")
+  .setCallback((ctx) => {
+    CLEAR_ALL_OUTPUT.Fire();
+    LogService.ClearOutput();
+  });
+
+new CCVar("fov", 70, []);
