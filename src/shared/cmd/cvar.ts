@@ -146,8 +146,6 @@ export class ConsoleFunctionCallback {
 
     const convertedArguments = new Map<string, CFunctionArgument<never>>();
 
-    print("Executing console command:", this.names[0], "with args:", args);
-
     for (let i = 0; i < this.args.size(); i++) {
       const element = this.args[i];
       convertedArguments.set(element.name, { name: element.name, value: convertConsoleArgumentType(element.type, args) as never });

@@ -1,4 +1,4 @@
-import React, { PropsWithChildren } from "@rbxts/react";
+import React, { PropsWithChildren, useEffect } from "@rbxts/react";
 import ReactRoblox from "@rbxts/react-roblox";
 import { LogService, UserInputService } from "@rbxts/services";
 import { ExecuteCommand } from "shared/cmd";
@@ -13,9 +13,10 @@ const MASTER_SIZE = new UDim2(1, -200, 0, 40);
 const LOADING_CHARS_LIST = ["|", "/", "—", "\\"] as const;
 const CLEAR_ALL_OUTPUT = new Signal();
 
-const [masterVisible, setMasterVisible] = React.createBinding(true);
+const [masterVisible, setMasterVisible] = React.createBinding(false);
 const [commandLineEditable, setEditable] = React.createBinding(true);
 const textChanged = new Signal<[newText: string]>();
+const focusTextBox = new Signal();
 
 
 // # Functions
@@ -25,6 +26,16 @@ function formatString(text: string) {
 
 function InputBar() {
   const textboxRef = React.createRef<TextBox>();
+
+  useEffect(() => {
+    if (!textboxRef.current) return;
+
+  });
+  focusTextBox.Connect(() => {
+    if (!textboxRef.current) return;
+    defaultEnvironments.lifecycle.YieldForTicks(2);
+    textboxRef.current.CaptureFocus();
+  });
 
   return (
     <frame
@@ -117,8 +128,7 @@ function InputBar() {
               setEditable(true);
               rbx.Text = "";
               rbx.CursorPosition = -1;
-              defaultEnvironments.lifecycle.YieldForTicks(1);
-              rbx.CaptureFocus();
+              focusTextBox.Fire();
             });
           },
         }}
@@ -208,18 +218,15 @@ function SuggestionsFrame() {
       }
 
       renderElements.push(
-        <textbutton
-          FontFace={new Font("rbxasset://fonts/families/SourceSansPro.json")}
-          Text={""}
-          TextColor3={Color3.fromHex("#000000")}
-          TextSize={14}
+        <frame // TODO: Change this to a text button
+          // FontFace={new Font("rbxasset://fonts/families/SourceSansPro.json")}
+          // Text={""}
+          // TextColor3={Color3.fromHex("#000000")}
+          // TextSize={14}
           BackgroundColor3={Color3.fromHex("#323232")}
           BorderColor3={Color3.fromHex("#000000")}
           BorderSizePixel={0}
           Size={new UDim2(1, 0, 0, 30)}
-          Event={{
-            Activated: () => warn("TODO: Suggestion completion"),
-          }}
         >
           <frame // Left side content
             BackgroundTransparency={1}
@@ -267,7 +274,7 @@ function SuggestionsFrame() {
             Color={Color3.fromHex("#FFFFFF")}
             Transparency={0.75}
           />
-        </textbutton>
+        </frame>
       );
 
       root?.unmount();
@@ -426,9 +433,10 @@ export function CommandLine() {
 UserInputService.InputBegan.Connect((input) => {
   if (input.KeyCode !== Enum.KeyCode.F2) return;
   setMasterVisible(!masterVisible.getValue());
+  if (masterVisible.getValue()) focusTextBox.Fire();
 });
 
-new ConsoleFunctionCallback(["testyield", "shit"], [{ name: "time", type: "number" }])
+new ConsoleFunctionCallback(["testyield"], [{ name: "time", type: "number" }])
   .setCallback((ctx) => {
     const timeAmount = ctx.getArgument("time", "number").value;
     ctx.Reply(`Yielding for ${timeAmount} seconds!`);
@@ -439,7 +447,6 @@ new ConsoleFunctionCallback(["clear", "cls"], [])
   .setDescription("Clears the console output.")
   .setCallback((ctx) => {
     CLEAR_ALL_OUTPUT.Fire();
-    LogService.ClearOutput();
   });
 
 new CCVar("fov", 70, []);
