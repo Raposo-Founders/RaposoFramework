@@ -1,10 +1,10 @@
 import ReactRoblox from "@rbxts/react-roblox";
-import { Players } from "@rbxts/services";
+import { Players, RunService } from "@rbxts/services";
 import Vide from "@rbxts/vide";
 
 export const defaultScreenGui = Vide.create("ScreenGui")({
   Name: "React Default",
-  Parent: Players.LocalPlayer.WaitForChild("PlayerGui"),
+  Parent: RunService.IsClient() ? Players.LocalPlayer.WaitForChild("PlayerGui") : undefined,
   Enabled: true,
   ResetOnSpawn: false,
   IgnoreGuiInset: true,

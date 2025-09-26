@@ -18,22 +18,7 @@
         }
       },
       "Raposo": {
-        "$path": "out/shared"
-      }
-    },
-    "ServerScriptService": {
-      "$className": "ServerScriptService",
-      "Raposo": {
-        "$path": "out/server"
-      }
-    },
-    "StarterPlayer": {
-      "$className": "StarterPlayer",
-      "StarterPlayerScripts": {
-        "$className": "StarterPlayerScripts",
-        "Raposo": {
-          "$path": "out/client"
-        }
+        "$path": "out/"
       }
     }
   }
