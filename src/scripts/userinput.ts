@@ -1,6 +1,6 @@
 import { RunService, UserInputService } from "@rbxts/services";
-import { defaultEnvironments } from "shared/defaultinsts";
-import { getLocalPlayerEntity } from "shared/util/localent";
+import { defaultEnvironments } from "defaultinsts";
+import { getLocalPlayerEntity } from "util/localent";
 
 // # Constants & variables
 let swordEquipped = false;

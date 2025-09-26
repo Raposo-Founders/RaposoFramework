@@ -1,4 +1,4 @@
-import { ErrorObject } from "shared/util/utilfuncs";
+import { ErrorObject } from "util/utilfuncs";
 
 declare global {
   interface GameEntities {

@@ -3,8 +3,8 @@ import { MarketplaceService } from "@rbxts/services";
 import { uiPreferences } from "../default/values";
 import { Tab, TabButton, TabsButtonList, TabContentFrame } from "./tabs";
 import { PlayMenu } from "./playmenu";
-import Signal from "shared/util/signal";
-import { ConsoleFunctionCallback } from "shared/cmd/cvar";
+import Signal from "util/signal";
+import { ConsoleFunctionCallback } from "cmd/cvar";
 
 // # Constants & variables
 export const MAINMENU_VISIBILITY_CHANGED = new Signal<[boolean]>();

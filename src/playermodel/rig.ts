@@ -1,6 +1,6 @@
 import * as Services from "@rbxts/services";
-import { animFolder, cacheFolder } from "shared/folders";
-import WorldInstance from "shared/worldrender";
+import { animFolder, cacheFolder } from "folders";
+import WorldInstance from "worldrender";
 
 // # Types
 declare global {

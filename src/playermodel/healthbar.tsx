@@ -1,9 +1,9 @@
 import React from "@rbxts/react";
 import ReactRoblox from "@rbxts/react-roblox";
 import { Players, RunService, TweenService } from "@rbxts/services";
-import { defaultEnvironments } from "shared/defaultinsts";
-import PlayerEntity from "shared/entities/PlayerEntity";
-import Signal from "shared/util/signal";
+import { defaultEnvironments } from "defaultinsts";
+import PlayerEntity from "entities/PlayerEntity";
+import Signal from "util/signal";
 
 // # Types & interfaces
 interface HealthFrameSectionInfo {

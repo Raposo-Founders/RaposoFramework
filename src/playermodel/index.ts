@@ -1,8 +1,8 @@
 import * as Services from "@rbxts/services";
-import PlayerEntity from "shared/entities/PlayerEntity";
+import PlayerEntity from "entities/PlayerEntity";
 import { Playermodel } from "./rig";
-import { defaultEnvironments } from "shared/defaultinsts";
-import { TICKRATE } from "shared/lifecycle";
+import { defaultEnvironments } from "defaultinsts";
+import { TICKRATE } from "lifecycle";
 import { createHealthBarForEntity } from "./healthbar";
 
 // # Constants & variables

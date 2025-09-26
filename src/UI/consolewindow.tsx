@@ -2,9 +2,9 @@ import Object from "@rbxts/object-utils";
 import React from "@rbxts/react";
 import ReactRoblox from "@rbxts/react-roblox";
 import { LogService, UserInputService } from "@rbxts/services";
-import { ExecuteCommand } from "shared/cmd";
-import { ConsoleFunctionCallback, createdCVars } from "shared/cmd/cvar";
-import Signal from "shared/util/signal";
+import { ExecuteCommand } from "cmd";
+import { ConsoleFunctionCallback, createdCVars } from "cmd/cvar";
+import Signal from "util/signal";
 import { colorTable, uiPreferences } from "./default/values";
 import { BaseWindow, hideWindow, showWindow } from "./default/window";
 

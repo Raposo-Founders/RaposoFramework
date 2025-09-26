@@ -1,10 +1,10 @@
 import React, { PropsWithChildren, useEffect } from "@rbxts/react";
 import ReactRoblox from "@rbxts/react-roblox";
 import { LogService, UserInputService } from "@rbxts/services";
-import { ExecuteCommand } from "shared/cmd";
-import { CCVar, ConsoleFunctionCallback, createdCVars } from "shared/cmd/cvar";
-import { defaultEnvironments } from "shared/defaultinsts";
-import Signal from "shared/util/signal";
+import { ExecuteCommand } from "cmd";
+import { CCVar, ConsoleFunctionCallback, createdCVars } from "cmd/cvar";
+import { defaultEnvironments } from "defaultinsts";
+import Signal from "util/signal";
 
 // # Constants & variables
 const PADDING_SIZE = 5;

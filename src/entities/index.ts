@@ -1,8 +1,8 @@
 import { RunService } from "@rbxts/services";
 import { t } from "@rbxts/t";
-import Signal from "shared/util/signal";
-import { RandomString } from "shared/util/utilfuncs";
-import WorldInstance from "shared/worldrender";
+import Signal from "util/signal";
+import { RandomString } from "util/utilfuncs";
+import WorldInstance from "worldrender";
 import BaseEntity from "./BaseEntity";
 
 // # Types

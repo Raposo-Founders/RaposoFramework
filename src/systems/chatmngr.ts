@@ -1,9 +1,9 @@
 import { RunService, StarterGui, TextChatService, UserInputService } from "@rbxts/services";
-import { finishDirectMessage, listenDirectMessage, startDirectMessage } from "shared/network";
-import ServerInstance from "shared/serverinst";
-import { BufferReader } from "shared/util/bufferreader";
-import { writeBufferString } from "shared/util/bufferwriter";
-import { RandomString, ReplicatedInstance } from "shared/util/utilfuncs";
+import { finishDirectMessage, listenDirectMessage, startDirectMessage } from "network";
+import ServerInstance from "serverinst";
+import { BufferReader } from "util/bufferreader";
+import { writeBufferString } from "util/bufferwriter";
+import { RandomString, ReplicatedInstance } from "util/utilfuncs";
 
 // # Constants & variables
 const channelsFolder = ReplicatedInstance(TextChatService, "ServerChannels", "Folder");

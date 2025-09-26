@@ -1,8 +1,8 @@
 import { Players } from "@rbxts/services";
-import { gameValues } from "shared/gamevalues";
-import { BufferReader } from "shared/util/bufferreader";
-import { writeBufferBool, writeBufferString, writeBufferU16, writeBufferU64, writeBufferU8, writeBufferVector } from "shared/util/bufferwriter";
-import Signal from "shared/util/signal";
+import { gameValues } from "gamevalues";
+import { BufferReader } from "util/bufferreader";
+import { writeBufferBool, writeBufferString, writeBufferU16, writeBufferU64, writeBufferU8, writeBufferVector } from "util/bufferwriter";
+import Signal from "util/signal";
 import { EntityManager, registerEntityClass } from ".";
 import HealthEntity from "./HealthEntity";
 

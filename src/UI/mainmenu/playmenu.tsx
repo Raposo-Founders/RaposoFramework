@@ -1,8 +1,8 @@
 import React from "@rbxts/react";
 import { Tab, TabButton, TabContentFrame } from "./tabs";
 import { uiPreferences } from "../default/values";
-import { FetchServers } from "shared/systems/sessionmngr";
-import { ExecuteCommand } from "shared/cmd";
+import { FetchServers } from "systems/sessionmngr";
+import { ExecuteCommand } from "cmd";
 
 // # Constants & variables
 const GROUPID = "PlayMenu";

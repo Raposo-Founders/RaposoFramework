@@ -1,7 +1,7 @@
 import React from "@rbxts/react";
 import { colorTable, uiPreferences } from "./values";
 import { UserInputService } from "@rbxts/services";
-import { BindFramerate } from "shared/lifecycle";
+import { BindFramerate } from "lifecycle";
 
 interface I_WindowProps extends React.PropsWithChildren {
   id: string;

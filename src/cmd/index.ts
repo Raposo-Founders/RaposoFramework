@@ -1,7 +1,7 @@
 import { HttpService, Players, RunService, TextChatService } from "@rbxts/services";
-import { gameValues } from "shared/gamevalues";
+import { gameValues } from "gamevalues";
 import { ConsoleFunctionCallback, createdCVars, cvarFlags } from "./cvar";
-import Signal from "shared/util/signal";
+import Signal from "util/signal";
 import { t } from "@rbxts/t";
 
 // # Constants & variables

@@ -1,5 +1,5 @@
 import React from "@rbxts/react";
-import Signal from "shared/util/signal";
+import Signal from "util/signal";
 import { colorTable } from "../default/values";
 import { TweenService } from "@rbxts/services";
 

@@ -1,13 +1,13 @@
 import { Players, RunService, TextChatService } from "@rbxts/services";
-import { ConsoleFunctionCallback } from "shared/cmd/cvar";
-import { clientSessionConnected, clientSessionDisconnected, defaultEnvironments } from "shared/defaultinsts";
-import { EntityManager } from "shared/entities";
-import { LifecycleInstance } from "shared/lifecycle";
-import { finishDirectMessage, listenDirectMessage, NetworkManager, startDirectMessage } from "shared/network";
-import ServerInstance from "shared/serverinst";
-import { BufferReader } from "shared/util/bufferreader";
-import { writeBufferString, writeBufferU64, writeBufferU8 } from "shared/util/bufferwriter";
-import WorldInstance from "shared/worldrender";
+import { ConsoleFunctionCallback } from "cmd/cvar";
+import { clientSessionConnected, clientSessionDisconnected, defaultEnvironments } from "defaultinsts";
+import { EntityManager } from "entities";
+import { LifecycleInstance } from "lifecycle";
+import { finishDirectMessage, listenDirectMessage, NetworkManager, startDirectMessage } from "network";
+import ServerInstance from "serverinst";
+import { BufferReader } from "util/bufferreader";
+import { writeBufferString, writeBufferU64, writeBufferU8 } from "util/bufferwriter";
+import WorldInstance from "worldrender";
 
 // # Interfaces & types
 interface ConnectionQueueInfo {

@@ -1,4 +1,4 @@
-import Signal from "shared/util/signal";
+import Signal from "util/signal";
 import WorldEntity from "./worldent";
 
 declare global {

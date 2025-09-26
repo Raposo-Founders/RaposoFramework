@@ -1,5 +1,5 @@
-import { defaultEnvironments } from "shared/defaultinsts";
-import PlayerEntity, { PlayerTeam } from "shared/entities/PlayerEntity";
+import { defaultEnvironments } from "defaultinsts";
+import PlayerEntity, { PlayerTeam } from "entities/PlayerEntity";
 
 // # Types
 interface CommandContext {

@@ -1,14 +1,14 @@
 import BannerNotify from "@rbxts/banner-notify";
 import React from "@rbxts/react";
 import { ReplicatedStorage, RunService, StarterGui } from "@rbxts/services";
-import { RaposoConsole } from "shared/cmd";
-import { defaultEnvironments } from "shared/defaultinsts";
-import { requireEntities } from "shared/entities";
-import { modulesFolder, uiFolder } from "shared/folders";
-import { gameValues } from "shared/gamevalues";
-import { listenDirectMessage } from "shared/network";
-import ServerInstance from "shared/serverinst";
-import { BufferReader } from "shared/util/bufferreader";
+import { RaposoConsole } from "cmd";
+import { defaultEnvironments } from "defaultinsts";
+import { requireEntities } from "entities";
+import { modulesFolder, uiFolder } from "folders";
+import { gameValues } from "gamevalues";
+import { listenDirectMessage } from "network";
+import ServerInstance from "serverinst";
+import { BufferReader } from "util/bufferreader";
 import { ChatBar, ChatButton } from "UI/chatui";
 import { CommandLine } from "UI/cmdline";
 import ConsoleWindow from "UI/consolewindow";
@@ -46,19 +46,19 @@ function WaitForServer() {
 function ImportSystems() {
   _G.Raposo = {
     Systems: {
-      Sound: import("shared/systems/sound").expect(),
-      Playermngr: import("shared/systems/playermngr").expect(),
-      Sessionmngr: import("shared/systems/sessionmngr").expect(),
-      Chatmngr: import("shared/systems/chatmngr").expect(),
+      Sound: import("systems/sound").expect(),
+      Playermngr: import("systems/playermngr").expect(),
+      Sessionmngr: import("systems/sessionmngr").expect(),
+      Chatmngr: import("systems/chatmngr").expect(),
     },
     Environment: {
-      Folders: import("shared/folders").expect(),
-      Sessions: import("shared/serverinst").expect(),
-      Network: import("shared/network").expect(),
+      Folders: import("folders").expect(),
+      Sessions: import("serverinst").expect(),
+      Network: import("network").expect(),
       defaultEnvironments,
       util: {
         BufferReader: BufferReader,
-        BufferWriter: import("shared/util/bufferwriter").expect(),
+        BufferWriter: import("util/bufferwriter").expect(),
       }
     }
   };

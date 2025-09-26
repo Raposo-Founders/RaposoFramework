@@ -1,5 +1,5 @@
 import { t } from "@rbxts/t";
-import BaseEntity from "shared/entities/BaseEntity";
+import BaseEntity from "entities/BaseEntity";
 
 /* -------------------------------------------------------------------------- */
 /*                                  Functions                                 */

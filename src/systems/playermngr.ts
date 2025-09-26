@@ -1,15 +1,15 @@
 import { Players, RunService } from "@rbxts/services";
-import { ConsoleFunctionCallback } from "shared/cmd/cvar";
-import { defaultEnvironments } from "shared/defaultinsts";
-import PlayerEntity, { PlayerTeam } from "shared/entities/PlayerEntity";
-import { gameValues } from "shared/gamevalues";
-import { finishDirectMessage, startDirectMessage } from "shared/network";
-import { getPlayermodelFromEntity } from "shared/playermodel";
-import ServerInstance from "shared/serverinst";
-import { BufferReader } from "shared/util/bufferreader";
-import { writeBufferString, writeBufferU32, writeBufferU8 } from "shared/util/bufferwriter";
-import { getLocalPlayerEntity } from "shared/util/localent";
-import { DoesInstanceExist, RandomString } from "shared/util/utilfuncs";
+import { ConsoleFunctionCallback } from "cmd/cvar";
+import { defaultEnvironments } from "defaultinsts";
+import PlayerEntity, { PlayerTeam } from "entities/PlayerEntity";
+import { gameValues } from "gamevalues";
+import { finishDirectMessage, startDirectMessage } from "network";
+import { getPlayermodelFromEntity } from "playermodel";
+import ServerInstance from "serverinst";
+import { BufferReader } from "util/bufferreader";
+import { writeBufferString, writeBufferU32, writeBufferU8 } from "util/bufferwriter";
+import { getLocalPlayerEntity } from "util/localent";
+import { DoesInstanceExist, RandomString } from "util/utilfuncs";
 
 // # Constants & variables
 const TARGET_GROUP = 7203437 as const;

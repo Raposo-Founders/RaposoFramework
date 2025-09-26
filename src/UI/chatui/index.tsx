@@ -1,7 +1,7 @@
 import React from "@rbxts/react";
 import { UserInputService } from "@rbxts/services";
-import { sendMessage } from "shared/systems/chatmngr";
-import Signal from "shared/util/signal";
+import { sendMessage } from "systems/chatmngr";
+import Signal from "util/signal";
 import { TintButton } from "../default/tintbtn";
 
 // # Constants & variables
