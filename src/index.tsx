@@ -3,12 +3,12 @@ import React from "@rbxts/react";
 import { ReplicatedStorage, RunService, StarterGui } from "@rbxts/services";
 import { RaposoConsole } from "shared/cmd";
 import { defaultEnvironments } from "shared/defaultinsts";
+import { requireEntities } from "shared/entities";
 import { modulesFolder, uiFolder } from "shared/folders";
 import { gameValues } from "shared/gamevalues";
 import { listenDirectMessage } from "shared/network";
 import ServerInstance from "shared/serverinst";
 import { BufferReader } from "shared/util/bufferreader";
-import { getInstanceFromPath } from "shared/util/instancepath";
 import { ChatBar, ChatButton } from "UI/chatui";
 import { CommandLine } from "UI/cmdline";
 import ConsoleWindow from "UI/consolewindow";
@@ -73,14 +73,7 @@ if (RunService.IsClient()) {
   WaitForServer();
 }
 
-// Import entities
-{
-  const [root, path] = $getModuleTree("shared/entities");
-  for (const inst of getInstanceFromPath(root, path).GetChildren()) {
-    if (!inst.IsA("ModuleScript")) continue;
-    require(inst);
-  }
-}
+requireEntities();
 
 if (RunService.IsServer())
   CleanUpWorkspace();

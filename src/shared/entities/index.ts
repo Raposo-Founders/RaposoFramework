@@ -26,8 +26,8 @@ export function registerEntityClass(name: keyof GameEntities, builder?: new (...
     entitiesBuildList.set(name, builder);
 }
 
-export function requireEntityModulesFromFolder(instance: Instance) {
-  for (const inst of instance.GetChildren()) {
+export function requireEntities() {
+  for (const inst of script.GetChildren()) {
     if (!inst.IsA("ModuleScript")) continue;
 
     const content = require(inst);
