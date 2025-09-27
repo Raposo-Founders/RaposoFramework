@@ -43,7 +43,7 @@ let currentConnectionThread: thread | undefined;
 let currentServerListFetchThread: thread | undefined;
 
 // # Functions
-export function ClientConnectToServerSession(sessionId: string) {
+export function clientConnectToServerSession(sessionId: string) {
   assert(RunService.IsClient(), "Function can only be called from the client.");
   assert(canConnect, "Function is on cooldown.");
 
@@ -90,7 +90,7 @@ export function ClientConnectToServerSession(sessionId: string) {
   warn("Finished connection to server!");
 }
 
-export function ClientCreateLocalSession() {
+export function clientCreateLocalSession() {
   assert(RunService.IsClient(), "Function can only be called from the client.");
 
   const worldInstance = new WorldInstance("default");
@@ -162,9 +162,9 @@ new ConsoleFunctionCallback(["connect"], [{ name: "id", type: "string" }])
 
     ctx.Reply(`Connecting to session: ${sessionId}...`);
     if (sessionId === "local")
-      ClientCreateLocalSession();
+      clientCreateLocalSession();
     else
-      ClientConnectToServerSession(sessionId);
+      clientConnectToServerSession(sessionId);
   });
 
 // Connection requests
