@@ -8,12 +8,11 @@ import { modulesFolder, uiFolder } from "folders";
 import { gameValues } from "gamevalues";
 import { listenDirectMessage } from "network";
 import ServerInstance from "serverinst";
-import { BufferReader } from "util/bufferreader";
 import { ChatBar, ChatButton } from "UI/chatui";
 import { CommandLine } from "UI/cmdline";
 import ConsoleWindow from "UI/consolewindow";
 import { defaultRoot } from "UI/default/values";
-import { MainMenu } from "UI/mainmenu";
+import { BufferReader } from "util/bufferreader";
 
 
 // # Constants & variables
@@ -135,7 +134,6 @@ if (RunService.IsClient()) {
   // Build interface
   // Shared UI
   defaultRoot.render(<>
-    <MainMenu />
     <ConsoleWindow />
     <CommandLine />
     <ChatBar /><ChatButton />

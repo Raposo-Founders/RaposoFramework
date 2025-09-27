@@ -25,5 +25,5 @@ export const uiPreferences = {
 
   menuElementsPadding: 5,
   menuVerticalTabListSize: 0.25,
-  menuVerticalTabButtonsSize: 0.075,
+  menuVerticalTabButtonsSize: 30,
 };
