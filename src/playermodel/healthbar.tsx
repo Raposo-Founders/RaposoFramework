@@ -3,7 +3,7 @@ import ReactRoblox from "@rbxts/react-roblox";
 import { Players, RunService, TweenService } from "@rbxts/services";
 import { defaultEnvironments } from "defaultinsts";
 import PlayerEntity from "entities/PlayerEntity";
-import Signal from "util/signal";
+import { getLocalPlayerEntity } from "util/localent";
 
 // # Types & interfaces
 interface HealthFrameSectionInfo {
@@ -21,7 +21,7 @@ const POSITION_OFFSET = new Vector3(0, 4, 0);
 const SCREENGUI = new Instance("ScreenGui");
 const FRAME_HURT_TRANSPARENCY = 0.75;
 const FRAME_NORM_TRANSPARENCY = 0.25;
-const FRAME_BARS_SIZE = UDim2.fromOffset(20, 20);
+const FRAME_BARS_SIZE = UDim2.fromOffset(12, 12);
 const FRAME_BARS_PADDING = 2;
 const FRAME_BARS_PER_ROW = 10;
 const MASTER_SIZE = UDim2.fromOffset(
@@ -40,7 +40,7 @@ function EntityHealthBar(props: { entity: PlayerEntity }) {
   const registeredFrames: HealthFrameSectionInfo[] = [];
 
   let defaultLifecycleUnbind: Callback | undefined = defaultEnvironments.lifecycle.BindLateUpdate(() => {
-    if (props.entity.health <= 0) {
+    if (props.entity.health <= 0 || props.entity.GetUserFromController() === Players.LocalPlayer) {
       setVisible(false);
       return;
     }
@@ -77,8 +77,8 @@ function EntityHealthBar(props: { entity: PlayerEntity }) {
     const [viewportPosition, onViewport] = camera.WorldToViewportPoint(props.entity.origin.Position.add(POSITION_OFFSET));
 
     const distance = camera.CFrame.Position.sub(props.entity.origin.Position).Magnitude;
-    let scaleAmount = 0;
-    if (distance > NEAR_DISTANCE && props.entity.GetUserFromController() !== Players.LocalPlayer) {
+    let scaleAmount = 1;
+    if (distance > NEAR_DISTANCE) {
       const farOffset = FAR_DISTANCE - NEAR_DISTANCE;
       const nearOffset = distance - NEAR_DISTANCE;
       scaleAmount = 1 - (nearOffset / farOffset);
@@ -172,7 +172,7 @@ function EntityHealthBar(props: { entity: PlayerEntity }) {
         )}
         Text={usernameBinding}
         TextColor3={Color3.fromHex("#FFFFFF")}
-        TextSize={30}
+        TextSize={20}
         TextStrokeTransparency={0.75}
         AnchorPoint={new Vector2(0.5, 0)}
         AutomaticSize={"XY"}
