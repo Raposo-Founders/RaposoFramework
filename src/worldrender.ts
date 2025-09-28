@@ -23,7 +23,9 @@ export default class WorldInstance {
   constructor(public currentMap: string) {
     this.parts = this.temporaryFolder;
     this.objects = this.temporaryFolder;
-    this.loadMap(currentMap);
+
+    if (currentMap !== "void")
+      this.loadMap(currentMap);
 
     spawnedWorlds.set(this.id, this);
   }

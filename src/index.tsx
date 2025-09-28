@@ -12,6 +12,8 @@ import { ChatBar, ChatButton } from "UI/chatui";
 import { CommandLine } from "UI/cmdline";
 import ConsoleWindow from "UI/consolewindow";
 import { defaultRoot } from "UI/default/values";
+import { HudPlayerPanel } from "UI/hud/playerpanel";
+import { DisplayLoadingScreen, HideLoadingScreen } from "UI/loadscreen";
 import { BufferReader } from "util/bufferreader";
 
 
@@ -63,6 +65,17 @@ function ImportSystems() {
   };
 }
 
+function ExecuteModules() {
+  for (const inst of modulesFolder.GetChildren()) {
+    if (!inst.IsA("ModuleScript")) continue;
+    if (!inst.GetAttribute(`Execute${RunService.IsServer() ? "Server" : "Client"}`)) continue;
+
+    task.spawn(() => {
+      require(inst);
+    });
+  }
+}
+
 // # Execution
 if (RunService.IsClient())
   while (!game.IsLoaded()) task.wait();
@@ -78,19 +91,7 @@ if (RunService.IsServer())
   CleanUpWorkspace();
 
 ImportSystems();
-
-// Start backend scripts
-import "scripts/userinput";
-
-// Start game-defined modules
-for (const inst of modulesFolder.GetChildren()) {
-  if (!inst.IsA("ModuleScript")) continue;
-  if (!inst.GetAttribute(`Execute${RunService.IsServer() ? "Server" : "Client"}`)) continue;
-
-  task.spawn(() => {
-    require(inst);
-  });
-}
+ExecuteModules();
 
 // Misc & other shit
 if (RunService.IsServer())
@@ -134,8 +135,32 @@ if (RunService.IsClient()) {
   // Build interface
   // Shared UI
   defaultRoot.render(<>
+    <frame // 16:9 aspect ratio frame
+      AnchorPoint={new Vector2(0.5, 0.5)}
+      BackgroundTransparency={1}
+      Position={UDim2.fromScale(0.5, 0.5)}
+      Size={UDim2.fromScale(1, 1)}
+    >
+      <uiaspectratioconstraint AspectRatio={1.78} />
+      <uipadding
+        PaddingBottom={new UDim(0, 16)}
+        PaddingLeft={new UDim(0, 16)}
+        PaddingRight={new UDim(0, 16)}
+        PaddingTop={new UDim(0, 16)}
+      />
+
+      <HudPlayerPanel />
+    </frame>
+
     <ConsoleWindow />
     <CommandLine />
     <ChatBar /><ChatButton />
   </>);
 }
+
+if (!RunService.IsStudio())
+  task.spawn(() => {
+    DisplayLoadingScreen("Init")
+    task.wait(10);
+    HideLoadingScreen("Init")
+  });

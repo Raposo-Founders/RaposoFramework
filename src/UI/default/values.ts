@@ -1,3 +1,4 @@
+import React from "@rbxts/react";
 import ReactRoblox from "@rbxts/react-roblox";
 import { Players, RunService } from "@rbxts/services";
 import Vide from "@rbxts/vide";
@@ -12,6 +13,13 @@ export const defaultScreenGui = Vide.create("ScreenGui")({
 });
 
 export const defaultRoot = ReactRoblox.createRoot(defaultScreenGui, { "hydrate": true });
+
+export const values = {
+  hud_player_health: React.createBinding(300),
+  hud_player_weapon: React.createBinding(""),
+
+  hud_team_color: React.createBinding(Color3.fromHex("#55557F")),
+};
 
 export const colorTable = {
   primaryColor: "#55aa7f",
