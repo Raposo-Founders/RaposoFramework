@@ -1,7 +1,7 @@
 import React, { PropsWithChildren, useEffect } from "@rbxts/react";
 import ReactRoblox from "@rbxts/react-roblox";
 import { LogService, UserInputService } from "@rbxts/services";
-import { ExecuteCommand } from "cmd";
+import { CONSOLE_OUT, ExecuteCommand } from "cmd";
 import { CCVar, ConsoleFunctionCallback, createdCVars } from "cmd/cvar";
 import { defaultEnvironments } from "defaultinsts";
 import Signal from "util/signal";
@@ -34,7 +34,10 @@ function InputBar() {
   focusTextBox.Connect(() => {
     if (!textboxRef.current) return;
     defaultEnvironments.lifecycle.YieldForTicks(2);
-    textboxRef.current.CaptureFocus();
+    if (masterVisible.getValue())
+      textboxRef.current.CaptureFocus();
+    else
+      textboxRef.current.ReleaseFocus(false);
   });
 
   return (
@@ -157,7 +160,7 @@ function SuggestionsFrame() {
 
   React.useEffect(() => {
     if (!referenceParent.current) return;
-    root = ReactRoblox.createRoot(referenceParent.current, { "hydrate": true });
+    root = ReactRoblox.createRoot(referenceParent.current);
   });
 
   textChanged.Connect((newText) => {
@@ -277,8 +280,26 @@ function SuggestionsFrame() {
         </frame>
       );
 
-      root?.unmount();
-      root?.render(<>{renderElements}</>);
+      root?.render(<>
+        <uistroke
+          ApplyStrokeMode={"Border"}
+          Color={Color3.fromHex("#FFFFFF")}
+          Transparency={0.75}
+        />
+        <uipadding
+          PaddingBottom={new UDim(0, 4)}
+          PaddingLeft={new UDim(0, 4)}
+          PaddingRight={new UDim(0, 4)}
+          PaddingTop={new UDim(0, 4)}
+        />
+        <uilistlayout
+          Padding={new UDim(0, 5)}
+          SortOrder={"LayoutOrder"}
+        />
+        <uicorner />
+        {renderElements}
+      </>
+      );
     }
   });
 
@@ -291,38 +312,19 @@ function SuggestionsFrame() {
       Size={UDim2.fromScale(1, 0)}
       Visible={suggestionsVisibleBinding}
       ref={referenceParent}
-    >
-      <uistroke
-        ApplyStrokeMode={"Border"}
-        Color={Color3.fromHex("#FFFFFF")}
-        Transparency={0.75}
-      />
-
-      <uipadding
-        PaddingBottom={new UDim(0, 4)}
-        PaddingLeft={new UDim(0, 4)}
-        PaddingRight={new UDim(0, 4)}
-        PaddingTop={new UDim(0, 4)}
-      />
-
-      <uilistlayout
-        Padding={new UDim(0, 5)}
-        SortOrder={"LayoutOrder"}
-      />
-      <uicorner />
-    </frame>
+    />
   );
 }
 
 function LogsFrame() {
   const referenceParent = React.createRef<Frame>();
 
-  LogService.MessageOut.Connect((message, msgType) => {
+  CONSOLE_OUT.Connect((msgType, message) => {
     if (!referenceParent.current) return;
 
     let textColor = Color3.fromHex("#FFFFFF");
-    if (msgType.Name === "MessageWarning") textColor = Color3.fromRGB(255, 200, 0);
-    if (msgType.Name === "MessageError") textColor = Color3.fromRGB(255, 30, 0);
+    if (msgType === "warn") textColor = Color3.fromRGB(255, 200, 0);
+    if (msgType === "error") textColor = Color3.fromRGB(255, 30, 0);
 
     const element = <textlabel
       FontFace={new Font("rbxassetid://16658246179")}
@@ -433,7 +435,7 @@ export function CommandLine() {
 UserInputService.InputBegan.Connect((input) => {
   if (input.KeyCode !== Enum.KeyCode.F2) return;
   setMasterVisible(!masterVisible.getValue());
-  if (masterVisible.getValue()) focusTextBox.Fire();
+  focusTextBox.Fire();
 });
 
 new ConsoleFunctionCallback(["testyield"], [{ name: "time", type: "number" }])

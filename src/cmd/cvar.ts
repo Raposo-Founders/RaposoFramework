@@ -67,8 +67,7 @@ export function convertConsoleArgumentType(argumenttype: CONFUNC_TYPES, values: 
 
     for (const playerEntity of defaultEnvironments.entity.getEntitiesThatIsA("PlayerEntity")) {
       const controller = playerEntity.GetUserFromController();
-      if (!controller) continue;
-      if (controller.Name.sub(value.size()) !== value || playerEntity.id.sub(value.size()) !== value) continue;
+      if ((controller && controller.Name.sub(0, value.size()) !== value) && playerEntity.id.sub(0, value.size()) !== value) continue;
 
       foundPlayers.push(playerEntity);
       break;
@@ -173,9 +172,3 @@ export class ConsoleFunctionCallback {
     this.callback(contextEnvironment);
   }
 }
-
-const test = new ConsoleFunctionCallback(["testyield", "ty"], [{ name: "time", type: "number" }]);
-test.setCallback((ctx) => {
-  const timeAmount = ctx.getArgument("time", "number");
-  
-});
