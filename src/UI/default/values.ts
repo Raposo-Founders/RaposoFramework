@@ -14,18 +14,15 @@ export const defaultScreenGui = Vide.create("ScreenGui")({
 
 export const defaultRoot = ReactRoblox.createRoot(defaultScreenGui, { "hydrate": true });
 
-export const values = {
-  hud_player_health: React.createBinding(300),
-  hud_player_weapon: React.createBinding(""),
-
-  hud_team_color: React.createBinding(Color3.fromHex("#55557F")),
-};
-
 export const colorTable = {
   primaryColor: "#55aa7f",
 
   windowBackground: "#000000",
   windowText: "#FFFFFF",
+
+  spectatorsColor: "#55557F",
+  defendersColor: "#55AAFF",
+  raidersColor: "#FF6464",
 };
 
 export const uiPreferences = {
@@ -34,4 +31,17 @@ export const uiPreferences = {
   menuElementsPadding: 5,
   menuVerticalTabListSize: 0.25,
   menuVerticalTabButtonsSize: 30,
+};
+
+export const uiValues = {
+  hud_player_health: React.createBinding(300),
+  hud_player_weapon: React.createBinding(""),
+
+  hud_team_color: React.createBinding(Color3.fromHex(colorTable.spectatorsColor)),
+
+  hud_gamemode: React.createBinding(""),
+  hud_game_time: React.createBinding(0),
+  hud_defenders_points: React.createBinding(0),
+  hud_raiders_points: React.createBinding(0),
+  hud_target_points: React.createBinding(0),
 };

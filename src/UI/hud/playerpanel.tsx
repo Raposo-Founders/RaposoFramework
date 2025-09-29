@@ -3,7 +3,7 @@ import { Players } from "@rbxts/services";
 import { defaultEnvironments } from "defaultinsts";
 import { cacheFolder } from "folders";
 import { Playermodel } from "playermodel/rig";
-import { values } from "UI/default/values";
+import { uiValues } from "UI/default/values";
 import { getLocalPlayerEntity } from "util/localent";
 import WorldInstance from "worldrender";
 
@@ -93,7 +93,7 @@ export function HudPlayerPanel() {
       <uiaspectratioconstraint AspectRatio={2} />
       <imagelabel
         Image={"rbxassetid://101883834047596"}
-        ImageColor3={values.hud_team_color[0]}
+        ImageColor3={uiValues.hud_team_color[0]}
         ScaleType={"Fit"}
         BackgroundTransparency={1}
         Size={UDim2.fromScale(1, 1)}
@@ -131,7 +131,7 @@ export function HudPlayerPanel() {
           Enum.FontWeight.SemiBold,
           Enum.FontStyle.Normal
         )}
-        Text={values.hud_player_health[0].map(val => `${val}%`)}
+        Text={uiValues.hud_player_health[0].map(val => `${val}%`)}
         TextColor3={Color3.fromHex("#ABABFF")}
         TextScaled={true}
         TextSize={40}
