@@ -1,78 +1,76 @@
 import React, { PropsWithChildren, useEffect } from "@rbxts/react";
 import ReactRoblox from "@rbxts/react-roblox";
-import { LogService, UserInputService } from "@rbxts/services";
+import { Players, UserInputService } from "@rbxts/services";
 import { CONSOLE_OUT, ExecuteCommand } from "cmd";
 import { CCVar, ConsoleFunctionCallback, createdCVars } from "cmd/cvar";
 import { defaultEnvironments } from "defaultinsts";
 import Signal from "util/signal";
 
 // # Constants & variables
-const PADDING_SIZE = 5;
-const MASTER_SIZE = new UDim2(1, -200, 0, 40);
+const PREFIX_TEXT = `${Players.LocalPlayer?.Name}@Raposo $`;
+const TEXT_SIZE = 18;
+const KEYBIND = Enum.KeyCode.Semicolon;
 
 const LOADING_CHARS_LIST = ["|", "/", "—", "\\"] as const;
 const CLEAR_ALL_OUTPUT = new Signal();
 
 const [masterVisible, setMasterVisible] = React.createBinding(false);
-const [commandLineEditable, setEditable] = React.createBinding(true);
 const textChanged = new Signal<[newText: string]>();
 const focusTextBox = new Signal();
 
+let currentDisplayIndex = 1;
+let currentContentFrame: Frame | undefined;
 
 // # Functions
 function formatString(text: string) {
   return text.gsub("^%s+", "")[0].gsub("%s+$", "")[0];
 }
 
-function InputBar() {
+async function SpawnInputBar() {
+  do task.wait(); while (!currentContentFrame);
+
+  const root = ReactRoblox.createRoot(currentContentFrame, { hydrate: true });
+  root.render(<InputBarElement />);
+
+  CLEAR_ALL_OUTPUT.Once(() => {
+    root.unmount();
+  });
+}
+
+function InputBarElement() {
+  const parentFrameRef = React.createRef<Frame>();
   const textboxRef = React.createRef<TextBox>();
+  const boundConnections: Callback[] = [];
 
-  useEffect(() => {
-    if (!textboxRef.current) return;
+  {
+    const connection = focusTextBox.Connect(() => {
+      if (!textboxRef.current || !textboxRef.current.TextEditable) return;
+      defaultEnvironments.lifecycle.YieldForTicks(2);
+      if (masterVisible.getValue())
+        textboxRef.current.CaptureFocus();
+      else
+        textboxRef.current.ReleaseFocus(false);
+    });
 
-  });
-  focusTextBox.Connect(() => {
-    if (!textboxRef.current) return;
-    defaultEnvironments.lifecycle.YieldForTicks(2);
-    if (masterVisible.getValue())
-      textboxRef.current.CaptureFocus();
-    else
-      textboxRef.current.ReleaseFocus(false);
-  });
+    boundConnections.push(() => connection.Disconnect());
+  }
 
   return (
     <frame
-      BackgroundColor3={Color3.fromHex("#FFFFFF")}
-      BorderSizePixel={0}
-      LayoutOrder={-999}
-      Size={new UDim2(1, 0, 0, 40)}
+      AutomaticSize={"Y"}
+      BackgroundTransparency={1}
+      LayoutOrder={9999}
+      Size={UDim2.fromScale(1, 0)}
+      ref={parentFrameRef}
     >
-      <uicorner />
-      <uistroke
-        Color={Color3.fromHex("#FFFFFF")}
-        Transparency={0.75}
-      />
-      <uilistlayout
-        Padding={new UDim(0, PADDING_SIZE)}
-        FillDirection={"Horizontal"}
-        SortOrder={"LayoutOrder"}
-      />
       <textlabel
         FontFace={new Font("rbxassetid://16658246179")}
-        Text={"Raposo$"}
+        Text={PREFIX_TEXT}
         TextColor3={Color3.fromHex("#55AAFF")}
-        TextSize={22}
-        TextWrapped={true}
-        AutomaticSize={"X"}
+        TextSize={TEXT_SIZE}
+        TextWrapped={false}
+        AutomaticSize={"XY"}
         BackgroundTransparency={1}
-        Size={UDim2.fromScale(0, 1)}
-      />
-
-      <uipadding
-        PaddingBottom={new UDim(0, 5)}
-        PaddingLeft={new UDim(0, 12)}
-        PaddingRight={new UDim(0, 12)}
-        PaddingTop={new UDim(0, 5)}
       />
 
       <textbox
@@ -80,27 +78,39 @@ function InputBar() {
         CursorPosition={-1}
         FontFace={new Font("rbxassetid://16658246179")}
         PlaceholderColor3={Color3.fromHex("#646464")}
-        PlaceholderText={"Command here"}
+        PlaceholderText={"Your command here"}
         Text={""}
         TextColor3={Color3.fromHex("#C8C8C8")}
-        TextSize={22}
+        TextSize={TEXT_SIZE}
+        TextWrapped={true}
+        RichText={true}
         TextXAlignment={"Left"}
         AutomaticSize={"Y"}
         BackgroundTransparency={1}
         ClipsDescendants={true}
         LayoutOrder={1}
-        Size={UDim2.fromScale(1, 1)}
+        Size={UDim2.fromScale(1, 0)}
         ref={textboxRef}
-        TextEditable={commandLineEditable}
         Change={{
           Text: (rbx) => textChanged.Fire(rbx.TextEditable ? rbx.Text : ""),
         }}
         Event={{
+          Destroying: () => {
+            for (const callback of boundConnections)
+              callback();
+            boundConnections.clear();
+          },
+
           FocusLost: (rbx, enterPressed) => {
             if (!enterPressed) return;
 
             const text = formatString(rbx.Text);
             const startTime = time();
+
+            currentDisplayIndex++;
+            if (parentFrameRef.current) parentFrameRef.current.LayoutOrder = currentDisplayIndex;
+            rbx.TextEditable = false;
+            rbx.TextColor3 = new Color3(1, 1, 1);
 
             const thread1 = task.spawn(() => {
               let currentIndex = 0;
@@ -118,19 +128,15 @@ function InputBar() {
                   nextRotationTime = elapsedTime + 0.25;
                 }
 
-                rbx.Text = string.format("%s %.2f s...", LOADING_CHARS_LIST[currentIndex - 1], timePassed);
+                rbx.Text = `${string.format("%s %.2f", LOADING_CHARS_LIST[currentIndex - 1], timePassed)}s...`;
                 task.wait(0.1);
               }
             });
 
-            setEditable(false);
-            print(">", text);
-
             ExecuteCommand(text).finally(() => {
               task.cancel(thread1);
-              setEditable(true);
-              rbx.Text = "";
-              rbx.CursorPosition = -1;
+              rbx.Text = text;
+              SpawnInputBar();
               focusTextBox.Fire();
             });
           },
@@ -141,12 +147,10 @@ function InputBar() {
         />
       </textbox>
 
-      <uigradient
-        Color={new ColorSequence([
-          new ColorSequenceKeypoint(0, Color3.fromHex("#323232")),
-          new ColorSequenceKeypoint(1, Color3.fromHex("#000000")),
-        ])}
-        Rotation={90}
+      <uilistlayout
+        Padding={new UDim(0, 5)}
+        FillDirection={"Horizontal"}
+        SortOrder={"LayoutOrder"}
       />
     </frame>
   );
@@ -316,124 +320,112 @@ function SuggestionsFrame() {
   );
 }
 
-function LogsFrame() {
-  const referenceParent = React.createRef<Frame>();
-
-  CONSOLE_OUT.Connect((msgType, message) => {
-    if (!referenceParent.current) return;
-
-    let textColor = Color3.fromHex("#FFFFFF");
-    if (msgType === "warn") textColor = Color3.fromRGB(255, 200, 0);
-    if (msgType === "error") textColor = Color3.fromRGB(255, 30, 0);
-
-    const element = <textlabel
-      FontFace={new Font("rbxassetid://16658246179")}
-      Text={message}
-      TextColor3={textColor}
-      TextSize={20}
-      TextWrapped={true}
-      TextXAlignment={"Left"}
-      TextYAlignment={"Top"}
-      AutomaticSize={"Y"}
-      BackgroundTransparency={1}
-      Size={UDim2.fromScale(1, 0)}
-      LayoutOrder={referenceParent.current.GetChildren().size()}
-    />;
-
-    const root = ReactRoblox.createRoot(referenceParent.current, { "hydrate": true });
-    root.render(element);
-
-    CLEAR_ALL_OUTPUT.Once(() => root.unmount());
-  });
-
+function ConsoleWindow(props: PropsWithChildren) {
   return (
     <frame
-      AutomaticSize={"Y"}
-      BackgroundTransparency={1}
-      LayoutOrder={1}
-      Size={UDim2.fromScale(1, 0)}
-      ref={referenceParent}
-    >
-      <frame // Spacing
-        BackgroundTransparency={1}
-        LayoutOrder={-998}
-        Size={new UDim2(1, 0, 0, 5)}
-      />
-      <frame // Top line
-        BackgroundColor3={Color3.fromHex("#FFFFFF")}
-        BackgroundTransparency={0.75}
-        BorderSizePixel={0}
-        LayoutOrder={-999}
-        Size={new UDim2(1, 0, 0, 2)}
-      />
-      <uipadding
-        PaddingBottom={new UDim(0, 5)}
-        PaddingLeft={new UDim(0, 6)}
-        PaddingRight={new UDim(0, 6)}
-        PaddingTop={new UDim(0, 5)}
-      />
-      <uilistlayout
-        SortOrder={"LayoutOrder"}
-      />
-    </frame>
-  );
-}
-
-function CommandLineMasterFrame(props: PropsWithChildren) {
-  return (
-    <frame
-      AnchorPoint={new Vector2(0.5, 0)}
-      AutomaticSize={"Y"}
+      AnchorPoint={new Vector2(0.5, 0.5)}
       BackgroundColor3={Color3.fromHex("#000000")}
       BackgroundTransparency={0.5}
       BorderSizePixel={0}
-      Position={UDim2.fromScale(0.5, 0.1)}
-      Size={MASTER_SIZE}
+      Position={UDim2.fromScale(0.5, 0.5)}
+      Size={UDim2.fromScale(0.75, 0.75)}
       Visible={masterVisible}
     >
-      <uicorner
-        CornerRadius={new UDim(0, 12)}
-      />
-
+      {props.children}
       <uistroke
         Color={Color3.fromHex("#FFFFFF")}
         Transparency={0.75}
       />
-
-      <uipadding
-        PaddingBottom={new UDim(0, 5)}
-        PaddingLeft={new UDim(0, 5)}
-        PaddingRight={new UDim(0, 5)}
-        PaddingTop={new UDim(0, 5)}
-      />
-
-      <frame
+      <textlabel
+        FontFace={new Font("rbxasset://fonts/families/RobotoMono.json")}
+        Text={`Raposo console - [${UserInputService.GetStringForKeyCode(KEYBIND)}] to close.`}
+        TextColor3={Color3.fromHex("#FFFFFF")}
+        TextSize={20}
+        TextXAlignment={"Left"}
+        AnchorPoint={new Vector2(0, 1)}
         AutomaticSize={"Y"}
         BackgroundTransparency={1}
+        Position={UDim2.fromOffset(0, -5)}
         Size={UDim2.fromScale(1, 0)}
-      >
-        <uilistlayout
-          Padding={new UDim(0, 5)}
-          HorizontalAlignment={"Center"}
-          SortOrder={"LayoutOrder"}
-        />
-        {props.children}
-      </frame>
+      />
     </frame>
-  );
+  )
 }
 
 export function CommandLine() {
-  return <CommandLineMasterFrame>
-    <InputBar />
-    <SuggestionsFrame />
-    <LogsFrame />
-  </CommandLineMasterFrame>;
+  SpawnInputBar();
+
+  const contentRef = React.createRef<Frame>();
+
+  useEffect(() => {
+    if (!contentRef.current) return;
+    currentContentFrame = contentRef.current;
+  });
+
+  return <ConsoleWindow>
+    <frame
+      AnchorPoint={new Vector2(0.5, 0.5)}
+      BackgroundColor3={Color3.fromHex("#FFFFFF")}
+      BackgroundTransparency={1}
+      BorderColor3={Color3.fromHex("#000000")}
+      BorderSizePixel={0}
+      Position={UDim2.fromScale(0.5, 0.5)}
+      Size={UDim2.fromScale(1, 1)}
+      ref={contentRef}
+    >
+      <uilistlayout
+        Padding={new UDim(0, 5)}
+        VerticalAlignment={"Bottom"}
+        HorizontalAlignment={"Center"}
+        SortOrder={"LayoutOrder"}
+      />
+      <uipadding
+        PaddingBottom={new UDim(0, 5)}
+        PaddingLeft={new UDim(0, 7)}
+        PaddingRight={new UDim(0, 5)}
+        PaddingTop={new UDim(0, 5)}
+      />
+    </frame>
+    {/* <SuggestionsFrame /> */}
+  </ConsoleWindow>;
 }
 
 // # Execution
+CONSOLE_OUT.Connect((msgType, message) => {
+  if (!currentContentFrame) return;
+
+  let textColor = Color3.fromHex("#FFFFFF");
+  if (msgType === "warn") textColor = Color3.fromRGB(255, 200, 0);
+  if (msgType === "error") textColor = Color3.fromRGB(255, 30, 0);
+
+  currentDisplayIndex++;
+
+  const element = <textbox
+    ClearTextOnFocus={false}
+    CursorPosition={-1}
+    FontFace={new Font("rbxassetid://16658246179")}
+    PlaceholderText=""
+    Text={message}
+    TextColor3={textColor}
+    TextEditable={false}
+    TextSize={TEXT_SIZE}
+    TextWrapped={true}
+    TextXAlignment={"Left"}
+    AutomaticSize={"Y"}
+    BackgroundTransparency={1}
+    ClipsDescendants={true}
+    LayoutOrder={currentDisplayIndex}
+    Size={UDim2.fromScale(1, 0)}
+  />;
+
+  const root = ReactRoblox.createRoot(currentContentFrame, { "hydrate": true });
+  root.render(element);
+
+  CLEAR_ALL_OUTPUT.Once(() => root.unmount());
+});
+
 UserInputService.InputBegan.Connect((input) => {
-  if (input.KeyCode !== Enum.KeyCode.F2) return;
+  if (input.KeyCode !== KEYBIND) return;
   setMasterVisible(!masterVisible.getValue());
   focusTextBox.Fire();
 });
@@ -448,6 +440,7 @@ new ConsoleFunctionCallback(["testyield"], [{ name: "time", type: "number" }])
 new ConsoleFunctionCallback(["clear", "cls"], [])
   .setDescription("Clears the console output.")
   .setCallback((ctx) => {
+    currentDisplayIndex = 1;
     CLEAR_ALL_OUTPUT.Fire();
   });
 
