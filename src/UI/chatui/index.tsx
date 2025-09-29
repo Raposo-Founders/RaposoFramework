@@ -3,6 +3,8 @@ import { UserInputService } from "@rbxts/services";
 import { sendMessage } from "systems/chatmngr";
 import Signal from "util/signal";
 import { TintButton } from "../default/tintbtn";
+import { gameValues } from "gamevalues";
+import { ExecuteCommand } from "cmd";
 
 // # Constants & variables
 const KEYCODE = Enum.KeyCode.Slash;
@@ -10,6 +12,10 @@ const KEYCODE = Enum.KeyCode.Slash;
 const toggleChatVisibility = new Signal<[visible?: boolean]>();
 
 // # Functions
+function FormatString(text: string) {
+  return text.gsub("^%s+", "")[0].gsub("%s+$", "")[0];
+}
+
 export function ChatBar() {
   const reference = React.createRef<TextBox>();
   const [visibilityBindings, setVisible] = React.createBinding(false);
@@ -52,12 +58,21 @@ export function ChatBar() {
 
           if (!enterPressed) return;
 
-          const text = inst.Text;
-
+          const text = FormatString(inst.Text);
           inst.Text = "";
           inst.CursorPosition = -1;
 
           sendMessage(text);
+
+          if (text.sub(1, 1) === gameValues.cmdprefix) {
+            const split = text.split(gameValues.cmdprefix);
+
+            for (const argument of split) {
+              ExecuteCommand(argument);
+              task.wait();
+              task.wait(); // Double trouble :)
+            }
+          }
         },
       }}
       Change={{

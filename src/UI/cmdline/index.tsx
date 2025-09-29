@@ -424,8 +424,8 @@ CONSOLE_OUT.Connect((msgType, message) => {
   CLEAR_ALL_OUTPUT.Once(() => root.unmount());
 });
 
-UserInputService.InputBegan.Connect((input) => {
-  if (input.KeyCode !== KEYBIND) return;
+UserInputService.InputBegan.Connect((input, gameProcessed) => {
+  if (input.KeyCode !== KEYBIND || gameProcessed) return;
   setMasterVisible(!masterVisible.getValue());
   focusTextBox.Fire();
 });

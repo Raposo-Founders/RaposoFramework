@@ -100,22 +100,3 @@ export namespace RaposoConsole {
 }
 
 // # Bindings & misc
-if (RunService.IsClient()) {
-  TextChatService.SendingMessage.Connect((message) => {
-    if (message.TextSource?.UserId !== Players.LocalPlayer.UserId) return; // WHAT?
-
-    const content = message.Text;
-    if (content.sub(1, 1) !== gameValues.cmdprefix) return;
-
-    const split = content.split(gameValues.cmdprefix);
-    for (const argument of split) {
-      ExecuteCommand(argument);
-      task.wait();
-      task.wait(); // Double trouble :)
-    }
-  });
-}
-
-// LogService.MessageOut.Connect((message, msgType) => {
-//   conch.log("normal", `${msgType.Name.gsub("Message", "")[0]} - ${message}`);
-// });
