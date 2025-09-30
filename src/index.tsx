@@ -53,6 +53,7 @@ function ImportSystems() {
       Playermngr: import("systems/playermngr").expect(),
       Sessionmngr: import("systems/sessionmngr").expect(),
       Chatmngr: import("systems/chatmngr").expect(),
+      Matchmngr: import("systems/matchmngr").expect(),
     },
     Environment: {
       Folders: import("folders").expect(),
