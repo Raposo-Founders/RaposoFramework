@@ -40,8 +40,8 @@ export default class CapturePointEntity extends WorldEntity {
   velocity = new Vector3();
 
   current_team = PlayerTeam.Spectators;
-  capture_progress = 0; // (float) -1 to 1. -1 = Raiders, 1 = Defenders
-  capture_speed = 10;
+  capture_progress = 0; // (float) -1(raiders) to 1(defenders).
+  capture_speed = 2.5;
   is_instant_cap = false;
 
   constructor(public origin: CFrame, public size: Vector3) {
@@ -57,7 +57,7 @@ export default class CapturePointEntity extends WorldEntity {
     writeBufferVector(this.origin.ToOrientation()[1], this.origin.ToOrientation()[0], this.origin.ToOrientation()[2]);
     writeBufferVector(this.size.X, this.size.Y, this.size.Z);
 
-    writeBufferF32(math.floor(this.capture_progress));
+    writeBufferF32(this.capture_progress);
     writeBufferU8(this.capture_speed);
     writeBufferU8(this.current_team);
     writeBufferBool(this.is_instant_cap);
@@ -67,11 +67,20 @@ export default class CapturePointEntity extends WorldEntity {
     if (this.environment.isServer && this.environment.isPlayback) return;
 
     const reader = BufferReader(state);
-    reader.string(); // Entity ID (obvious)
+    reader.string(); // Entity ID (o/bvious)
+
+    const pos = reader.vec();
+    const rot = reader.vec();
+    const size = reader.vec();
+
     const captureProgress = reader.f32();
     const captureSpeed = reader.u8();
     const currentTeam = reader.u8();
     const instantCap = reader.bool();
+
+    this.origin = new CFrame(pos.x, pos.y, pos.z)
+      .mul(CFrame.Angles(math.rad(rot.x), math.rad(rot.y), math.rad(rot.z)));
+    this.size = new Vector3(size.x, size.y, size.z);
 
     this.capture_progress = captureProgress;
     this.capture_speed = captureSpeed;

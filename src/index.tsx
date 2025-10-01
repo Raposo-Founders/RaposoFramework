@@ -14,6 +14,7 @@ import ConsoleWindow from "UI/consolewindow";
 import { defaultRoot, uiValues } from "UI/default/values";
 import { FairzoneCounter } from "UI/hud/fairzonetimer";
 import { FairzoneTopDisplay } from "UI/hud/fairzonetopdisplay";
+import { ObjectivesLine } from "UI/hud/objectivesDisplay";
 import { HudPlayerPanel } from "UI/hud/playerpanel";
 import { DisplayLoadingScreen, HideLoadingScreen } from "UI/loadscreen";
 import { BufferReader } from "util/bufferreader";
@@ -156,6 +157,8 @@ if (RunService.IsClient()) {
       <FairzoneTopDisplay>
         <FairzoneCounter />
       </FairzoneTopDisplay>
+
+      <ObjectivesLine />
     </frame>
 
     <ConsoleWindow />
@@ -163,28 +166,6 @@ if (RunService.IsClient()) {
     <ChatBar /><ChatButton />
   </>);
 }
-
-// task.spawn(() => {
-//   uiValues.hud_gamemode[1]("Fairzone");
-
-//   while (game) {
-//     let timePassed = 0;
-
-//     task.wait(5);
-
-//     while (game) {
-//       timePassed++;
-//       uiValues.hud_raiders_points[1](timePassed);
-//       uiValues.hud_defenders_points[1](timePassed);
-//       uiValues.hud_game_time[1](timePassed);
-
-//       if (timePassed >= 120)
-//         break;
-
-//       task.wait(1);
-//     }
-//   }
-// });
 
 if (!RunService.IsStudio())
   task.spawn(() => {
