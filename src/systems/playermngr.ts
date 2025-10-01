@@ -1,13 +1,13 @@
 import { Players, RunService } from "@rbxts/services";
 import { ConsoleFunctionCallback } from "cmd/cvar";
 import { defaultEnvironments } from "defaultinsts";
-import PlayerEntity, { PlayerTeam } from "entities/PlayerEntity";
+import { PlayerTeam } from "entities/PlayerEntity";
 import { gameValues } from "gamevalues";
-import { finishDirectMessage, startDirectMessage } from "network";
+import { sendDirectPacket } from "network";
 import { getPlayermodelFromEntity } from "playermodel";
 import ServerInstance from "serverinst";
 import { BufferReader } from "util/bufferreader";
-import { writeBufferString, writeBufferU32, writeBufferU8 } from "util/bufferwriter";
+import { startBufferCreation, writeBufferString, writeBufferU32, writeBufferU8 } from "util/bufferwriter";
 import { getLocalPlayerEntity } from "util/localent";
 import { DoesInstanceExist, RandomString } from "util/utilfuncs";
 
@@ -60,31 +60,31 @@ ServerInstance.serverCreated.Connect(inst => {
     }
   });
 
-  inst.network.listenPacket("team", (sender, bfr) => {
-    if (!sender || !sender.GetAttribute(gameValues.modattr)) return;
+  inst.network.listenPacket("team", (packet) => {
+    if (!packet.sender || !packet.sender.GetAttribute(gameValues.modattr)) return;
 
-    const reader = BufferReader(bfr);
+    const reader = BufferReader(packet.content);
     const entityId = reader.string();
     const team = reader.u8();
 
     const targetEntity = inst.entity.entities.get(entityId);
     if (!targetEntity || !targetEntity.IsA("PlayerEntity")) {
-      startDirectMessage(gameValues.cmdnetinfo, sender);
+      startBufferCreation();
       writeBufferString(`Invalid player entity ${entityId}`);
-      finishDirectMessage();
+      sendDirectPacket(gameValues.cmdnetinfo, packet.sender);
 
       return;
     }
 
     // Check to see if the sender is just someone with tempmod
-    if (!sender.GetAttribute(gameValues.adminattr) || team === PlayerTeam.Defenders) {
+    if (!packet.sender.GetAttribute(gameValues.adminattr) || team === PlayerTeam.Defenders) {
 
       // Block the action if the target player is from the defenders team
       if (targetEntity.team === PlayerTeam.Defenders) {
-        startDirectMessage(gameValues.cmdnetinfo, sender);
+        startBufferCreation();
         // writeBufferString("Moderators can't switch players off the Defenders team."); // Formal?
         writeBufferString("Moderators can't mess with the Defenders' team."); // :)
-        finishDirectMessage();
+        sendDirectPacket(gameValues.cmdnetinfo, packet.sender);
 
         return;
       }
@@ -93,36 +93,36 @@ ServerInstance.serverCreated.Connect(inst => {
     targetEntity.team = team;
     targetEntity.Spawn();
 
-    startDirectMessage(gameValues.cmdnetinfo, sender);
+    startBufferCreation();
     writeBufferString(`Changed ${targetEntity.GetUserFromController()}'s team to ${PlayerTeam[team]}.`);
-    finishDirectMessage();
+    sendDirectPacket(gameValues.cmdnetinfo, packet.sender);
   });
 
-  inst.network.listenPacket("damage", (sender, bfr) => {
-    if (!sender || !sender.GetAttribute(gameValues.modattr)) return;
+  inst.network.listenPacket("damage", (packet) => {
+    if (!packet.sender || !packet.sender.GetAttribute(gameValues.modattr)) return;
 
-    const reader = BufferReader(bfr);
+    const reader = BufferReader(packet.content);
     const entityId = reader.string();
     const amount = reader.u32();
 
     const targetEntity = inst.entity.entities.get(entityId);
     if (!targetEntity || !targetEntity.IsA("PlayerEntity")) {
-      startDirectMessage(gameValues.cmdnetinfo, sender);
+      startBufferCreation();
       writeBufferString(`Invalid player entity ${entityId}`);
-      finishDirectMessage();
+      sendDirectPacket(gameValues.cmdnetinfo, packet.sender);
 
       return;
     }
 
     // Check to see if the sender is just someone with tempmod
-    if (!sender.GetAttribute(gameValues.adminattr)) {
+    if (!packet.sender.GetAttribute(gameValues.adminattr)) {
 
       // Block the action if the target player is from the defenders team
       if (targetEntity.team === PlayerTeam.Defenders) {
-        startDirectMessage(gameValues.cmdnetinfo, sender);
+        startBufferCreation();
         // writeBufferString("Moderators can't switch players off the Defenders team."); // Formal?
         writeBufferString("Moderators can't mess with the Defenders' team."); // :)
-        finishDirectMessage();
+        sendDirectPacket(gameValues.cmdnetinfo, packet.sender);
 
         return;
       }
@@ -130,9 +130,9 @@ ServerInstance.serverCreated.Connect(inst => {
 
     targetEntity.takeDamage(amount);
 
-    startDirectMessage(gameValues.cmdnetinfo, sender);
+    startBufferCreation();
     writeBufferString(`Damaged ${targetEntity.GetUserFromController()} by ${amount} points.`);
-    finishDirectMessage();
+    sendDirectPacket(gameValues.cmdnetinfo, packet.sender);
   });
 });
 
@@ -144,10 +144,10 @@ new ConsoleFunctionCallback(["team"], [{ name: "player", type: "player" }, { nam
 
     assert(playerEntity, `Invalid player entity.`);
 
-    defaultEnvironments.network.startWritingMessage("team");
+    startBufferCreation();
     writeBufferString(playerEntity.id);
     writeBufferU8(PlayerTeam[team]);
-    defaultEnvironments.network.finishWritingMessage();
+    defaultEnvironments.network.sendPacket("team");
   });
 
 new ConsoleFunctionCallback(["damage", "dmg"], [{ name: "player", type: "player" }, { name: "amount", type: "number" }])
@@ -158,10 +158,10 @@ new ConsoleFunctionCallback(["damage", "dmg"], [{ name: "player", type: "player"
 
     assert(targetEntity[0], "Invalid player entity.");
 
-    defaultEnvironments.network.startWritingMessage("damage");
+    startBufferCreation();
     writeBufferString(targetEntity[0].id);
     writeBufferU32(amount as number);
-    defaultEnvironments.network.finishWritingMessage();
+    defaultEnvironments.network.sendPacket("damage");
   });
 
 if (RunService.IsClient()) {

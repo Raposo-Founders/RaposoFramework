@@ -6,12 +6,12 @@ import { defaultEnvironments } from "defaultinsts";
 import { requireEntities } from "entities";
 import { modulesFolder, uiFolder } from "folders";
 import { gameValues } from "gamevalues";
-import { listenDirectMessage } from "network";
+import { listenDirectPacket } from "network";
 import ServerInstance from "serverinst";
 import { ChatBar, ChatButton } from "UI/chatui";
 import { CommandLine } from "UI/cmdline";
 import ConsoleWindow from "UI/consolewindow";
-import { defaultRoot, uiValues } from "UI/default/values";
+import { defaultRoot } from "UI/default/values";
 import { FairzoneCounter } from "UI/hud/fairzonetimer";
 import { FairzoneTopDisplay } from "UI/hud/fairzonetopdisplay";
 import { ObjectivesLine } from "UI/hud/objectivesDisplay";
@@ -104,8 +104,9 @@ else
   BannerNotify.InitClient();
 
 if (RunService.IsClient()) {
-  defaultEnvironments.lifecycle.BindTickrate(() => defaultEnvironments.network.processQueuedPackets());
   defaultEnvironments.lifecycle.BindTickrate((_, dt) => {
+    defaultEnvironments.network.processPackets();
+
     for (const [, entity] of defaultEnvironments.entity.entities)
       task.spawn(() => entity.Think(dt));
   });
@@ -129,7 +130,7 @@ if (RunService.IsServer()) {
 }
 
 if (RunService.IsClient()) {
-  listenDirectMessage(gameValues.cmdnetinfo, (_, bfr) => {
+  listenDirectPacket(gameValues.cmdnetinfo, (_, bfr) => {
     const reader = BufferReader(bfr);
     const message = reader.string();
   

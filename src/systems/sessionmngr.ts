@@ -3,10 +3,10 @@ import { ConsoleFunctionCallback } from "cmd/cvar";
 import { clientSessionConnected, clientSessionDisconnected, defaultEnvironments } from "defaultinsts";
 import { EntityManager } from "entities";
 import { LifecycleInstance } from "lifecycle";
-import { finishDirectMessage, listenDirectMessage, NetworkManager, startDirectMessage } from "network";
+import { listenDirectPacket, NetworkManager, sendDirectPacket } from "network";
 import ServerInstance from "serverinst";
 import { BufferReader } from "util/bufferreader";
-import { writeBufferString, writeBufferU64, writeBufferU8 } from "util/bufferwriter";
+import { startBufferCreation, writeBufferString, writeBufferU64, writeBufferU8 } from "util/bufferwriter";
 import WorldInstance from "worldrender";
 
 // # Interfaces & types
@@ -52,9 +52,9 @@ export function clientConnectToServerSession(sessionId: string) {
 
   print("Requesting connection to session:", sessionId);
 
-  startDirectMessage(SessionConnectionIds.Request, undefined);
+  startBufferCreation();
   writeBufferString(sessionId);
-  finishDirectMessage();
+  sendDirectPacket(SessionConnectionIds.Request, undefined);
 
   const connectionResult = coroutine.yield()[0] as SessionConnectionReply;
   if (connectionResult !== SessionConnectionReply.Allowed) {
@@ -64,9 +64,9 @@ export function clientConnectToServerSession(sessionId: string) {
 
   task.wait(connectionStepCooldown);
 
-  startDirectMessage(SessionConnectionIds.GetSessionInfo, undefined);
+  startBufferCreation();
   writeBufferString(sessionId);
-  finishDirectMessage();
+  sendDirectPacket(SessionConnectionIds.GetSessionInfo, undefined);
 
   const mapName = tostring(coroutine.yield()[0]);
 
@@ -78,9 +78,9 @@ export function clientConnectToServerSession(sessionId: string) {
 
   task.wait(connectionStepCooldown);
 
-  startDirectMessage(SessionConnectionIds.MapLoaded, undefined);
+  startBufferCreation();
   writeBufferString(sessionId);
-  finishDirectMessage();
+  sendDirectPacket(SessionConnectionIds.MapLoaded, undefined);
 
   canConnect = true;
   currentConnectionThread = undefined;
@@ -104,17 +104,23 @@ export function clientCreateLocalSession() {
   );
   defaultEnvironments.server = serverInst;
 
-  serverInst.network.postToRemote = false;
-  const serverSessionConnection = serverInst.network.networkOutgoing.Connect((id, bfr) => defaultEnvironments.network.insertNetwork(undefined, id, bfr));
+  serverInst.network.remoteEnabled = false;
+  const serverSessionConnection = serverInst.network.packetsPosted.Connect(packets => {
+    for (const packet of packets)
+      defaultEnvironments.network.insertNetwork(packet);
+  });
 
-  defaultEnvironments.network.postToRemote = false;
-  const clientSessionConnection = defaultEnvironments.network.networkOutgoing.Connect((id, bfr) => serverInst.network.insertNetwork(Players.LocalPlayer, id, bfr));
+  defaultEnvironments.network.remoteEnabled = false;
+  const clientSessionConnection = defaultEnvironments.network.packetsPosted.Connect(packets => {
+    for (const packet of packets)
+      serverInst.network.insertNetwork(packet);
+  });
 
   serverInst.BindToClose(() => {
     serverSessionConnection.Disconnect();
     clientSessionConnection.Disconnect();
 
-    defaultEnvironments.network.postToRemote = true;
+    defaultEnvironments.network.remoteEnabled = true;
     defaultEnvironments.server = undefined;
   });
 
@@ -137,8 +143,8 @@ export function FetchServers() {
 
   currentServerListFetchThread = coroutine.running();
 
-  startDirectMessage("game_getservers");
-  finishDirectMessage();
+  startBufferCreation();
+  sendDirectPacket("game_getservers", undefined);
 
   const [serversInfo] = coroutine.yield() as LuaTuple<[ServerListingInfo[]]>;
 
@@ -151,8 +157,8 @@ new ConsoleFunctionCallback(["disconnect", "dc"], [])
   .setCallback((ctx) => {
     ctx.Reply("Disconnecting from session...");
 
-    defaultEnvironments.network.startWritingMessage("disconnect_request", undefined, undefined);
-    defaultEnvironments.network.finishWritingMessage();
+    startBufferCreation();
+    sendDirectPacket("disconnect_request", undefined);
   });
 
 new ConsoleFunctionCallback(["connect"], [{ name: "id", type: "string" }])
@@ -169,7 +175,7 @@ new ConsoleFunctionCallback(["connect"], [{ name: "id", type: "string" }])
 
 // Connection requests
 if (RunService.IsServer())
-  listenDirectMessage(SessionConnectionIds.Request, (sender, bfr) => {
+  listenDirectPacket(SessionConnectionIds.Request, (sender, bfr) => {
     if (!sender) return;
     if (playersConnectionQueue.has(sender)) return;
 
@@ -177,16 +183,16 @@ if (RunService.IsServer())
     const sessionId = reader.string();
 
     if (!ServerInstance.runningInstances.has(sessionId)) {
-      startDirectMessage("SESSION_CONNECTION_REPLY", sender);
+      startBufferCreation();
       writeBufferU8(SessionConnectionReply.NoExist);
-      finishDirectMessage();
+      sendDirectPacket("SESSION_CONNECTION_REPLY", sender);
 
       return;
     }
 
-    startDirectMessage("SESSION_CONNECTION_REPLY", sender);
+    startBufferCreation();
     writeBufferU8(SessionConnectionReply.Allowed);
-    finishDirectMessage();
+    sendDirectPacket("SESSION_CONNECTION_REPLY", sender);
 
     playersConnectionQueue.set(sender, {
       sessionId: sessionId,
@@ -196,7 +202,7 @@ if (RunService.IsServer())
 
 // Getting info from sessions
 if (RunService.IsServer())
-  listenDirectMessage(SessionConnectionIds.GetSessionInfo, (sender, bfr) => {
+  listenDirectPacket(SessionConnectionIds.GetSessionInfo, (sender, bfr) => {
     if (!sender) return;
 
     const reader = BufferReader(bfr);
@@ -208,16 +214,16 @@ if (RunService.IsServer())
     const targetSession = ServerInstance.runningInstances.get(sessionId);
     if (!targetSession) return; // TODO: Better error handling
 
-    startDirectMessage("SESSION_INFO_REPLY", sender);
+    startBufferCreation();
     writeBufferString("default"); // TODO: Change this.
-    finishDirectMessage();
+    sendDirectPacket("SESSION_INFO_REPLY", sender);
 
     info.nextCallId = SessionConnectionIds.MapLoaded;
   });
 
 // Finalize connection
 if (RunService.IsServer())
-  listenDirectMessage(SessionConnectionIds.MapLoaded, (sender, bfr) => {
+  listenDirectPacket(SessionConnectionIds.MapLoaded, (sender, bfr) => {
     if (!sender) return;
 
     const reader = BufferReader(bfr);
@@ -236,7 +242,7 @@ if (RunService.IsServer())
 
 // Receiving connection reply info
 if (RunService.IsClient())
-  listenDirectMessage("SESSION_CONNECTION_REPLY", (sender, bfr) => {
+  listenDirectPacket("SESSION_CONNECTION_REPLY", (sender, bfr) => {
     const reader = BufferReader(bfr);
     const reply = reader.u8() as SessionConnectionReply;
 
@@ -248,7 +254,7 @@ if (RunService.IsClient())
 
 // Receiving connection reply info
 if (RunService.IsClient())
-  listenDirectMessage("SESSION_INFO_REPLY", (sender, bfr) => {
+  listenDirectPacket("SESSION_INFO_REPLY", (sender, bfr) => {
     const reader = BufferReader(bfr);
     const mapName = reader.string();
 
@@ -260,8 +266,8 @@ if (RunService.IsClient())
 
 // Handling disconnections
 if (RunService.IsClient())
-  defaultEnvironments.network.listenPacket("server_disconnected", (sender, bfr) => {
-    const reader = BufferReader(bfr);
+  defaultEnvironments.network.listenPacket("server_disconnected", (packet) => {
+    const reader = BufferReader(packet.content);
     const reason = reader.string();
 
     clientSessionDisconnected.Fire(reason, reason);
@@ -273,10 +279,10 @@ if (RunService.IsClient())
 
 // Fetching server list
 if (RunService.IsServer())
-  listenDirectMessage("game_getservers", (sender, bfr) => {
+  listenDirectPacket("game_getservers", (sender, bfr) => {
     if (!sender) return;
 
-    startDirectMessage("game_getservers_reply", sender, false);
+    startBufferCreation();
     writeBufferU8(ServerInstance.runningInstances.size());
     for (const [serverId, inst] of ServerInstance.runningInstances) {
       writeBufferString(serverId);
@@ -286,12 +292,12 @@ if (RunService.IsServer())
       for (const user of inst.trackingPlayers)
         writeBufferU64(user.UserId);
     }
-    finishDirectMessage();
+    sendDirectPacket("game_getservers_reply", sender);
   });
 
 // Receiving server list
 if (RunService.IsClient())
-  listenDirectMessage("game_getservers_reply", (sender, bfr) => {
+  listenDirectPacket("game_getservers_reply", (sender, bfr) => {
     const reader = BufferReader(bfr);
     const serverList: ServerListingInfo[] = [];
     const serversAmount = reader.u8();

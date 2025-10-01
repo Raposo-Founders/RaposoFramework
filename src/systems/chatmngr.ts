@@ -1,8 +1,8 @@
-import { RunService, StarterGui, TextChatService, UserInputService } from "@rbxts/services";
-import { finishDirectMessage, listenDirectMessage, startDirectMessage } from "network";
+import { RunService, TextChatService, UserInputService } from "@rbxts/services";
+import { listenDirectPacket, sendDirectPacket } from "network";
 import ServerInstance from "serverinst";
 import { BufferReader } from "util/bufferreader";
-import { writeBufferString } from "util/bufferwriter";
+import { startBufferCreation, writeBufferString } from "util/bufferwriter";
 import { RandomString, ReplicatedInstance } from "util/utilfuncs";
 
 // # Constants & variables
@@ -20,9 +20,9 @@ function requestChannelName() {
   const thread = coroutine.running();
   const threadId = RandomString(10);
 
-  startDirectMessage("c-GetChannel");
+  startBufferCreation();
   writeBufferString(threadId);
-  finishDirectMessage();
+  sendDirectPacket("c-GetChannel", undefined);
 
   yieldingThreads.set(threadId, thread);
   return tostring(coroutine.yield()[0]);
@@ -58,7 +58,7 @@ ServerInstance.serverCreated.Connect(inst => {
 });
 
 if (RunService.IsServer())
-  listenDirectMessage("c-GetChannel", (sender, bfr) => {
+  listenDirectPacket("c-GetChannel", (sender, bfr) => {
     if (!sender) return;
 
     const reader = BufferReader(bfr);
@@ -67,14 +67,14 @@ if (RunService.IsServer())
     const serverInstance = ServerInstance.GetServersFromPlayer(sender)[0];
     if (!serverInstance) return;
 
-    startDirectMessage("c-GetChannel_reply", sender);
+    startBufferCreation();
     writeBufferString(replyId);
     writeBufferString(serverInstance.id);
-    finishDirectMessage();
+    sendDirectPacket("c-GetChannel_reply", sender);
   });
 
 if (RunService.IsClient())
-  listenDirectMessage("c-GetChannel_reply", (sender, bfr) => {
+  listenDirectPacket("c-GetChannel_reply", (sender, bfr) => {
     const reader = BufferReader(bfr);
     const replyId = reader.string();
     const channelName = reader.string();

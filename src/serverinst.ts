@@ -1,12 +1,12 @@
-import { HttpService, Players, RunService, TextChatService } from "@rbxts/services";
+import { Players, RunService, TextChatService } from "@rbxts/services";
 import { EntityManager } from "./entities";
+import { gameValues } from "./gamevalues";
 import { LifecycleInstance } from "./lifecycle";
 import { NetworkManager } from "./network";
-import { writeBufferString } from "./util/bufferwriter";
+import { startBufferCreation, writeBufferString } from "./util/bufferwriter";
 import Signal from "./util/signal";
-import WorldInstance from "./worldrender";
-import { gameValues } from "./gamevalues";
 import { RandomString } from "./util/utilfuncs";
+import WorldInstance from "./worldrender";
 
 // # Class
 class ServerInstance {
@@ -34,12 +34,12 @@ class ServerInstance {
 
     ServerInstance.runningInstances.set(id, this);
 
-    this.networkLifecycleDisconnect = lifecycle.BindTickrate(() => network.processQueuedPackets());
+    this.networkLifecycleDisconnect = lifecycle.BindTickrate(() => network.processPackets());
     this.connections.push(Players.PlayerRemoving.Connect(user => this.RemovePlayer(user, "Left the game.")));
 
-    network.listenPacket("disconnect_request", (sender, bfr) => {
-      if (!sender) return;
-      this.RemovePlayer(sender, "Disconnected by user.");
+    network.listenPacket("disconnect_request", (packet) => {
+      if (!packet.sender) return;
+      this.RemovePlayer(packet.sender, "Disconnected by user.");
     });
 
     this.channel.Name = id;
@@ -107,9 +107,9 @@ class ServerInstance {
     print(`${player.Name} has left the server ${this.id}. (${disconnectreason})`);
     player.SetAttribute(gameValues.usersessionid, undefined);
 
-    this.network.startWritingMessage("server_disconnected", [player], []);
+    startBufferCreation();
     writeBufferString(disconnectreason);
-    this.network.finishWritingMessage();
+    this.network.sendPacket("server_disconnected", [player], []);
 
     this.network.signedUsers.delete(player);
     this.trackingPlayers.delete(player);

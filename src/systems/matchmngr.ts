@@ -1,14 +1,12 @@
 import { RunService } from "@rbxts/services";
 import { ConsoleFunctionCallback } from "cmd/cvar";
 import { defaultEnvironments } from "defaultinsts";
-import CapturePointEntity from "entities/CapturePointEntity";
 import { PlayerTeam } from "entities/PlayerEntity";
 import { gameValues } from "gamevalues";
 import ServerInstance from "serverinst";
 import { uiValues } from "UI/default/values";
 import { BufferReader } from "util/bufferreader";
-import { startBufferCreation, writeBufferF32, writeBufferI16, writeBufferString, writeBufferU16, writeBufferU32, writeBufferU8 } from "util/bufferwriter";
-import WorldInstance from "worldrender";
+import { startBufferCreation, writeBufferF32, writeBufferU32, writeBufferU8 } from "util/bufferwriter";
 
 // # Constants & variables
 
@@ -48,11 +46,11 @@ ServerInstance.serverCreated.Connect(server => {
 
   SpawnCapturePoints(server);
 
-  server.network.listenPacket("match_start", (caller, bfr) => {
-    if (!caller) return;
-    if (!caller.GetAttribute(gameValues.adminattr)) return;
+  server.network.listenPacket("match_start", (packet) => {
+    if (!packet.sender) return;
+    if (!packet.sender.GetAttribute(gameValues.adminattr)) return;
 
-    const reader = BufferReader(bfr);
+    const reader = BufferReader(packet.content);
     const pointsAmount = reader.u32();
     const raidersId = reader.u32();
 
@@ -68,11 +66,11 @@ ServerInstance.serverCreated.Connect(server => {
     matchStartedTime = time();
   });
 
-  server.network.listenPacket("match_changepts", (caller, bfr) => {
-    if (!caller) return;
-    if (!caller.GetAttribute(gameValues.adminattr)) return;
+  server.network.listenPacket("match_changepts", (packet) => {
+    if (!packet.sender) return;
+    if (!packet.sender.GetAttribute(gameValues.adminattr)) return;
 
-    const reader = BufferReader(bfr);
+    const reader = BufferReader(packet.content);
     targetPoints = reader.u32();
   });
 
@@ -95,24 +93,24 @@ ServerInstance.serverCreated.Connect(server => {
       if (points >= targetPoints) {
         isRunning = false;
 
-        server.network.startWritingMessage("match_team_won");
+        startBufferCreation();
         writeBufferU32(targetPoints);
         writeBufferU8(teamIndex);
         writeBufferU32(teamPoints.get(PlayerTeam.Defenders) || 0);
         writeBufferU32(teamPoints.get(PlayerTeam.Raiders) || 0);
-        server.network.finishWritingMessage();
+        server.network.sendPacket("match_team_won");
 
         break;
       }
     }
 
-    server.network.startWritingMessage("match_update");
+    startBufferCreation();
     writeBufferU32(targetPoints);
     writeBufferU32(raidingGroupId);
     writeBufferU32(teamPoints.get(PlayerTeam.Defenders) || 0);
     writeBufferU32(teamPoints.get(PlayerTeam.Raiders) || 0);
     writeBufferF32(currentTime - matchStartedTime);
-    server.network.finishWritingMessage();
+    server.network.sendPacket("match_update");
   });
 
   server.lifecycle.BindTickrate(ctx => {
@@ -121,16 +119,16 @@ ServerInstance.serverCreated.Connect(server => {
     for (const ent of server.entity.getEntitiesThatIsA("CapturePointEntity")) {
       ent.UpdateCaptureProgress(ctx.tickrate);
 
-      server.network.startWritingMessage("cpent_update");
+      startBufferCreation();
       ent.WriteStateBuffer();
-      server.network.finishWritingMessage();
+      server.network.sendPacket("cpent_update");
     }
   });
 });
 
 if (RunService.IsClient()) {
-  defaultEnvironments.network.listenPacket("match_update", (_, bfr) => {
-    const reader = BufferReader(bfr);
+  defaultEnvironments.network.listenPacket("match_update", (packet) => {
+    const reader = BufferReader(packet.content);
     const targetPoints = reader.u32();
     const raidingGroupId = reader.u32();
     const defendersPoints = reader.u32();
@@ -144,8 +142,8 @@ if (RunService.IsClient()) {
     uiValues.hud_gamemode[1]("Fairzone"); // TODO: Replicate current gamemode
   });
 
-  defaultEnvironments.network.listenPacket("cpent_update", (_, bfr) => {
-    const reader = BufferReader(bfr);
+  defaultEnvironments.network.listenPacket("cpent_update", (packet) => {
+    const reader = BufferReader(packet.content);
     const entityId = reader.string();
 
     const worldPosition = reader.vec();
@@ -160,12 +158,12 @@ if (RunService.IsClient()) {
         entityId,
         new CFrame(worldPosition.x, worldPosition.y, worldPosition.z).mul(CFrame.Angles(math.rad(worldRotation.y), math.rad(worldRotation.x), math.rad(worldRotation.z))),
         new Vector3(worldSize.x, worldSize.y, worldSize.z),
-      ).andThen(ent => ent.ApplyStateBuffer(bfr));
+      ).andThen(ent => ent.ApplyStateBuffer(packet.content));
 
       return;
     }
 
-    targetEntity.ApplyStateBuffer(bfr);
+    targetEntity.ApplyStateBuffer(packet.content);
   });
 }
 
@@ -175,8 +173,8 @@ new ConsoleFunctionCallback(["start"], [{ name: "points", type: "number" }, { na
     const pointsAmount = ctx.getArgument("points", "number").value;
     const raidersGroupId = ctx.getArgument("raidersGroupId", "number").value;
 
-    defaultEnvironments.network.startWritingMessage("match_start");
+    startBufferCreation();
     writeBufferU32(pointsAmount);
     writeBufferU32(raidersGroupId);
-    defaultEnvironments.network.finishWritingMessage();
+    defaultEnvironments.network.sendPacket("match_start");
   });
