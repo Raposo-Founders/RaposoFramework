@@ -67,7 +67,12 @@ export function convertConsoleArgumentType(argumenttype: CONFUNC_TYPES, values: 
 
     for (const playerEntity of defaultEnvironments.entity.getEntitiesThatIsA("PlayerEntity")) {
       const controller = playerEntity.GetUserFromController();
-      if ((controller && controller.Name.sub(0, value.size()) !== value) && playerEntity.id.sub(0, value.size()) !== value) continue;
+
+      if (controller) {
+        if (controller.Name.sub(0, value.size()) !== value) continue;
+      } else {
+        if (playerEntity.id.sub(0, value.size()) !== value) continue;
+      }
 
       foundPlayers.push(playerEntity);
       break;
