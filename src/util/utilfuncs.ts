@@ -42,9 +42,14 @@ export function ReplicatedInstance<K extends keyof CreatableInstances, I extends
 }
 
 export function RandomString(length: number) {
-  let content = "";
-  for (let index = 0; index < length; index++)
-    content = `${content}${string.char(math.random(48, 122))}`;
+  const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
+  let finalString = "";
 
-  return content;
+  for (let index = 0; index < length; index++) {
+    const randomInt = math.random(1, charset.size());
+    finalString = `${finalString}${charset.sub(randomInt, randomInt)}`;
+  }
+
+  return finalString;
 }
+
