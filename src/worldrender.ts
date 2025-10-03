@@ -1,6 +1,8 @@
+import { CollectionService } from "@rbxts/services";
 import { mapStorageFolder } from "./folders";
 import Signal from "./util/signal";
 import { RandomString } from "./util/utilfuncs";
+import { gameValues } from "gamevalues";
 
 // # Types
 
@@ -31,7 +33,15 @@ export default class WorldInstance {
   }
 
   loadMap(name: string) {
-    const mapInstance = mapStorageFolder.FindFirstChild(name);
+    let mapInstance: Folder | undefined;
+
+    for (const inst of CollectionService.GetTagged(gameValues.maptag)) {
+      if (!inst.IsA("Folder")) continue;
+      if (inst.Name !== name) continue;
+
+      mapInstance = inst;
+    }
+
     assert(mapInstance && mapInstance.IsA("Folder"), `Unknown map ${name} or invalid instance classname.`);
 
     print(`Loading map "${name}..."`);
