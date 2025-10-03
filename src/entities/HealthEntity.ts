@@ -1,5 +1,5 @@
 import Signal from "util/signal";
-import WorldEntity from "./worldent";
+import WorldEntity from "./WorldEntity";
 
 declare global {
   interface GameEntities {

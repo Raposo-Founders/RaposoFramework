@@ -198,7 +198,7 @@ export default class PlayerEntity extends HealthEntity {
     this.pendingTeleport = true;
   }
 
-  takeDamage(amount: number, attacker?: import("./worldent")): void {
+  takeDamage(amount: number, attacker?: import("./WorldEntity")): void {
     super.takeDamage(amount, attacker);
 
     if (attacker?.IsA("PlayerEntity") && amount > 0)

@@ -2,7 +2,7 @@ import { BufferReader } from "util/bufferreader";
 import { writeBufferBool, writeBufferF32, writeBufferString, writeBufferU8, writeBufferVector } from "util/bufferwriter";
 import { registerEntityClass } from ".";
 import PlayerEntity, { PlayerTeam } from "./PlayerEntity";
-import WorldEntity from "./worldent";
+import WorldEntity from "./WorldEntity";
 
 declare global {
   interface GameEntities {
