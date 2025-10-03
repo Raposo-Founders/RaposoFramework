@@ -1,10 +1,10 @@
 import BannerNotify from "@rbxts/banner-notify";
 import React from "@rbxts/react";
-import { ReplicatedStorage, RunService, StarterGui } from "@rbxts/services";
+import { CollectionService, ReplicatedStorage, RunService, StarterGui } from "@rbxts/services";
 import { RaposoConsole } from "cmd";
 import { defaultEnvironments } from "defaultinsts";
 import { requireEntities } from "entities";
-import { modulesFolder, uiFolder } from "folders";
+import { mapStorageFolder, modulesFolder, uiFolder } from "folders";
 import { gameValues } from "gamevalues";
 import { listenDirectPacket } from "network";
 import ServerInstance from "serverinst";
@@ -80,9 +80,20 @@ function ExecuteModules() {
   }
 }
 
+function ParentMaps() {
+  if (RunService.IsClient()) return;
+
+  for (const inst of CollectionService.GetTagged(gameValues.maptag)) {
+    if (!inst.IsA("Folder")) continue;
+    inst.Parent = mapStorageFolder;
+  }
+}
+
 // # Execution
 if (RunService.IsClient())
   while (!game.IsLoaded()) task.wait();
+
+ParentMaps();
 
 if (RunService.IsClient()) {
   StarterGui.SetCoreGuiEnabled("All", false);

@@ -16,10 +16,7 @@ function SpawnCapturePoints(session: ServerInstance) {
     if (!obj.IsA("BasePart")) continue;
     if (obj.Name !== "ent_objective_capturepoint") continue;
 
-    session.entity.createEntity("CapturePointEntity", undefined, obj.CFrame, obj.Size)
-      .andThen(ent => {
-
-      });
+    session.entity.createEntity("CapturePointEntity", undefined, obj.CFrame, obj.Size);
   }
 }
 
@@ -114,7 +111,7 @@ ServerInstance.serverCreated.Connect(server => {
   });
 
   server.lifecycle.BindTickrate(ctx => {
-    if (!isRunning) return;
+    // if (!isRunning) return;
 
     for (const ent of server.entity.getEntitiesThatIsA("CapturePointEntity")) {
       ent.UpdateCaptureProgress(ctx.tickrate);

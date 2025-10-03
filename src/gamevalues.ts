@@ -14,6 +14,8 @@ export const gameValues = {
 
   cmdnetinfo: "DBG-SVCMD-OUT",
   cmdprefix: ":",
+
+  maptag: "Map",
 } as const;
 
 export function getStringMappedValue(name: string) {
