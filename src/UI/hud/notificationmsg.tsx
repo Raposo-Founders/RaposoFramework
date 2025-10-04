@@ -12,37 +12,10 @@ import { BufferReader } from "util/bufferreader";
 import { startBufferCreation, writeBufferString } from "util/bufferwriter";
 
 // # Constants & variables
-const [positionBinding, SetPosition] = React.createBinding(-0.1);
-
+const ANIMATION_DURATION = 0.25;
 let currentParentInstance: Instance | undefined;
-let disconnectCurrentAnimation: Callback | undefined;
 
 // # Functions
-function Animate() {
-  disconnectCurrentAnimation?.();
-
-  const startingTime = time();
-
-  let binding: Callback | undefined;
-  binding = defaultEnvironments.lifecycle.BindUpdate(() => {
-    const alpha = TweenService.GetValue((time() - startingTime) / 0.25, "Sine", "InOut");
-    SetPosition(-0.2 * math.clamp(1 - alpha, 0, 1));
-
-    if (alpha <= 0) {
-      binding?.();
-      binding = undefined;
-
-      disconnectCurrentAnimation = undefined;
-    }
-  });
-
-  disconnectCurrentAnimation = () => {
-    binding?.();
-    binding = undefined;
-
-    SetPosition(-0.1);
-  };
-}
 
 export function NotificationsDisplay() {
   const parentReference = React.createRef<Frame>();
@@ -70,10 +43,54 @@ export function NotificationsDisplay() {
 export async function RenderPlayerShout(userId: number, color: Color3, duration: number, message: string) {
   if (!currentParentInstance) return;
 
+  const animationTimeOffset = 0.5;
+  const [contentPositionBinding, SetContentPosition] = React.createBinding(-1);
+  const [backgroundPositionBinding, SetBackgroundPosition] = React.createBinding(-1);
+
+  const AnimateIn = async () => {
+    const startingTime = time();
+
+    let binding: Callback | undefined;
+    binding = defaultEnvironments.lifecycle.BindUpdate(() => {
+      const elapsedTime = time() - startingTime;
+      const backgroundAlpha = TweenService.GetValue(elapsedTime / ANIMATION_DURATION, "Exponential", "Out");
+      const contentAlpha = TweenService.GetValue(elapsedTime / (ANIMATION_DURATION + animationTimeOffset), "Exponential", "Out");
+
+      SetBackgroundPosition(-1 * math.clamp(1 - backgroundAlpha, 0, 1));
+      SetContentPosition(-1 * math.clamp(1 - contentAlpha, 0, 1));
+
+      if (elapsedTime >= ANIMATION_DURATION + animationTimeOffset) {
+        binding?.();
+        binding = undefined;
+        return;
+      }
+    });
+  };
+
+  const AnimateOut = async () => {
+    const startingTime = time();
+
+    let binding: Callback | undefined;
+    binding = defaultEnvironments.lifecycle.BindUpdate(() => {
+      const elapsedTime = time() - startingTime;
+      const backgroundAlpha = TweenService.GetValue(elapsedTime / (ANIMATION_DURATION + animationTimeOffset), "Exponential", "In");
+      const contentAlpha = TweenService.GetValue(elapsedTime / ANIMATION_DURATION, "Exponential", "In");
+
+      SetBackgroundPosition(-1 * math.clamp(backgroundAlpha, 0, 1));
+      SetContentPosition(-1 * math.clamp(contentAlpha, 0, 1));
+
+      if (elapsedTime >= ANIMATION_DURATION + animationTimeOffset) {
+        binding?.();
+        binding = undefined;
+        return;
+      }
+    });
+  };
+
   const element = (
     <frame
+      BackgroundTransparency={1}
       BackgroundColor3={ColorUtils.Darken(color, 0.75)}
-      BorderSizePixel={0}
       ClipsDescendants={true}
       Position={UDim2.fromScale(0, 0.25)}
       Size={UDim2.fromScale(1, 1)}
@@ -82,12 +99,20 @@ export async function RenderPlayerShout(userId: number, color: Color3, duration:
         AspectRatio={3}
       />
 
+      <frame // Background
+        BackgroundColor3={ColorUtils.Darken(color, 0.75)}
+        BackgroundTransparency={0}
+        BorderSizePixel={0}
+        Size={UDim2.fromScale(1, 1)}
+        Position={backgroundPositionBinding.map(val => UDim2.fromScale(val, 0))}
+      />
+
       <frame // Content frame
         BackgroundColor3={color}
         BorderSizePixel={0}
         LayoutOrder={1}
         Size={UDim2.fromScale(1, 1)}
-        Position={positionBinding.map(val => UDim2.fromScale(val, 0))}
+        Position={contentPositionBinding.map(val => UDim2.fromScale(val, 0))}
         ZIndex={100}
       >
         <uiflexitem
@@ -120,7 +145,7 @@ export async function RenderPlayerShout(userId: number, color: Color3, duration:
           Size={UDim2.fromScale(0.9, 0.25)}
         />
 
-        <textlabel // Content
+        <textlabel // Message content
           FontFace={new Font(
             "rbxasset://fonts/families/GothamSSm.json",
             Enum.FontWeight.Bold,
@@ -160,9 +185,13 @@ export async function RenderPlayerShout(userId: number, color: Color3, duration:
   const root = ReactRoblox.createRoot(currentParentInstance, { "hydrate": true });
   root.render(element);
 
-  Animate();
+  AnimateIn();
 
-  task.wait(duration);
+  task.wait(ANIMATION_DURATION + duration);
+
+  AnimateOut();
+
+  task.wait(ANIMATION_DURATION + animationTimeOffset);
 
   root.unmount();
 }
