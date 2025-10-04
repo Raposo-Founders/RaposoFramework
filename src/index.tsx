@@ -14,6 +14,7 @@ import ConsoleWindow from "UI/consolewindow";
 import { defaultRoot } from "UI/default/values";
 import { FairzoneCounter } from "UI/hud/fairzonetimer";
 import { FairzoneTopDisplay } from "UI/hud/fairzonetopdisplay";
+import { NotificationsDisplay } from "UI/hud/notificationmsg";
 import { ObjectivesLine } from "UI/hud/objectivesDisplay";
 import { HudPlayerPanel } from "UI/hud/playerpanel";
 import { SpectatorLabel } from "UI/hud/spectatinglabel";
@@ -176,6 +177,8 @@ if (RunService.IsClient()) {
 
       <SpectatorLabel />
     </frame>
+
+    <NotificationsDisplay />
 
     <ConsoleWindow />
     <CommandLine />
