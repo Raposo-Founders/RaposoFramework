@@ -25,8 +25,8 @@ function Animate() {
 
   let binding: Callback | undefined;
   binding = defaultEnvironments.lifecycle.BindUpdate(() => {
-    const alpha = TweenService.GetValue((time() - startingTime) / 0.25, "Sine", "Out");
-    SetPosition(-0.1 * math.clamp(1 - alpha, 0, 1));
+    const alpha = TweenService.GetValue((time() - startingTime) / 0.25, "Sine", "InOut");
+    SetPosition(-0.2 * math.clamp(1 - alpha, 0, 1));
 
     if (alpha <= 0) {
       binding?.();
@@ -70,8 +70,6 @@ export function NotificationsDisplay() {
 export async function RenderPlayerShout(userId: number, color: Color3, duration: number, message: string) {
   if (!currentParentInstance) return;
 
-  print("Rendering message:", message);
-
   const element = (
     <frame
       BackgroundColor3={ColorUtils.Darken(color, 0.75)}
@@ -112,7 +110,7 @@ export async function RenderPlayerShout(userId: number, color: Color3, duration:
             Enum.FontWeight.Bold,
             Enum.FontStyle.Normal
           )}
-          Text={Players.GetPlayerByUserId(userId)?.Name ?? Players.GetNameFromUserIdAsync(userId)}
+          Text={`${Players.GetPlayerByUserId(userId)?.Name ?? Players.GetNameFromUserIdAsync(userId)}:`}
           TextColor3={Color3.fromHex("#FFFFFF")}
           TextScaled={true}
           TextTransparency={0.25}
@@ -195,8 +193,6 @@ ServerInstance.serverCreated.Connect(inst => {
     writeBufferString(tostring(info.sender.GetAttribute(gameValues.usersessionid)));
     writeBufferString(filteredMessage.GetNonChatStringForBroadcastAsync());
     inst.network.sendPacket("message_shouted");
-
-    print("Broadcasting shout message:", message, "->", filteredMessage);
   });
 
 });
@@ -220,7 +216,5 @@ if (RunService.IsClient())
     if (entity.team === PlayerTeam.Raiders) teamColor = colorTable.raidersColor;
     if (entity.team === PlayerTeam.Defenders) teamColor = colorTable.defendersColor;
 
-    RenderPlayerShout(userId, Color3.fromHex(teamColor), 5, message);
-
-    print("Shout received!", message);
+    RenderPlayerShout(userId, Color3.fromHex(teamColor), 10, message);
   });
