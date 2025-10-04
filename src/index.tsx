@@ -16,6 +16,7 @@ import { FairzoneCounter } from "UI/hud/fairzonetimer";
 import { FairzoneTopDisplay } from "UI/hud/fairzonetopdisplay";
 import { ObjectivesLine } from "UI/hud/objectivesDisplay";
 import { HudPlayerPanel } from "UI/hud/playerpanel";
+import { SpectatorLabel } from "UI/hud/spectatinglabel";
 import { DisplayLoadingScreen, HideLoadingScreen } from "UI/loadscreen";
 import { BufferReader } from "util/bufferreader";
 
@@ -55,6 +56,7 @@ function ImportSystems() {
       Sessionmngr: import("systems/sessionmngr").expect(),
       Chatmngr: import("systems/chatmngr").expect(),
       Matchmngr: import("systems/matchmngr").expect(),
+      HudMngr: import("systems/hudvalues").expect(),
     },
     Environment: {
       Folders: import("folders").expect(),
@@ -171,6 +173,8 @@ if (RunService.IsClient()) {
       </FairzoneTopDisplay>
 
       <ObjectivesLine />
+
+      <SpectatorLabel />
     </frame>
 
     <ConsoleWindow />

@@ -1,3 +1,4 @@
+import ColorUtils from "@rbxts/colour-utils";
 import React from "@rbxts/react";
 import { Players } from "@rbxts/services";
 import { defaultEnvironments } from "defaultinsts";
@@ -13,6 +14,8 @@ export function HudPlayerPanel() {
   const viewportReference = React.createRef<ViewportFrame>();
   const cameraReference = React.createRef<Camera>();
   const worldReference = React.createRef<WorldModel>();
+
+  const [visibleBinding, SetVisible] = React.createBinding(false);
 
   const worldInstance = new WorldInstance("void");
 
@@ -83,10 +86,7 @@ export function HudPlayerPanel() {
   return (
     <frame
       AnchorPoint={new Vector2(0, 1)}
-      BackgroundColor3={Color3.fromHex("#FFFFFF")}
       BackgroundTransparency={1}
-      BorderColor3={Color3.fromHex("#000000")}
-      BorderSizePixel={0}
       Position={UDim2.fromScale(0.125, 0.9)}
       Size={UDim2.fromScale(0.25, 0.25)}
     >
@@ -132,15 +132,17 @@ export function HudPlayerPanel() {
           Enum.FontStyle.Normal
         )}
         Text={uiValues.hud_player_health[0].map(val => `${val}%`)}
-        TextColor3={Color3.fromHex("#ABABFF")}
+        TextColor3={uiValues.hud_team_color[0].map(val => {
+          if (ColorUtils.isLight(val))
+            return ColorUtils.Lighten(val, 0.5);
+          else
+            return ColorUtils.Darken(val, 0.5);
+        })}
         TextScaled={true}
         TextSize={40}
         TextWrapped={true}
         AnchorPoint={new Vector2(0.5, 0.5)}
-        BackgroundColor3={Color3.fromHex("#FFFFFF")}
         BackgroundTransparency={1}
-        BorderColor3={Color3.fromHex("#000000")}
-        BorderSizePixel={0}
         Position={UDim2.fromScale(0.7, 0.5)}
         Size={UDim2.fromScale(1, 0.3)}
       />

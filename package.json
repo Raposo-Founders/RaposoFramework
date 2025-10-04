@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@rbxts/banner-notify": "^1.0.1",
+    "@rbxts/colour-utils": "^1.4.1",
     "@rbxts/object-utils": "^1.0.4",
     "@rbxts/pretty-react-hooks": "^0.6.2",
     "@rbxts/react": "^17.2.3",
