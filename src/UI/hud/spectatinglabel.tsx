@@ -1,6 +1,6 @@
 import React from "@rbxts/react";
 import { PlayerTeam } from "entities/PlayerEntity";
-import { uiValues } from "UI/default/values";
+import { uiValues } from "UI/values";
 
 export function SpectatorLabel() {
   return <textlabel

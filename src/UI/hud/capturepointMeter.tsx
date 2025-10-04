@@ -2,7 +2,7 @@ import React from "@rbxts/react";
 import { defaultEnvironments } from "defaultinsts";
 import CapturePointEntity from "entities/CapturePointEntity";
 import { PlayerTeam } from "entities/PlayerEntity";
-import { colorTable } from "UI/default/values";
+import { colorTable } from "UI/values";
 
 const ICON_ID = "rbxassetid://103434352040367";
 

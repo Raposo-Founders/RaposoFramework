@@ -328,7 +328,7 @@ function ConsoleWindow(props: PropsWithChildren) {
       BackgroundTransparency={0.5}
       BorderSizePixel={0}
       Position={UDim2.fromScale(0.5, 0.5)}
-      Size={UDim2.fromScale(0.75, 0.75)}
+      Size={UDim2.fromScale(0.6, 0.6)}
       Visible={masterVisible}
     >
       {props.children}

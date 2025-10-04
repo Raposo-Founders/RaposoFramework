@@ -4,7 +4,7 @@ import { defaultEnvironments } from "defaultinsts";
 import { PlayerTeam } from "entities/PlayerEntity";
 import { gameValues } from "gamevalues";
 import ServerInstance from "serverinst";
-import { uiValues } from "UI/default/values";
+import { uiValues } from "UI/values";
 import { BufferReader } from "util/bufferreader";
 import { startBufferCreation, writeBufferF32, writeBufferU32, writeBufferU8 } from "util/bufferwriter";
 

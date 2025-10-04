@@ -1,7 +1,7 @@
 import { RunService } from "@rbxts/services";
 import { defaultEnvironments } from "defaultinsts";
 import { PlayerTeam } from "entities/PlayerEntity";
-import { colorTable, uiValues } from "UI/default/values";
+import { colorTable, uiValues } from "UI/values";
 import { getLocalPlayerEntity } from "util/localent";
 
 // # Constants & variables

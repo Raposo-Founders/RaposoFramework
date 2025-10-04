@@ -5,7 +5,7 @@ import { LogService, UserInputService } from "@rbxts/services";
 import { ExecuteCommand } from "cmd";
 import { ConsoleFunctionCallback, createdCVars } from "cmd/cvar";
 import Signal from "util/signal";
-import { colorTable, uiPreferences } from "./default/values";
+import { colorTable, uiPreferences } from "./values";
 import { BaseWindow, hideWindow, showWindow } from "./default/window";
 
 // # Constants & variables

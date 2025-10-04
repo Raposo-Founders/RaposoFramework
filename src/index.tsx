@@ -11,7 +11,7 @@ import ServerInstance from "serverinst";
 import { ChatBar, ChatButton } from "UI/chatui";
 import { CommandLine } from "UI/cmdline";
 import ConsoleWindow from "UI/consolewindow";
-import { defaultRoot } from "UI/default/values";
+import { defaultRoot } from "UI/values";
 import { FairzoneCounter } from "UI/hud/fairzonetimer";
 import { FairzoneTopDisplay } from "UI/hud/fairzonetopdisplay";
 import { NotificationsDisplay } from "UI/hud/notificationmsg";

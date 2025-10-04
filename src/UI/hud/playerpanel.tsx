@@ -4,7 +4,7 @@ import { Players } from "@rbxts/services";
 import { defaultEnvironments } from "defaultinsts";
 import { cacheFolder } from "folders";
 import { Playermodel } from "playermodel/rig";
-import { uiValues } from "UI/default/values";
+import { uiValues } from "UI/values";
 import { getLocalPlayerEntity } from "util/localent";
 import WorldInstance from "worldrender";
 

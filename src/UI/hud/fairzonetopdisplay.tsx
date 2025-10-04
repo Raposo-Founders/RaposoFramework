@@ -1,5 +1,5 @@
 import React from "@rbxts/react";
-import { uiValues } from "UI/default/values";
+import { uiValues } from "UI/values";
 
 export function FairzoneTopDisplay(props: React.PropsWithChildren) {
   return (

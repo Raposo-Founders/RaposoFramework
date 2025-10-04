@@ -1,5 +1,5 @@
 import React from "@rbxts/react";
-import { colorTable, uiValues } from "UI/default/values";
+import { colorTable, uiValues } from "UI/values";
 
 export function FairzoneCounter() {
   return (
