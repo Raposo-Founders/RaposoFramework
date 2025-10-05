@@ -21,8 +21,6 @@ class ServerInstance {
   readonly playerJoined = new Signal<[user: Player, referenceId: string]>();
   readonly playerLeft = new Signal<[Player, string]>();
 
-  readonly channel = new Instance("TextChannel");
-
   constructor(
     readonly id: string,
     readonly world: WorldInstance,
@@ -41,10 +39,6 @@ class ServerInstance {
       if (!packet.sender) return;
       this.RemovePlayer(packet.sender, "Disconnected by user.");
     });
-
-    this.channel.Name = id;
-    this.channel.Parent = TextChatService;
-    if (RunService.IsClient()) this.channel.AddUserAsync(Players.LocalPlayer.UserId);
 
     ServerInstance.serverCreated.Fire(this);
   }
@@ -97,8 +91,6 @@ class ServerInstance {
     this.network.signedUsers.add(player);
     this.trackingPlayers.add(player);
     this.playerJoined.Fire(player, referenceId);
-
-    this.channel.AddUserAsync(player.UserId);
   }
 
   RemovePlayer(player: Player, disconnectreason = "") {

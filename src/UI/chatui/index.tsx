@@ -2,7 +2,7 @@ import React from "@rbxts/react";
 import { UserInputService } from "@rbxts/services";
 import { sendMessage } from "systems/chatmngr";
 import Signal from "util/signal";
-import { TintButton } from "../default/tintbtn";
+import { TintButton } from "../blocks/tintbtn";
 import { gameValues } from "gamevalues";
 import { ExecuteCommand } from "cmd";
 

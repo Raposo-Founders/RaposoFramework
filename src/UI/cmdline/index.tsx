@@ -1,15 +1,18 @@
-import React, { PropsWithChildren, useEffect } from "@rbxts/react";
+import ColorUtils from "@rbxts/colour-utils";
+import React, { useEffect } from "@rbxts/react";
 import ReactRoblox from "@rbxts/react-roblox";
 import { Players, UserInputService } from "@rbxts/services";
 import { CONSOLE_OUT, ExecuteCommand } from "cmd";
 import { CCVar, ConsoleFunctionCallback, createdCVars } from "cmd/cvar";
 import { defaultEnvironments } from "defaultinsts";
+import { Window } from "UI/blocks/window";
+import { uiValues } from "UI/values";
 import Signal from "util/signal";
 
 // # Constants & variables
 const PREFIX_TEXT = `${Players.LocalPlayer?.Name}@Raposo $`;
 const TEXT_SIZE = 18;
-const KEYBIND = Enum.KeyCode.Semicolon;
+const KEYBIND = Enum.KeyCode.F2;
 
 const LOADING_CHARS_LIST = ["|", "/", "—", "\\"] as const;
 const CLEAR_ALL_OUTPUT = new Signal();
@@ -320,38 +323,6 @@ function SuggestionsFrame() {
   );
 }
 
-function ConsoleWindow(props: PropsWithChildren) {
-  return (
-    <frame
-      AnchorPoint={new Vector2(0.5, 0.5)}
-      BackgroundColor3={Color3.fromHex("#000000")}
-      BackgroundTransparency={0.5}
-      BorderSizePixel={0}
-      Position={UDim2.fromScale(0.5, 0.5)}
-      Size={UDim2.fromScale(0.6, 0.6)}
-      Visible={masterVisible}
-    >
-      {props.children}
-      <uistroke
-        Color={Color3.fromHex("#FFFFFF")}
-        Transparency={0.75}
-      />
-      <textlabel
-        FontFace={new Font("rbxasset://fonts/families/RobotoMono.json")}
-        Text={`Raposo console - [${UserInputService.GetStringForKeyCode(KEYBIND)}] to close.`}
-        TextColor3={Color3.fromHex("#FFFFFF")}
-        TextSize={20}
-        TextXAlignment={"Left"}
-        AnchorPoint={new Vector2(0, 1)}
-        AutomaticSize={"Y"}
-        BackgroundTransparency={1}
-        Position={UDim2.fromOffset(0, -5)}
-        Size={UDim2.fromScale(1, 0)}
-      />
-    </frame>
-  )
-}
-
 export function CommandLine() {
   SpawnInputBar();
 
@@ -362,7 +333,13 @@ export function CommandLine() {
     currentContentFrame = contentRef.current;
   });
 
-  return <ConsoleWindow>
+  return <Window
+      AccentColor={uiValues.hud_team_color[0]}
+      BackgroundColor={uiValues.hud_team_color[0].map(val => ColorUtils.Darken(val, 0.75))}
+      Size={UDim2.fromScale(0.5, 0.5)}
+      Title="Raposo Console"
+      Visible={masterVisible}
+    >
     <frame
       AnchorPoint={new Vector2(0.5, 0.5)}
       BackgroundColor3={Color3.fromHex("#FFFFFF")}
@@ -387,7 +364,7 @@ export function CommandLine() {
       />
     </frame>
     {/* <SuggestionsFrame /> */}
-  </ConsoleWindow>;
+  </Window>;
 }
 
 // # Execution
@@ -443,5 +420,3 @@ new ConsoleFunctionCallback(["clear", "cls"], [])
     currentDisplayIndex = 1;
     CLEAR_ALL_OUTPUT.Fire();
   });
-
-new CCVar("fov", 70, []);

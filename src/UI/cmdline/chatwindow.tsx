@@ -5,8 +5,9 @@ import { LogService, UserInputService } from "@rbxts/services";
 import { ExecuteCommand } from "cmd";
 import { ConsoleFunctionCallback, createdCVars } from "cmd/cvar";
 import Signal from "util/signal";
-import { colorTable, uiPreferences } from "./values";
-import { BaseWindow, hideWindow, showWindow } from "./default/window";
+import { colorTable, uiPreferences, uiValues } from "../values";
+import { Window } from "../blocks/window";
+import ColorUtils from "@rbxts/colour-utils";
 
 // # Constants & variables
 const logEntryAccentSize = 5;
@@ -15,6 +16,8 @@ const currentRenderingSuggestions: string[] = [];
 const setTextboxText = new Signal<[string]>();
 const setTextboxFocus = new Signal<[focused: boolean]>();
 
+const [windowVisible, SetWindowVisible] = React.createBinding(false);
+
 let currentLogsFrame: ScrollingFrame | undefined;
 let currentSuggestionsFrame: Frame | undefined;
 let suggestionsRoot: ReactRoblox.Root | undefined;
@@ -22,7 +25,6 @@ let logsRoot: ReactRoblox.Root | undefined;
 
 let selectedSuggestionIndex = 0;
 let isTextboxFocused = false;
-let isWindowVisible = false;
 
 // # Functions
 function clearLogs() {
@@ -233,7 +235,14 @@ export default function ConsoleWindow() {
     }
   });
 
-  return <BaseWindow id="console" title="Console" Closed={() => isWindowVisible = false}>
+  return <Window
+    Title="Console"
+    AccentColor={uiValues.hud_team_color[0]}
+    Visible={windowVisible}
+    BackgroundColor={uiValues.hud_team_color[0].map(val => ColorUtils.Darken(val, 0.75))}
+    Size={new UDim2(0, 600, 0, 300)}
+    OnClose={() => SetWindowVisible(false)}
+  >
     <scrollingframe // Logs content
       BackgroundColor3={Color3.fromHex(colorTable.windowBackground)}
       BackgroundTransparency={1}
@@ -303,7 +312,7 @@ export default function ConsoleWindow() {
         />
       </frame>
     </frame>
-  </BaseWindow>;
+  </Window>;
 }
 
 // # Bindings & misc
@@ -329,27 +338,6 @@ UserInputService.InputBegan.Connect((input, busy) => {
 UserInputService.InputBegan.Connect((input) => {
   if (input.KeyCode.Name !== "Insert") return;
 
-  if (isWindowVisible)
-    hideWindow("console");
-  else
-    showWindow("console");
-
-  isWindowVisible = !isWindowVisible;
-  setTextboxFocus.Fire(isWindowVisible);
-});
-
-LogService.MessageOut.Connect((content, logType) => {
-
-  let accentColor: Color3 | undefined;
-
-  switch (logType.Name) {
-  case "MessageWarning":
-    accentColor = new Color3(0.95, 0.95, 0);
-    break;
-  case "MessageError":
-    accentColor = new Color3(1, 0.25, 0.25);
-    break;
-  }
-
-  logEntry([content], accentColor);
+  SetWindowVisible(!windowVisible.getValue());
+  setTextboxFocus.Fire(windowVisible.getValue());
 });

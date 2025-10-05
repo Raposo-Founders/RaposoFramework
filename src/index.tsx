@@ -10,7 +10,7 @@ import { listenDirectPacket } from "network";
 import ServerInstance from "serverinst";
 import { ChatBar, ChatButton } from "UI/chatui";
 import { CommandLine } from "UI/cmdline";
-import ConsoleWindow from "UI/consolewindow";
+import ConsoleWindow from "UI/cmdline/chatwindow";
 import { defaultRoot } from "UI/values";
 import { FairzoneCounter } from "UI/hud/fairzonetimer";
 import { FairzoneTopDisplay } from "UI/hud/fairzonetopdisplay";
@@ -100,6 +100,7 @@ ParentMaps();
 
 if (RunService.IsClient()) {
   StarterGui.SetCoreGuiEnabled("All", false);
+  StarterGui.SetCoreGuiEnabled("Chat", true);
   WaitForServer();
 }
 

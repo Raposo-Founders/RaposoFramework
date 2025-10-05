@@ -22,7 +22,7 @@ function requestChannelName() {
 
   startBufferCreation();
   writeBufferString(threadId);
-  sendDirectPacket("c-GetChannel", undefined);
+  sendDirectPacket("GET_CHANNEL", undefined);
 
   yieldingThreads.set(threadId, thread);
   return tostring(coroutine.yield()[0]);
@@ -58,7 +58,7 @@ ServerInstance.serverCreated.Connect(inst => {
 });
 
 if (RunService.IsServer())
-  listenDirectPacket("c-GetChannel", (sender, bfr) => {
+  listenDirectPacket("GET_CHANNEL", (sender, bfr) => {
     if (!sender) return;
 
     const reader = BufferReader(bfr);
@@ -70,11 +70,11 @@ if (RunService.IsServer())
     startBufferCreation();
     writeBufferString(replyId);
     writeBufferString(serverInstance.id);
-    sendDirectPacket("c-GetChannel_reply", sender);
+    sendDirectPacket("GET_CHANNEL_REPLY", sender);
   });
 
 if (RunService.IsClient())
-  listenDirectPacket("c-GetChannel_reply", (sender, bfr) => {
+  listenDirectPacket("GET_CHANNEL_REPLY", (sender, bfr) => {
     const reader = BufferReader(bfr);
     const replyId = reader.string();
     const channelName = reader.string();
@@ -88,6 +88,6 @@ if (RunService.IsClient())
 
 if (RunService.IsClient()) {
   UserInputService.InputBegan.Connect(() => {
-    inputBarConfig.Enabled = UserInputService.PreferredInput === Enum.PreferredInput.Touch;
+    inputBarConfig.Enabled = UserInputService.TouchEnabled;
   });
 }
