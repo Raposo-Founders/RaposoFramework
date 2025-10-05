@@ -100,3 +100,7 @@ export namespace RaposoConsole {
 }
 
 // # Bindings & misc
+for (const inst of script.WaitForChild("commands").GetChildren()) {
+  if (inst.IsA("ModuleScript"))
+    task.spawn(require, inst);
+}
