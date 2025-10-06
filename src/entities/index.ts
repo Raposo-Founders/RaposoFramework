@@ -4,6 +4,7 @@ import Signal from "util/signal";
 import { RandomString } from "util/utilfuncs";
 import WorldInstance from "worldrender";
 import BaseEntity from "./BaseEntity";
+import { RaposoConsole } from "logging";
 
 // # Types
 declare global {
@@ -33,14 +34,14 @@ export function requireEntities() {
     const content = require(inst);
     if (t.nil(content)) continue;
     if (!t.table(content) || !("constructor" in content)) {
-      warn(inst, "did not return an valid entity class constructor.");
+      RaposoConsole.Warn(inst, "did not return an valid entity class constructor.");
       continue;
     }
 
     const [success, message] = pcall(registerEntityClass, inst.Name as keyof GameEntities, content as new () => BaseEntity);
     if (success) continue;
 
-    warn("Failed when requiring entity file:", inst, `\n${message}`);
+    RaposoConsole.Warn("Failed when requiring entity file:", inst, `\n${message}`);
   }
 }
 
@@ -106,7 +107,7 @@ export class EntityManager {
       for (const callback of entity.deletionCallbacks) {
         const [success, message] = pcall(() => callback());
         if (!success)
-          warn(message);
+          RaposoConsole.Warn(message);
       }
 
       // Fuckass hack :)
@@ -120,7 +121,7 @@ export class EntityManager {
           // This is the ugliest fucking thing I've ever seen
           const [success, message] = pcall(() => (obj as Map<string, unknown>).set(index, undefined));
           if (!success)
-            warn("Failed when clearing object entity content.", message);
+            RaposoConsole.Warn("Failed when clearing object entity content.", message);
         }
       };
 

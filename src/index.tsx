@@ -1,7 +1,7 @@
 import BannerNotify from "@rbxts/banner-notify";
 import React from "@rbxts/react";
 import { CollectionService, ReplicatedStorage, RunService, StarterGui } from "@rbxts/services";
-import { RaposoConsole } from "cmd";
+import { RaposoConsole } from "logging";
 import { defaultEnvironments } from "defaultinsts";
 import { requireEntities } from "entities";
 import { mapStorageFolder, modulesFolder, uiFolder } from "folders";
@@ -19,7 +19,7 @@ import { HudPlayerPanel } from "UI/hud/playerpanel";
 import { SpectatorLabel } from "UI/hud/spectatinglabel";
 import { DisplayLoadingScreen, HideLoadingScreen } from "UI/loadscreen";
 import { BufferReader } from "util/bufferreader";
-import { ChatWindow } from "UI/chatui/chatwindow";
+import { ChatWindow, RenderChatMessage } from "UI/chatui/chatwindow";
 import { ConsoleCommandsLogs } from "UI/cmdline/logs";
 
 
@@ -149,7 +149,8 @@ if (RunService.IsClient()) {
     const reader = BufferReader(bfr);
     const message = reader.string();
   
-    RaposoConsole.info(message);
+    RaposoConsole.Info(message);
+    RenderChatMessage(message);
   });
   
   // Build interface

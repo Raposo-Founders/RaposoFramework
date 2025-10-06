@@ -4,6 +4,7 @@ import { Playermodel } from "./rig";
 import { defaultEnvironments } from "defaultinsts";
 import { TICKRATE } from "lifecycle";
 import { createHealthBarForEntity } from "./healthbar";
+import { RaposoConsole } from "logging";
 
 // # Constants & variables
 const entityPlayermodels = new Map<EntityId, Playermodel>();
@@ -21,13 +22,13 @@ export async function fetchHumanoidDescription(userid: number) {
   while (description === undefined) {
     totalAttempts++;
     if (totalAttempts >= humanoidFetchDescriptionMaxAttempts) {
-      warn(`Failed to fetch HumanoidDescription ${userid} after ${humanoidFetchDescriptionMaxAttempts} attempts.`);
+      RaposoConsole.Warn(`Failed to fetch HumanoidDescription ${userid} after ${humanoidFetchDescriptionMaxAttempts} attempts.`);
       break;
     }
 
     const [success, obj] = pcall(() => Services.Players.GetHumanoidDescriptionFromUserId(math.max(userid, 1)));
     if (!success) {
-      warn(`Failed to fetch HumanoidDescription, retrying in 5 seconds...\n${obj}`);
+      RaposoConsole.Warn(`Failed to fetch HumanoidDescription, retrying in 5 seconds...\n${obj}`);
       task.wait(5);
       continue;
     }

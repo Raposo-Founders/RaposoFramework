@@ -1,4 +1,5 @@
 import { ReplicatedStorage } from "@rbxts/services";
+import { RaposoConsole } from "logging";
 
 const stringValues = new ReadonlyMap<string, string>([
   ["USER_CMD_MISSING_ADMIN", "You must have admin privileges to run this command."],
@@ -27,7 +28,7 @@ export function getInstanceDefinedValue<T extends AttributeValue>(name: string, 
   const targetInstance = ReplicatedStorage.FindFirstChild("Configuration");
   if (!targetInstance) {
     if (!alertedAttributeValues.has("MISSING_CONFIG_REPL")) {
-      warn("Warning: Current place is missing a Configuration instance on ReplicatedStorage.");
+      RaposoConsole.Warn("Warning: Current place is missing a Configuration instance on ReplicatedStorage.");
       alertedAttributeValues.add("MISSING_CONFIG_REPL");
     }
 
@@ -37,7 +38,7 @@ export function getInstanceDefinedValue<T extends AttributeValue>(name: string, 
   const targetValue = targetInstance.GetAttribute(name);
   if (targetValue === undefined) {
     if (!alertedAttributeValues.has(name)) {
-      warn("Attempted to fetch unknown Configuration attribute:", name, ".\n Returning default value...");
+      RaposoConsole.Warn("Attempted to fetch unknown Configuration attribute:", name, ".\n Returning default value...");
       alertedAttributeValues.add(name);
     }
 
@@ -45,7 +46,7 @@ export function getInstanceDefinedValue<T extends AttributeValue>(name: string, 
   }
 
   if (typeOf(targetValue) !== typeOf(defaultValue)) {
-    warn(`Invalid type from attribute: ${name}. Expected "${typeOf(defaultValue)}", got "${typeOf(targetValue)}".`);
+    RaposoConsole.Warn(`Invalid type from attribute: ${name}. Expected "${typeOf(defaultValue)}", got "${typeOf(targetValue)}".`);
     return defaultValue;
   }
 

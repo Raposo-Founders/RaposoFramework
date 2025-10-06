@@ -1,4 +1,5 @@
 import { Players, RunService, TextChatService } from "@rbxts/services";
+import { RaposoConsole } from "logging";
 import { ConsoleFunctionCallback } from "cmd/cvar";
 import { clientSessionConnected, clientSessionDisconnected, defaultEnvironments } from "defaultinsts";
 import { EntityManager } from "entities";
@@ -58,7 +59,7 @@ export function clientConnectToServerSession(sessionId: string) {
 
   const connectionResult = coroutine.yield()[0] as SessionConnectionReply;
   if (connectionResult !== SessionConnectionReply.Allowed) {
-    warn("Failed to connect to the session. ID: ", connectionResult);
+    RaposoConsole.Warn("Failed to connect to the session. ID: ", connectionResult);
     return;
   }
 
@@ -86,7 +87,7 @@ export function clientConnectToServerSession(sessionId: string) {
   currentConnectionThread = undefined;
 
   clientSessionConnected.Fire(sessionId);
-  warn("Finished connection to server!");
+  RaposoConsole.Warn("Finished connection to server!");
 }
 
 export function clientCreateLocalSession() {
@@ -271,7 +272,7 @@ if (RunService.IsClient())
 
     clientSessionDisconnected.Fire(reason, reason);
 
-    warn("Disconnected from session. Reason:", reason);
+    RaposoConsole.Warn("Disconnected from session. Reason:", reason);
 
     defaultEnvironments.entity.murderAllFuckers();
   });

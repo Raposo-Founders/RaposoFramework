@@ -1,4 +1,5 @@
 import * as Services from "@rbxts/services";
+import { RaposoConsole } from "logging";
 import { animFolder, cacheFolder } from "folders";
 import WorldInstance from "worldrender";
 
@@ -205,7 +206,7 @@ class CharacterAnimationManager {
   PlayAnimation(name: string, priority: Enum.AnimationPriority["Name"] = "Action", force = false, speed = 1) {
     const targetanim = this._loaded_anims.get(name);
     if (!targetanim) {
-      warn(`Unknown animation: ${name}`);
+      RaposoConsole.Warn(`Unknown animation: ${name}`);
       return;
     }
 
@@ -225,7 +226,7 @@ class CharacterAnimationManager {
   StopAnimation(name: string) {
     const targetanim = this._loaded_anims.get(name);
     if (!targetanim) {
-      warn(`Unknown animation: ${name}`);
+      RaposoConsole.Warn(`Unknown animation: ${name}`);
       return;
     }
 

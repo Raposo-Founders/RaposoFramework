@@ -7,6 +7,7 @@ import { startBufferCreation, writeBufferString } from "./util/bufferwriter";
 import Signal from "./util/signal";
 import { RandomString } from "./util/utilfuncs";
 import WorldInstance from "./worldrender";
+import { RaposoConsole } from "logging";
 
 // # Class
 class ServerInstance {
@@ -28,7 +29,7 @@ class ServerInstance {
     readonly entity: EntityManager,
     readonly lifecycle: LifecycleInstance,
   ) {
-    warn(`Spawning server ${id}`);
+    RaposoConsole.Warn(`Spawning server ${id}`);
 
     ServerInstance.runningInstances.set(id, this);
 

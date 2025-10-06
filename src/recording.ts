@@ -1,5 +1,6 @@
 import { UserInputService } from "@rbxts/services";
 import { ExecuteCommand } from "./cmd";
+import { RaposoConsole } from "logging";
 import { defaultEnvironments } from "./defaultinsts";
 import { EntityManager } from "./entities";
 import { LifecycleInstance } from "./lifecycle";
@@ -96,7 +97,7 @@ export class CReplayPlayer {
           break;
         }
 
-        if (!nextEntitySnapshot) warn(`Entity ${entityData.id} has no future data!`);
+        if (!nextEntitySnapshot) RaposoConsole.Warn(`Entity ${entityData.id} has no future data!`);
         // if (nextEntitySnapshot)
         // targetEntity.ApplyStateBuffer(entityData.content, nextEntitySnapshot.content, snapshotsInfo.alpha);
       }

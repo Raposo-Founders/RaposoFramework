@@ -1,6 +1,7 @@
 import { Players } from "@rbxts/services";
 import { defaultEnvironments } from "defaultinsts";
 import PlayerEntity, { PlayerTeam } from "entities/PlayerEntity";
+import Signal from "util/signal";
 
 // # Types
 interface CommandContext {
@@ -39,6 +40,8 @@ export enum cvarFlags {
   readonly,
   server, // Can only be used from the server or by developers
 }
+
+export const CFUNC_REPLY_POST = new Signal<[level: "warn" | "error" | "info", content: string]>();
 
 export const createdCVars = new Map<string, CCVar<unknown>>();
 
@@ -183,7 +186,7 @@ export class ConsoleFunctionCallback {
 
   execute(args: string[]) {
     if (!this.callback) {
-      warn(`No callback has been set for command ${this.names[0]}, ignoring call...`);
+      print(`No callback has been set for command ${this.names[0]}, ignoring call...`); // This print message is an special occasion (circular dependency)
       return;
     }
 
@@ -196,13 +199,13 @@ export class ConsoleFunctionCallback {
 
     const contextEnvironment: CommandContext = {
       Reply: (message) => {
-        print(`<${this.names[0]}> ${message}`);
+        CFUNC_REPLY_POST.Fire("info", `<${this.names[0]}> ${message}`);
       },
       Warn: (message) => {
-        warn(`<${this.names[0]}> ${message}`);
+        CFUNC_REPLY_POST.Fire("warn", `<${this.names[0]}> ${message}`);
       },
       Error: (message) => {
-        warn(`<${this.names[0]}> [error] ${message}`);
+        CFUNC_REPLY_POST.Fire("error", `<${this.names[0]}> ${message}`);
       },
 
       getArgument: (name, expectedType) => {

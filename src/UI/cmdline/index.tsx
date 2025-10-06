@@ -2,9 +2,10 @@ import ColorUtils from "@rbxts/colour-utils";
 import React, { useEffect } from "@rbxts/react";
 import ReactRoblox from "@rbxts/react-roblox";
 import { Players, UserInputService } from "@rbxts/services";
-import { CONSOLE_OUT, ExecuteCommand } from "cmd";
+import { ExecuteCommand } from "cmd";
 import { CCVar, ConsoleFunctionCallback, createdCVars } from "cmd/cvar";
 import { defaultEnvironments } from "defaultinsts";
+import { CONSOLE_OUT, ConsoleOutputType } from "logging";
 import { Window } from "UI/blocks/window";
 import { uiValues } from "UI/values";
 import Signal from "util/signal";
@@ -368,8 +369,7 @@ export function CommandLine() {
   </Window>;
 }
 
-// # Execution
-CONSOLE_OUT.Connect((msgType, message) => {
+export function renderConsoleMessage(msgType: ConsoleOutputType, message: string) {
   if (!currentContentFrame) return;
 
   let textColor = Color3.fromHex("#FFFFFF");
@@ -400,7 +400,10 @@ CONSOLE_OUT.Connect((msgType, message) => {
   root.render(element);
 
   CLEAR_ALL_OUTPUT.Once(() => root.unmount());
-});
+}
+
+// # Execution
+CONSOLE_OUT.Connect((msgType, message) => renderConsoleMessage(msgType, message));
 
 UserInputService.InputBegan.Connect((input, gameProcessed) => {
   if (input.KeyCode !== KEYBIND || gameProcessed) return;

@@ -4,6 +4,7 @@ import { t } from "@rbxts/t";
 import { finalizeBufferCreation } from "util/bufferwriter";
 import Signal from "./util/signal";
 import { ReplicatedInstance } from "./util/utilfuncs";
+import { RaposoConsole } from "logging";
 
 // # Types
 interface PacketInfo {
@@ -37,7 +38,7 @@ const ASSERT_PACKET_CHECK = t.interface({
 
 // # Functions
 function HandleInfraction(user: Player | undefined, obj: unknown) {
-  warn(`Player ${user?.Name} (${user?.UserId}) has sent an unknown object type.`, typeOf(obj), obj);
+  RaposoConsole.Warn(`Player ${user?.Name} (${user?.UserId}) has sent an unknown object type.`, typeOf(obj), obj);
 }
 
 export function sendDirectPacket(id: string, user: Player | undefined, unreliable = false) {
@@ -125,7 +126,7 @@ export class NetworkManager {
 
   insertNetwork(packet: PacketInfo) {
     if (!ASSERT_PACKET_CHECK(packet)) {
-      if (RunService.IsStudio()) warn("Packet failed checking!", packet);
+      RaposoConsole.Warn("Packet assert failed:", packet);
       return;
     }
 
@@ -148,9 +149,9 @@ export class NetworkManager {
       const callbackList = this.boundListeners.get(packet.id);
       if (!callbackList || callbackList.size() <= 0) {
         if (RunService.IsStudio())
-          warn(`Unbound network callback: ${packet.id}`);
+          RaposoConsole.Warn(`Unbound network callback: ${packet.id}`);
         else
-          warn(`Unknown network callback: "${packet.id}" sent from ${RunService.IsClient() ? "Server" : packet.sender?.UserId}`);
+          RaposoConsole.Warn(`Unknown network callback: "${packet.id}" sent from ${RunService.IsClient() ? "Server" : packet.sender?.UserId}`);
 
         continue;
       }

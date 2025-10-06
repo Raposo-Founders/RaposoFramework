@@ -1,23 +1,13 @@
 import { HttpService, RunService } from "@rbxts/services";
 import { t } from "@rbxts/t";
 import Signal from "util/signal";
-import { ConsoleFunctionCallback, createdCVars, cvarFlags } from "./cvar";
+import { ConsoleFunctionCallback, createdCVars, cvarFlags, CFUNC_REPLY_POST } from "./cvar";
+import { RaposoConsole } from "logging";
 
 // # Constants & variables
-export const CONSOLE_OUT = new Signal<[Level: "warn" | "error" | "info", message: string]>();
 export const COMMAND_EXECUTED = new Signal<[name: string, args: string[]]>();
 
 // # Functions
-export function GetCVarFromName(name: string) {
-  const target = createdCVars.get(name);
-
-  if (!target) {
-    warn(`Attempt to get unknown CVar ${name}`);
-  }
-
-  return target;
-}
-
 function FormatCommandString(text: string) {
   return text.gsub("^%s+", "")[0].gsub("%s+$", "")[0];
 }
@@ -47,13 +37,13 @@ export async function ExecuteCommand(content: string) {
     }
 
     if (targetVariable.flags.includes(cvarFlags.readonly)) {
-      warn(`CVar ${name} is read only.`);
+      RaposoConsole.Error(`CVar ${name} is read only.`);
       return;
     }
 
     if (targetVariable.type === "number") {
       if (!numValue1) {
-        warn(`Value must be a number, got string.`);
+        RaposoConsole.Error(`Value must be a number, got string.`);
         return;
       }
       targetVariable.Set(numValue1);
@@ -72,35 +62,16 @@ export async function ExecuteCommand(content: string) {
     return;
   }
 
-  warn(`Unknown command "${content}".`);
-}
-
-function concatString(content: unknown[]) {
-  let finalString = "";
-
-  for (const element of content)
-    if (t.table(element))
-      finalString += `${HttpService.JSONEncode(element)} `;
-    else
-      finalString += `${tostring(element)} `;
-
-  return finalString;
-}
-
-// # Namespace
-export namespace RaposoConsole {
-  export function info(...content: string[]) {
-    CONSOLE_OUT.Fire("info", concatString(content));
-  }
-  export function warn(...content: string[]) {
-    CONSOLE_OUT.Fire("warn", concatString(content));
-  }
-  export function err(...content: string[]) {
-    CONSOLE_OUT.Fire("error", concatString(content));
-  }
+  RaposoConsole.Warn(`Unknown command "${content}".`);
 }
 
 // # Bindings & misc
+CFUNC_REPLY_POST.Connect((level, message) => {
+  if (level === "info") RaposoConsole.Info(message);
+  if (level === "warn") RaposoConsole.Warn(message);
+  if (level === "error") RaposoConsole.Error(message);
+});
+
 for (const inst of script.WaitForChild("commands").GetChildren()) {
   if (inst.IsA("ModuleScript"))
     task.spawn(require, inst);

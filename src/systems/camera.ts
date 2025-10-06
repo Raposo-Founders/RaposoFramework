@@ -1,4 +1,4 @@
-import { RaposoConsole } from "cmd";
+import { RaposoConsole } from "logging";
 import { defaultEnvironments } from "defaultinsts";
 import { BindFramerate } from "lifecycle";
 
@@ -58,12 +58,12 @@ export class PlayerCamera {
 
     const entity = defaultEnvironments.entity.entities.get(entityId);
     if (!entity) {
-      warn(`Invalid entity id: ${entityId}`);
+      RaposoConsole.Warn(`Invalid entity id: ${entityId}`);
       return;
     }
 
     if (!entity.IsA("WorldEntity")) {
-      warn(`Entity ${entityId} (${entity.classname}) is not an WorldEntity.`);
+      RaposoConsole.Warn(`Entity ${entityId} (${entity.classname}) is not an WorldEntity.`);
       return;
     }
 
