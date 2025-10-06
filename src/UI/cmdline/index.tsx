@@ -339,6 +339,7 @@ export function CommandLine() {
       Size={UDim2.fromScale(0.5, 0.5)}
       Title="Raposo Console"
       Visible={masterVisible}
+      OnClose={() => setMasterVisible(false)}
     >
     <frame
       AnchorPoint={new Vector2(0.5, 0.5)}
