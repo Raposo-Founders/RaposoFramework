@@ -54,13 +54,15 @@ ServerInstance.serverCreated.Connect(inst => {
 new ConsoleFunctionCallback(["damage", "dmg"], [{ name: "player", type: "player" }, { name: "amount", type: "number" }])
   .setDescription("Damages a player")
   .setCallback((ctx) => {
-    const targetEntity = ctx.getArgument("player", "player").value;
+    const targetPlayers = ctx.getArgument("player", "player").value;
     const amount = ctx.getArgument("amount", "number").value;
 
-    assert(targetEntity[0], "Invalid player entity.");
+    assert(targetPlayers[0], "Invalid player entity.");
 
-    startBufferCreation();
-    writeBufferString(targetEntity[0].id);
-    writeBufferU32(amount as number);
-    defaultEnvironments.network.sendPacket(CMD_INDEX_NAME);
+    for (const ent of targetPlayers) {
+      startBufferCreation();
+      writeBufferString(ent.id);
+      writeBufferU32(amount as number);
+      defaultEnvironments.network.sendPacket(CMD_INDEX_NAME);
+    }
   });

@@ -55,13 +55,15 @@ ServerInstance.serverCreated.Connect(inst => {
 new ConsoleFunctionCallback(["team"], [{ name: "player", type: "player" }, { name: "team", type: "team" }])
   .setDescription("Changes a player's team")
   .setCallback((ctx) => {
-    const playerEntity = ctx.getArgument("player", "player").value[0];
+    const targetPlayers = ctx.getArgument("player", "player").value;
     const team = ctx.getArgument("team", "team").value;
 
-    assert(playerEntity, `Invalid player entity.`);
+    assert(targetPlayers.size() > 0, `Invalid player entity.`);
 
-    startBufferCreation();
-    writeBufferString(playerEntity.id);
-    writeBufferU8(PlayerTeam[team]);
-    defaultEnvironments.network.sendPacket(CMD_INDEX_NAME);
+    for (const ent of targetPlayers) {
+      startBufferCreation();
+      writeBufferString(ent.id);
+      writeBufferU8(PlayerTeam[team]);
+      defaultEnvironments.network.sendPacket(CMD_INDEX_NAME);
+    }
   });

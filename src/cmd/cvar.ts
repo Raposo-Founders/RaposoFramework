@@ -1,3 +1,4 @@
+import { Players } from "@rbxts/services";
 import { defaultEnvironments } from "defaultinsts";
 import PlayerEntity, { PlayerTeam } from "entities/PlayerEntity";
 
@@ -42,44 +43,82 @@ export enum cvarFlags {
 export const createdCVars = new Map<string, CCVar<unknown>>();
 
 // # Functions
-export function convertConsoleArgumentType(argumenttype: CONFUNC_TYPES, values: string[]): CONFUNC_TYPES_Converted {
+function formatString(text: string) {
+  return text.gsub("^%s+", "")[0].gsub("%s+$", "")[0];
+}
+
+function getTeamFromString(value: string) {
+  let targetTeamId = PlayerTeam.Spectators;
+
+  if (("defenders").match((value).lower())[0]) targetTeamId = PlayerTeam.Defenders;
+  if (("raiders").match((value).lower())[0]) targetTeamId = PlayerTeam.Raiders;
+  if (("spectators").match((value).lower())[0]) targetTeamId = PlayerTeam.Spectators;
+
+  return PlayerTeam[targetTeamId];
+}
+
+function getPlayersFromString(value: string, caller: Player) {
+  const foundPlayers: PlayerEntity[] = [];
+
+  // Searching by team
+  if (value.sub(0, 1) === "%") {
+    const targetTeam = getTeamFromString(value.gsub("%%", "")[0]);
+
+    for (const ent of defaultEnvironments.entity.getEntitiesThatIsA("PlayerEntity")) {
+      if (PlayerTeam[ent.team] !== targetTeam) continue;
+      foundPlayers.push(ent);
+    }
+
+    return foundPlayers;
+  }
+
+  // Referencing themselves
+  if (value === "me") {
+    for (const ent of defaultEnvironments.entity.getEntitiesThatIsA("PlayerEntity")) {
+      if (ent.GetUserFromController() !== caller) continue;
+      foundPlayers.push(ent);
+      break;
+    }
+
+    return foundPlayers;
+  }
+
+  // Searching by usernames
+  {
+    const usernamesSplit = value.split(",");
+    const formattedUsernamesSplit: string[] = [];
+
+    for (const username of usernamesSplit)
+      formattedUsernamesSplit.push(formatString(username.lower()));
+
+    for (const ent of defaultEnvironments.entity.getEntitiesThatIsA("PlayerEntity")) {
+      const controller = ent.GetUserFromController();
+      const name = (controller ? controller.Name : ent.id).lower();
+
+      for (const username of formattedUsernamesSplit) {
+        if (name.sub(0, username.size()) !== username) continue;
+        foundPlayers.push(ent);
+        break;
+      }
+    }
+  }
+
+
+  return foundPlayers;
+}
+
+export function convertConsoleArgumentType(argumenttype: CONFUNC_TYPES, values: string[], caller: Player): CONFUNC_TYPES_Converted {
   if (argumenttype === "string")
     return tostring(values.shift());
 
   if (argumenttype === "number")
     return tonumber(tostring(values.shift())) || -1;
 
-  if (argumenttype === "team") {
+  if (argumenttype === "team")
+    return getTeamFromString(tostring(values.shift()));
 
-    const value = tostring(values.shift());
-    let targetTeamId = PlayerTeam.Spectators;
-
-    if (("defenders").match((value).lower())[0]) targetTeamId = PlayerTeam.Defenders;
-    if (("raiders").match((value).lower())[0]) targetTeamId = PlayerTeam.Raiders;
-    if (("spectators").match((value).lower())[0]) targetTeamId = PlayerTeam.Spectators;
-
-    return PlayerTeam[targetTeamId];
-  }
-
-  if (argumenttype === "player") {
-    const value = tostring(values.shift());
-    const foundPlayers: PlayerEntity[] = [];
-
-    for (const playerEntity of defaultEnvironments.entity.getEntitiesThatIsA("PlayerEntity")) {
-      const controller = playerEntity.GetUserFromController();
-
-      if (controller) {
-        if (controller.Name.sub(0, value.size()) !== value) continue;
-      } else {
-        if (playerEntity.id.sub(0, value.size()) !== value) continue;
-      }
-
-      foundPlayers.push(playerEntity);
-      break;
-    }
-
-    return foundPlayers;
-  }
+  if (argumenttype === "player")
+    return getPlayersFromString(tostring(values.shift()), caller);
 
   // Returning the "values" table itself
   const clonedObj = table.clone(values);
@@ -152,7 +191,7 @@ export class ConsoleFunctionCallback {
 
     for (let i = 0; i < this.args.size(); i++) {
       const element = this.args[i];
-      convertedArguments.set(element.name, { name: element.name, value: convertConsoleArgumentType(element.type, args) as never });
+      convertedArguments.set(element.name, { name: element.name, value: convertConsoleArgumentType(element.type, args, Players.LocalPlayer) as never });
     }
 
     const contextEnvironment: CommandContext = {
