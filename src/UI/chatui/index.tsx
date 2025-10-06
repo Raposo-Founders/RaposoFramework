@@ -1,10 +1,10 @@
 import React from "@rbxts/react";
 import { UserInputService } from "@rbxts/services";
-import { sendMessage } from "systems/chatmngr";
+import { ExecuteCommand } from "cmd";
+import { gameValues } from "gamevalues";
 import Signal from "util/signal";
 import { TintButton } from "../blocks/tintbtn";
-import { gameValues } from "gamevalues";
-import { ExecuteCommand } from "cmd";
+import { sendChatMessage } from "systems/chatmngr";
 
 // # Constants & variables
 const KEYCODE = Enum.KeyCode.Slash;
@@ -62,7 +62,7 @@ export function ChatBar() {
           inst.Text = "";
           inst.CursorPosition = -1;
 
-          sendMessage(text);
+          sendChatMessage(text, []);
 
           if (text.sub(1, 1) === gameValues.cmdprefix) {
             const split = text.split(gameValues.cmdprefix);

@@ -85,8 +85,7 @@ export function clientConnectToServerSession(sessionId: string) {
   canConnect = true;
   currentConnectionThread = undefined;
 
-  (TextChatService.WaitForChild("ChatInputBarConfiguration") as ChatInputBarConfiguration).TargetTextChannel = TextChatService.WaitForChild(sessionId) as TextChannel;
-
+  clientSessionConnected.Fire(sessionId);
   warn("Finished connection to server!");
 }
 

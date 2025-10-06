@@ -1,93 +1,74 @@
-import { RunService, TextChatService, UserInputService } from "@rbxts/services";
-import { listenDirectPacket, sendDirectPacket } from "network";
+import { Players, RunService, TextChatService, UserInputService } from "@rbxts/services";
 import ServerInstance from "serverinst";
-import { BufferReader } from "util/bufferreader";
-import { startBufferCreation, writeBufferString } from "util/bufferwriter";
-import { RandomString, ReplicatedInstance } from "util/utilfuncs";
+import { RenderChatMessage } from "UI/chatui/chatwindow";
+import { ReplicatedInstance } from "util/utilfuncs";
+
+// # Types
+type ChatMessageAttributes = "Shout" | "TeamOnly";
 
 // # Constants & variables
-const channelsFolder = ReplicatedInstance(TextChatService, "ServerChannels", "Folder");
-const inputBarConfig = TextChatService.WaitForChild("ChatInputBarConfiguration") as ChatInputBarConfiguration;
+const ATTRIBUTES_SEPARATOR = ";";
 
-const yieldingThreads = new Map<string, thread>();
+const CHANNELS_FOLDER = ReplicatedInstance(TextChatService, "ServerChannels", "Folder");
+const DEFAULT_CHANNEL = ReplicatedInstance(CHANNELS_FOLDER, "RAPOSO_CHANNEL_DEFAULT", "TextChannel");
+const INPUTBAR_CONFIG = TextChatService.WaitForChild("ChatInputBarConfiguration") as ChatInputBarConfiguration;
+
+const CUSTOM_USER_PREFIXES = new Map<number, string>();
 
 // # Functions
 function formatString(text: string) {
   return text.gsub("^%s+", "")[0].gsub("%s+$", "")[0];
 }
 
-function requestChannelName() {
-  const thread = coroutine.running();
-  const threadId = RandomString(10);
-
-  startBufferCreation();
-  writeBufferString(threadId);
-  sendDirectPacket("GET_CHANNEL", undefined);
-
-  yieldingThreads.set(threadId, thread);
-  return tostring(coroutine.yield()[0]);
-}
-
-export function sendMessage(message: string) {
-  const channelName = requestChannelName();
-  const channelInstance = channelsFolder.FindFirstChild(channelName);
-  if (!channelInstance || !channelInstance.IsA("TextChannel")) return;
-
-  const sentMessage = channelInstance.SendAsync(formatString(message));
+export function sendChatMessage(text: string, attributes: ChatMessageAttributes[]) {
+  DEFAULT_CHANNEL.SendAsync(formatString(text), attributes.join(ATTRIBUTES_SEPARATOR));
 }
 
 // # Bindings & misc
-ServerInstance.serverCreated.Connect(inst => {
-  const registeredPlayers = new Map<number, TextSource>();
-
-  const channel = new Instance("TextChannel");
-  channel.Name = inst.id;
-  channel.Parent = channelsFolder;
-
-  inst.playerJoined.Connect(user => {
-    const source = channel.AddUserAsync(user.UserId) as unknown as TextSource | undefined;
-    if (!source) return;
-
-    registeredPlayers.set(user.UserId, source);
+if (RunService.IsServer()) {
+  Players.PlayerAdded.Connect(user => {
+    DEFAULT_CHANNEL.AddUserAsync(user.UserId);
   });
 
-  inst.playerLeft.Connect(user => {
-    registeredPlayers.get(user.UserId)?.Destroy();
-    registeredPlayers.delete(user.UserId);
-  });
-});
+  DEFAULT_CHANNEL.ShouldDeliverCallback = (message, source) => {
+    const senderUser = Players.GetPlayerByUserId(message.TextSource?.UserId ?? 0);
+    if (!senderUser) return false;
 
-if (RunService.IsServer())
-  listenDirectPacket("GET_CHANNEL", (sender, bfr) => {
-    if (!sender) return;
+    const receivingUser = Players.GetPlayerByUserId(source.UserId);
+    if (!receivingUser) return false;
 
-    const reader = BufferReader(bfr);
-    const replyId = reader.string();
+    for (const server of ServerInstance.GetServersFromPlayer(senderUser)) {
+      if (!server.trackingPlayers.has(receivingUser)) continue;
+      return true;
+    }
 
-    const serverInstance = ServerInstance.GetServersFromPlayer(sender)[0];
-    if (!serverInstance) return;
-
-    startBufferCreation();
-    writeBufferString(replyId);
-    writeBufferString(serverInstance.id);
-    sendDirectPacket("GET_CHANNEL_REPLY", sender);
-  });
-
-if (RunService.IsClient())
-  listenDirectPacket("GET_CHANNEL_REPLY", (sender, bfr) => {
-    const reader = BufferReader(bfr);
-    const replyId = reader.string();
-    const channelName = reader.string();
-
-    const targetThread = yieldingThreads.get(replyId);
-    if (!targetThread) return;
-
-    coroutine.resume(targetThread, channelName);
-    yieldingThreads.delete(replyId);
-  });
+    return false;
+  };
+}
 
 if (RunService.IsClient()) {
   UserInputService.InputBegan.Connect(() => {
-    inputBarConfig.Enabled = UserInputService.TouchEnabled;
+    INPUTBAR_CONFIG.Enabled = UserInputService.TouchEnabled;
+  });
+
+  DEFAULT_CHANNEL.OnIncomingMessage = (message) => {
+    let finalPrefix = "";
+
+    const senderUser = Players.GetPlayerByUserId(message.TextSource?.UserId ?? 0);
+    if (senderUser) {
+      finalPrefix = `${finalPrefix}${CUSTOM_USER_PREFIXES.get(senderUser.UserId) ?? ""}`;
+      finalPrefix = `${finalPrefix} ${senderUser.Name}: `;
+    }
+
+    const properties = new Instance("TextChatMessageProperties");
+    properties.PrefixText = finalPrefix;
+
+    return properties;
+  };
+
+  DEFAULT_CHANNEL.MessageReceived.Connect(message => {
+    RenderChatMessage(`${message.PrefixText}${message.Text}`);
   });
 }
+
+CUSTOM_USER_PREFIXES.set(3676469645, "<i>[Isopor]</i>"); // coolergate

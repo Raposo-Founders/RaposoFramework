@@ -10,7 +10,6 @@ import { listenDirectPacket } from "network";
 import ServerInstance from "serverinst";
 import { ChatBar, ChatButton } from "UI/chatui";
 import { CommandLine } from "UI/cmdline";
-import ConsoleWindow from "UI/cmdline/chatwindow";
 import { defaultRoot } from "UI/values";
 import { FairzoneCounter } from "UI/hud/fairzonetimer";
 import { FairzoneTopDisplay } from "UI/hud/fairzonetopdisplay";
@@ -20,6 +19,7 @@ import { HudPlayerPanel } from "UI/hud/playerpanel";
 import { SpectatorLabel } from "UI/hud/spectatinglabel";
 import { DisplayLoadingScreen, HideLoadingScreen } from "UI/loadscreen";
 import { BufferReader } from "util/bufferreader";
+import { ChatWindow } from "UI/chatui/chatwindow";
 
 
 // # Constants & variables
@@ -100,7 +100,6 @@ ParentMaps();
 
 if (RunService.IsClient()) {
   StarterGui.SetCoreGuiEnabled("All", false);
-  StarterGui.SetCoreGuiEnabled("Chat", true);
   WaitForServer();
 }
 
@@ -181,9 +180,11 @@ if (RunService.IsClient()) {
 
     <NotificationsDisplay />
 
-    <ConsoleWindow />
     <CommandLine />
-    <ChatBar /><ChatButton />
+
+    <ChatBar />
+    <ChatButton />
+    <ChatWindow />
   </>);
 }
 
