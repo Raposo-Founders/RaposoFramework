@@ -1,7 +1,11 @@
+import ColorUtils from "@rbxts/colour-utils";
 import React, { useEffect } from "@rbxts/react";
-import { Players, TextChatService } from "@rbxts/services";
+import { Players, RunService, TextChatService, TweenService } from "@rbxts/services";
+import { defaultEnvironments } from "defaultinsts";
 import { BlankWindow } from "UI/blocks/window";
 import { uiValues } from "UI/values";
+import Signal from "util/signal";
+import { DoesInstanceExist } from "util/utilfuncs";
 
 // # Types
 interface ChatMessageConfig {
@@ -10,6 +14,10 @@ interface ChatMessageConfig {
 }
 
 // # Constants & variables
+const CHAT_FOCUSED = new Signal<[focused: boolean]>();
+const CHAT_DISPLAY_TIME = 5;
+const TWEEN_INFO = new TweenInfo(0.125, Enum.EasingStyle.Linear);
+
 let currentReference: Instance | undefined;
 
 // # Functions
@@ -21,6 +29,9 @@ export function RenderChatMessage(text: string, config?: Partial<ChatMessageConf
         text = `<${player.Name}> ${text}`;
     }
   }
+
+  let temporaryVisibility = 0;
+  let focusVisibility = 1;
 
   const textLabel = new Instance("TextLabel");
   textLabel.FontFace = new Font(
@@ -43,6 +54,67 @@ export function RenderChatMessage(text: string, config?: Partial<ChatMessageConf
   uIStroke.Thickness = 0.75;
   uIStroke.Parent = textLabel;
 
+  {
+    const value = new Instance("NumberValue");
+
+    let currentTween: Tween | undefined;
+
+    value.Value = 1;
+    value.Changed.Connect(val => focusVisibility = val);
+
+    const connection1 = CHAT_FOCUSED.Connect(focused => {
+      if (currentTween) {
+        currentTween.Cancel();
+        currentTween.Destroy();
+        currentTween = undefined;
+      }
+
+      value.Value = focused ? 1 : 0;
+
+      currentTween = TweenService.Create(value, TWEEN_INFO, { Value: focused ? 0 : 1 });
+      currentTween.Completed.Once(() => {
+        currentTween?.Destroy();
+        currentTween = undefined;
+      });
+      currentTween.Play();
+    });
+
+    textLabel.Destroying.Once(() => {
+      connection1.Disconnect();
+
+      currentTween?.Cancel();
+      currentTween?.Destroy();
+      currentTween = undefined;
+    });
+  }
+
+  {
+    let connection: RBXScriptConnection | undefined = RunService.PreRender.Connect(() => {
+      textLabel.TextTransparency = math.min(focusVisibility, temporaryVisibility);
+      uIStroke.Transparency = math.min(focusVisibility, temporaryVisibility);
+    });
+    textLabel.Destroying.Once(() => {
+      connection?.Disconnect();
+      connection = undefined;
+    });
+  }
+
+  task.spawn(() => {
+    const value = new Instance("NumberValue");
+    value.Value = 0;
+
+    const tween = TweenService.Create(value, TWEEN_INFO, { Value: 1 });
+    tween.Completed.Once(() => {
+      value.Destroy();
+      tween.Destroy();
+    });
+
+    value.Changed.Connect(val => temporaryVisibility = val);
+
+    task.wait(CHAT_DISPLAY_TIME);
+    tween.Play();
+  });
+
   if (currentReference) {
     textLabel.Parent = currentReference;
     textLabel.LayoutOrder = -currentReference.GetChildren().size();
@@ -51,6 +123,10 @@ export function RenderChatMessage(text: string, config?: Partial<ChatMessageConf
 
 export function ChatWindow() {
   const parentFrameRef = React.createRef<ScrollingFrame>();
+  const [backgroundTransparency, SetBackgroundTransparency] = React.createBinding(0);
+  const backgroundValue = new Instance("NumberValue");
+
+  backgroundValue.Changed.Connect(val => SetBackgroundTransparency(val));
 
   useEffect(() => {
     currentReference = parentFrameRef.current;
@@ -59,10 +135,18 @@ export function ChatWindow() {
   return (
     <BlankWindow
       AnchorPoint={new Vector2(0, 1)}
-      BackgroundColor={uiValues.hud_team_color[0]}
-      BackgroundTransparency={0.75}
+      BackgroundTransparency={backgroundTransparency.map(val => math.lerp(0.5, 1, val))}
+      BackgroundColor={uiValues.hud_team_color[0].map(val => ColorUtils.Darken(val, 0.75))}
       Position={React.createBinding(new UDim2(0, 16, 1, -16))[0]}
       Size={new UDim2(0.3, 0, 0.4, 0)}
+      OnMouseEnter={(rbx) => {
+        TweenService.Create(backgroundValue, TWEEN_INFO, { Value: 0 }).Play();
+        CHAT_FOCUSED.Fire(true);
+      }}
+      OnMouseLeave={(rbx) => {
+        TweenService.Create(backgroundValue, TWEEN_INFO, { Value: 1 }).Play();
+        CHAT_FOCUSED.Fire(false);
+      }}
     >
       <scrollingframe
         AutomaticCanvasSize={"Y"}

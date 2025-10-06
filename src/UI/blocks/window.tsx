@@ -9,6 +9,8 @@ interface WindowBaseProperties {
   Position?: React.Binding<UDim2>;
   Size?: UDim2 | React.Binding<UDim2>;
   Visible?: boolean | React.Binding<boolean>;
+  OnMouseEnter?: (rbx: ImageLabel) => void;
+  OnMouseLeave?: (rbx: ImageLabel) => void;
 }
 
 interface WindowProperties {
@@ -32,6 +34,10 @@ export function BlankWindow(props: WindowBaseProperties & React.PropsWithChildre
       Position={props.Position ?? new UDim2(0.25, 0, 0.25, 0)}
       Size={props.Size}
       Visible={props.Visible}
+      Event={{
+        MouseEnter: (rbx) => props.OnMouseEnter?.(rbx),
+        MouseLeave: (rbx) => props.OnMouseLeave?.(rbx),
+      }}
     >
       <uipadding
         PaddingBottom={new UDim(0, 10)}
@@ -68,6 +74,8 @@ export function Window(props: WindowProperties & Exclude<WindowBaseProperties, W
       Position={windowPosition}
       Size={props.Size}
       Visible={props.Visible}
+      OnMouseEnter={props.OnMouseEnter}
+      OnMouseLeave={props.OnMouseLeave}
     >
       <frame // Title bar
         BackgroundColor3={props.AccentColor}

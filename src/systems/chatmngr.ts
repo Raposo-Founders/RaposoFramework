@@ -1,6 +1,10 @@
+import ColorUtils from "@rbxts/colour-utils";
 import { Players, RunService, TextChatService, UserInputService } from "@rbxts/services";
+import { defaultEnvironments } from "defaultinsts";
+import PlayerEntity, { PlayerTeam } from "entities/PlayerEntity";
 import ServerInstance from "serverinst";
 import { RenderChatMessage } from "UI/chatui/chatwindow";
+import { colorTable, uiValues } from "UI/values";
 import { ReplicatedInstance } from "util/utilfuncs";
 
 // # Types
@@ -53,11 +57,33 @@ if (RunService.IsClient()) {
 
   DEFAULT_CHANNEL.OnIncomingMessage = (message) => {
     let finalPrefix = "";
+    let textColor = ColorUtils.Darken(uiValues.hud_team_color[0].getValue(), 0.75);
 
     const senderUser = Players.GetPlayerByUserId(message.TextSource?.UserId ?? 0);
     if (senderUser) {
+      let entity: PlayerEntity | undefined;
+      for (const ent of defaultEnvironments.entity.getEntitiesThatIsA("PlayerEntity")) {
+        if (ent.GetUserFromController() !== senderUser) continue;
+        entity = ent;
+        break;
+      }
+      
+      if (entity) {
+        switch (entity.team) {
+        case PlayerTeam.Defenders:
+          textColor = Color3.fromHex(colorTable.defendersColor);
+          break;
+        case PlayerTeam.Raiders:
+          textColor = Color3.fromHex(colorTable.raidersColor);
+          break;
+        case PlayerTeam.Spectators:
+          textColor = Color3.fromHex(colorTable.spectatorsColor);
+          break;
+        }
+      }
+
       finalPrefix = `${finalPrefix}${CUSTOM_USER_PREFIXES.get(senderUser.UserId) ?? ""}`;
-      finalPrefix = `${finalPrefix} ${senderUser.Name}: `;
+      finalPrefix = `${finalPrefix} <font color="#${textColor.ToHex()}">${senderUser.Name}</font>: `;
     }
 
     const properties = new Instance("TextChatMessageProperties");
@@ -71,4 +97,4 @@ if (RunService.IsClient()) {
   });
 }
 
-CUSTOM_USER_PREFIXES.set(3676469645, "<i>[Isopor]</i>"); // coolergate
+CUSTOM_USER_PREFIXES.set(3676469645, `<font color="#55ff7f"><i>[The snake]</i></font>`); // coolergate
