@@ -91,7 +91,7 @@ export function Window(props: WindowProperties & Exclude<WindowBaseProperties, W
               currentDraggingThread = undefined;
             }
 
-            let lastPosition = new Vector2(input.Position.X, input.Position.Y);
+            let lastPosition: Vector2;
 
             const getInputPosition = () => {
               if (input.UserInputType.Name === "MouseButton1")
@@ -108,6 +108,7 @@ export function Window(props: WindowProperties & Exclude<WindowBaseProperties, W
             };
 
             currentInput = input;
+            lastPosition = getInputPosition();
             currentDraggingThread = task.spawn(() => {
               while (game) {
                 const currentInputPosition = getInputPosition();
