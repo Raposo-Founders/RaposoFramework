@@ -1,11 +1,9 @@
 import ColorUtils from "@rbxts/colour-utils";
 import React, { useEffect } from "@rbxts/react";
-import { Players, RunService, TextChatService, TweenService } from "@rbxts/services";
-import { defaultEnvironments } from "defaultinsts";
+import { Players, RunService, TweenService } from "@rbxts/services";
 import { BlankWindow } from "UI/blocks/window";
 import { uiValues } from "UI/values";
 import Signal from "util/signal";
-import { DoesInstanceExist } from "util/utilfuncs";
 
 // # Types
 interface ChatMessageConfig {
@@ -123,9 +121,10 @@ export function RenderChatMessage(text: string, config?: Partial<ChatMessageConf
 
 export function ChatWindow() {
   const parentFrameRef = React.createRef<ScrollingFrame>();
-  const [backgroundTransparency, SetBackgroundTransparency] = React.createBinding(0);
+  const [backgroundTransparency, SetBackgroundTransparency] = React.createBinding(1);
   const backgroundValue = new Instance("NumberValue");
 
+  backgroundValue.Value = 1;
   backgroundValue.Changed.Connect(val => SetBackgroundTransparency(val));
 
   useEffect(() => {
