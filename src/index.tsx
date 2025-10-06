@@ -20,6 +20,7 @@ import { SpectatorLabel } from "UI/hud/spectatinglabel";
 import { DisplayLoadingScreen, HideLoadingScreen } from "UI/loadscreen";
 import { BufferReader } from "util/bufferreader";
 import { ChatWindow } from "UI/chatui/chatwindow";
+import { ConsoleCommandsLogs } from "UI/cmdline/logs";
 
 
 // # Constants & variables
@@ -181,6 +182,7 @@ if (RunService.IsClient()) {
     <NotificationsDisplay />
 
     <CommandLine />
+    <ConsoleCommandsLogs />
 
     <ChatBar />
     <ChatButton />
