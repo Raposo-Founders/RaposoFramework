@@ -113,7 +113,7 @@ export default class PlayerEntity extends HealthEntity {
     const ping = reader.u16();
     const damage = reader.u16();
 
-    const vectorPosition = new Vector3(position.x, position.y, position.z);
+    let vectorPosition = new Vector3(position.x, position.y, position.z);
     const rotationCFrame = CFrame.Angles(math.rad(rotation.y), math.rad(rotation.x), math.rad(rotation.z));
 
     if (this.environment.isServer && !this.environment.isPlayback) {
@@ -130,6 +130,9 @@ export default class PlayerEntity extends HealthEntity {
     // Client - Update position
     if (!this.environment.isServer)
       if (this.environment.isPlayback || (isLocalPlayer && pendingTeleport) || !isLocalPlayer) {
+        if (!isLocalPlayer && this.team === PlayerTeam.Spectators)
+          vectorPosition = new Vector3(0, -1000, 0);
+
         this.origin = new CFrame(vectorPosition).mul(rotationCFrame);
         this.teleportPlayermodelSignal.Fire(this.origin);
       }
