@@ -144,6 +144,9 @@ export default class PlayerEntity extends HealthEntity {
       if (this.health !== health) {
         if (this.health <= 0 && health > 0)
           this.spawned.Fire(this.origin);
+
+        if (this.health > 0 && health <= 0)
+          this.died.Fire();
       }
 
       this.health = health;

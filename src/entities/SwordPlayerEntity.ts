@@ -126,6 +126,9 @@ export class SwordPlayerEntity extends PlayerEntity {
     task.defer(() => {
       if (this.environment.isServer) return;
 
+      this.spawned.Connect(() => this.Equip());
+      this.died.Connect(() => this.Unequip());
+
       createPlayermodelForEntity(this).andThen(playermodel => {
         const hitboxPart = SWORD_MODEL.Clone();
         hitboxPart.Parent = this.environment.world.objects;
@@ -227,6 +230,10 @@ export class SwordPlayerEntity extends PlayerEntity {
       inst.Destroy();
     }
     this.instancesList.clear();
+  }
+
+  IsWeaponEquipped() {
+    return this.isEquipped;
   }
 
   Equip() {
