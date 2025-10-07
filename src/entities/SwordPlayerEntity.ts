@@ -392,7 +392,7 @@ ServerInstance.serverCreated.Connect(server => {
     for (const ent of entitiesList) {
       startBufferCreation();
       ent.WriteStateBuffer();
-      server.network.sendPacket(`${NETWORK_ID}replication`);
+      server.network.sendPacket(`${NETWORK_ID}replication`, undefined, undefined, true);
     }
   });
 

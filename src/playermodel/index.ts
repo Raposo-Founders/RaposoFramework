@@ -150,8 +150,13 @@ export async function createPlayermodelForEntity(entity: PlayerEntity) {
     playermodel.rig.Humanoid.Health = entity.health;
     playermodel.rig.Humanoid.MaxHealth = entity.maxHealth;
 
-    if (playermodel.rig.PrimaryPart)
-      playermodel.rig.PrimaryPart.Anchored = entity.GetUserFromController() !== Services.Players.LocalPlayer;
+    const primaryPart = playermodel.rig.PrimaryPart;
+    if (primaryPart) {
+      primaryPart.Anchored = entity.GetUserFromController() !== Services.Players.LocalPlayer;
+      primaryPart.AssemblyLinearVelocity = entity.GetUserFromController() !== Services.Players.LocalPlayer
+        ? entity.velocity
+        : primaryPart.AssemblyLinearVelocity;
+    }
 
     playermodel.animator.is_grounded = entity.grounded;
     playermodel.animator.Update();

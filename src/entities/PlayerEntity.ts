@@ -136,7 +136,7 @@ export default class PlayerEntity extends HealthEntity {
 
     this.size = new Vector3(size.x, size.y, size.z);
     this.velocity = new Vector3(velocity.x, velocity.y, velocity.z);
-    this.grounded = this.environment.isPlayback || (!this.environment.isServer && this.GetUserFromController() !== Players.LocalPlayer)
+    this.grounded = this.environment.isServer || this.environment.isPlayback || (!this.environment.isServer && this.GetUserFromController() !== Players.LocalPlayer)
       ? grounded
       : this.grounded;
 

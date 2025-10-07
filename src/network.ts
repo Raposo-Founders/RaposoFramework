@@ -212,7 +212,7 @@ export class NetworkManager {
         if (packetList[0].size() > 0)
           REMOTE_EVENT.FireClient(user, packetList[0]);
         if (packetList[1].size() > 0)
-          UNREL_DIRECT_REMOTE.FireClient(user, packetList[1]);
+          UNREL_REMOTE_EVENT.FireClient(user, packetList[1]);
       }
 
       // print("Reached end.", clonedOutgoingPacketsList);
