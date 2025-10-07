@@ -3,7 +3,7 @@ import React from "@rbxts/react";
 import { RunService, UserInputService } from "@rbxts/services";
 
 interface WindowBaseProperties {
-  AnchorPoint?: Vector2;
+  AnchorPoint?: React.Binding<Vector2> | Vector2;
   BackgroundColor?: Color3 | React.Binding<Color3>;
   BackgroundTransparency?: number | React.Binding<number>;
   Position?: React.Binding<UDim2>;

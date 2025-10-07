@@ -1,6 +1,6 @@
 import ColorUtils from "@rbxts/colour-utils";
 import React, { useEffect } from "@rbxts/react";
-import { Players, RunService, TweenService } from "@rbxts/services";
+import { Players, RunService, TweenService, UserInputService } from "@rbxts/services";
 import { BlankWindow } from "UI/blocks/window";
 import { uiValues } from "UI/values";
 import Signal from "util/signal";
@@ -122,6 +122,8 @@ export function RenderChatMessage(text: string, config?: Partial<ChatMessageConf
 export function ChatWindow() {
   const parentFrameRef = React.createRef<ScrollingFrame>();
   const [backgroundTransparency, SetBackgroundTransparency] = React.createBinding(1);
+  const [positionBinding, SetPosition] = React.createBinding(new UDim2(0, 16, 1, -16));
+  const [anchorBinding, SetAnchor] = React.createBinding(new Vector2(0, 1));
   const backgroundValue = new Instance("NumberValue");
 
   backgroundValue.Value = 1;
@@ -129,14 +131,19 @@ export function ChatWindow() {
 
   useEffect(() => {
     currentReference = parentFrameRef.current;
+
+    UserInputService.InputBegan.Connect(() => {
+      SetPosition(!UserInputService.TouchEnabled ? new UDim2(0, 16, 1, -16) : new UDim2(0, 16, 0, 68));
+      SetAnchor(!UserInputService.TouchEnabled ? new Vector2(0, 1) : new Vector2(0, 0));
+    });
   });
 
   return (
     <BlankWindow
-      AnchorPoint={new Vector2(0, 1)}
+      AnchorPoint={anchorBinding}
       BackgroundTransparency={backgroundTransparency.map(val => math.lerp(0.5, 1, val))}
       BackgroundColor={uiValues.hud_team_color[0].map(val => ColorUtils.Darken(val, 0.75))}
-      Position={React.createBinding(new UDim2(0, 16, 1, -16))[0]}
+      Position={positionBinding}
       Size={new UDim2(0.3, 0, 0.4, 0)}
       OnMouseEnter={(rbx) => {
         TweenService.Create(backgroundValue, TWEEN_INFO, { Value: 0 }).Play();
