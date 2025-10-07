@@ -115,7 +115,7 @@ export function convertConsoleArgumentType(argumenttype: CONFUNC_TYPES, values: 
     return tostring(values.shift());
 
   if (argumenttype === "number")
-    return tonumber(tostring(values.shift())) || -1;
+    return tonumber(tostring(values.shift())) || 0;
 
   if (argumenttype === "team")
     return getTeamFromString(tostring(values.shift()));

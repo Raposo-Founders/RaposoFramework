@@ -1,0 +1,26 @@
+import PlayerEntity, { PlayerTeam } from "entities/PlayerEntity";
+import { gameValues } from "gamevalues";
+import { sendDirectPacket } from "network";
+import { startBufferCreation, writeBufferString } from "util/bufferwriter";
+
+export function defendersCommandCheck(callerEntity: PlayerEntity, targetEntity: PlayerEntity) {
+  const caller = callerEntity.GetUserFromController();
+  if (!caller) return;
+
+  if (!caller.GetAttribute(gameValues.modattr)) return;
+  if (caller.GetAttribute(gameValues.adminattr)) return true;
+
+  // Check if they themselves are in the defenders' team
+  if (callerEntity.team === PlayerTeam.Defenders) return true;
+
+  // If they are attempting to mess with someone on defenders
+  if (targetEntity.team === PlayerTeam.Defenders) return false;
+
+  return true;
+}
+
+export function writePlayerReply(target: Player, reply: string) {
+  startBufferCreation();
+  writeBufferString(reply);
+  sendDirectPacket(gameValues.cmdnetinfo, target);
+}

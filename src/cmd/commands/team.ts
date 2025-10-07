@@ -1,6 +1,7 @@
+import { defendersCommandCheck, writePlayerReply } from "cmd/cmdutils";
 import { ConsoleFunctionCallback } from "cmd/cvar";
 import { defaultEnvironments } from "defaultinsts";
-import { PlayerTeam } from "entities/PlayerEntity";
+import PlayerEntity, { PlayerTeam } from "entities/PlayerEntity";
 import { gameValues } from "gamevalues";
 import { sendDirectPacket } from "network";
 import ServerInstance from "serverinst";
@@ -13,32 +14,31 @@ const CMD_INDEX_NAME = "cmd_team";
 // # Bindings & execution
 
 ServerInstance.serverCreated.Connect(inst => {
-  inst.network.listenPacket(CMD_INDEX_NAME, (packet) => {
-    if (!packet.sender || !packet.sender.GetAttribute(gameValues.modattr)) return;
+  inst.network.listenPacket(CMD_INDEX_NAME, info => {
+    if (!info.sender || !info.sender.GetAttribute(gameValues.modattr)) return;
 
-    const reader = BufferReader(packet.content);
+    const reader = BufferReader(info.content);
     const entityId = reader.string();
     const team = reader.u8();
 
+    let callerEntity: PlayerEntity | undefined;
+    for (const ent of inst.entity.getEntitiesThatIsA("PlayerEntity")) {
+      if (ent.GetUserFromController() !== info.sender) continue;
+      callerEntity = ent;
+      break;
+    }
+    if (!callerEntity) return;
+
     const targetEntity = inst.entity.entities.get(entityId);
     if (!targetEntity || !targetEntity.IsA("PlayerEntity")) {
-      startBufferCreation();
-      writeBufferString(`Invalid player entity ${entityId}`);
-      sendDirectPacket(gameValues.cmdnetinfo, packet.sender);
-
+      writePlayerReply(info.sender, `Invalid player entity ${entityId}`);
       return;
     }
 
-    // Check to see if the sender is just someone with tempmod
-    if (!packet.sender.GetAttribute(gameValues.adminattr) || team === PlayerTeam.Defenders) {
-
-      // Block the action if the target player is from the defenders team
-      if (targetEntity.team === PlayerTeam.Defenders) {
-        startBufferCreation();
-        // writeBufferString("Moderators can't switch players off the Defenders team."); // Formal?
-        writeBufferString("Moderators can't mess with the Defenders' team."); // :)
-        sendDirectPacket(gameValues.cmdnetinfo, packet.sender);
-
+    // Prevent people with tempmod from messing with the defenders' team
+    if (!info.sender.GetAttribute(gameValues.adminattr) && callerEntity.team !== PlayerTeam.Defenders) {
+      if (team === PlayerTeam.Defenders || targetEntity.team === PlayerTeam.Defenders) {
+        writePlayerReply(info.sender, gameValues.cmdtempmoddefendersdeny);
         return;
       }
     }
@@ -48,9 +48,9 @@ ServerInstance.serverCreated.Connect(inst => {
 
     startBufferCreation();
     writeBufferString(`Changed ${targetEntity.GetUserFromController()}'s team to ${PlayerTeam[team]}.`);
-    sendDirectPacket(gameValues.cmdnetinfo, packet.sender);
+    sendDirectPacket(gameValues.cmdnetinfo, info.sender);
   });
-});
+}); 
 
 new ConsoleFunctionCallback(["team"], [{ name: "player", type: "player" }, { name: "team", type: "team" }])
   .setDescription("Changes a player's team")
