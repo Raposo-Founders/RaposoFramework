@@ -67,8 +67,8 @@ export default class PlayerEntity extends HealthEntity {
 
   WriteStateBuffer(): void {
     writeBufferString(this.id);
-    writeBufferU8(this.health);
-    writeBufferU8(this.maxHealth);
+    writeBufferU16(this.health);
+    writeBufferU16(this.maxHealth);
 
     writeBufferVector(this.origin.Position.X, this.origin.Position.Y, this.origin.Position.Z);
     {
@@ -95,8 +95,8 @@ export default class PlayerEntity extends HealthEntity {
     const reader = BufferReader(state);
     reader.string(); // Entity ID (obvious)
 
-    const health = reader.u8();
-    const maxHealth = reader.u8();
+    const health = reader.u16();
+    const maxHealth = reader.u16();
 
     const position = reader.vec();
     const rotation = reader.vec();

@@ -182,8 +182,8 @@ export class SwordPlayerEntity extends PlayerEntity {
   
     /* Skip the original content from the PlayerEntity class */
     reader.string();
-    reader.u8();
-    reader.u8();
+    reader.u16();
+    reader.u16();
 
     reader.vec();
     reader.vec();
