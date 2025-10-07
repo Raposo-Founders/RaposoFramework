@@ -364,6 +364,9 @@ ServerInstance.serverCreated.Connect(server => {
     if (!attackerEntity?.IsA("SwordPlayerEntity")) return;
     if (!victimEntity?.IsA("HealthEntity")) return;
 
+    if (victimEntity.IsA("PlayerEntity") && victimEntity.team === attackerEntity.team) return;
+    if ((victimEntity.IsA("PlayerEntity") && victimEntity.team === PlayerTeam.Spectators) || attackerEntity.team === PlayerTeam.Spectators) return;
+
     if (hitIndex === SWORD_HIT_INDEX.LOCAL) {
       if (attackerEntity.GetUserFromController() !== packet.sender) return;
       if (attackerEntity.health <= 0) {
