@@ -126,11 +126,18 @@ function EntityHealthBar(props: { entity: PlayerEntity }) {
         defaultEnvironments.lifecycle.YieldForTicks(20);
       }
     });
-
-    props.entity.OnDelete(() => {
+    
+    return () => {
       task.cancel(updateThread!);
       updateThread = undefined;
-    });
+
+      defaultLifecycleUnbind?.();
+      defaultLifecycleUnbind = undefined;
+
+      for (const info of registeredFrames)
+        info.inst.Destroy();
+      registeredFrames.clear();
+    };
   });
 
   const element = (
@@ -186,21 +193,16 @@ function EntityHealthBar(props: { entity: PlayerEntity }) {
     </frame>
   );
 
-  props.entity.OnDelete(() => {
-    defaultLifecycleUnbind?.();
-    defaultLifecycleUnbind = undefined;
-
-    for (const info of registeredFrames)
-      info.inst.Destroy();
-    registeredFrames.clear();
-  });
-
   return element;
 }
 
 export function createHealthBarForEntity(entity: PlayerEntity) {
   const root = ReactRoblox.createRoot(SCREENGUI, { "hydrate": true });
   root.render(<EntityHealthBar entity={entity} />);
+
+  entity.OnDelete(() => {
+    root.unmount();
+  });
 }
 
 // # Bindings & misc
