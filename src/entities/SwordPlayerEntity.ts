@@ -366,6 +366,10 @@ ServerInstance.serverCreated.Connect(server => {
 
     if (hitIndex === SWORD_HIT_INDEX.LOCAL) {
       if (attackerEntity.GetUserFromController() !== packet.sender) return;
+      if (attackerEntity.health <= 0) {
+        const latestAttacker = attackerEntity.attackersList[0];
+        if (time() - latestAttacker.time > 0.2) return;
+      }
 
       victimEntity.takeDamage(attackerEntity.currentState, attackerEntity);
       return;
@@ -390,6 +394,7 @@ ServerInstance.serverCreated.Connect(server => {
     server.network.sendPacket(`${NETWORK_ID}entities_list`);
 
     for (const ent of entitiesList) {
+      if (ent.health <= 0) continue;
       startBufferCreation();
       ent.WriteStateBuffer();
       server.network.sendPacket(`${NETWORK_ID}replication`, undefined, undefined, true);
