@@ -1,8 +1,10 @@
+import ColorUtils from "@rbxts/colour-utils";
 import React from "@rbxts/react";
 import ReactRoblox from "@rbxts/react-roblox";
 import { Players, RunService, TweenService } from "@rbxts/services";
 import { defaultEnvironments } from "defaultinsts";
-import PlayerEntity from "entities/PlayerEntity";
+import PlayerEntity, { PlayerTeam } from "entities/PlayerEntity";
+import { colorTable } from "UI/values";
 import { getLocalPlayerEntity } from "util/localent";
 
 // # Types & interfaces
@@ -35,6 +37,7 @@ function EntityHealthBar(props: { entity: PlayerEntity }) {
   const [framePositionBinding, setPosition] = React.createBinding(UDim2.fromOffset(-100, -100));
   const [scaleAmountBinding, setScale] = React.createBinding(1);
   const [usernameBinding, setUsername] = React.createBinding("PlayerEntity");
+  const [accentColorBinding, setAccentColor] = React.createBinding(Color3.fromHex(colorTable.spectatorsColor));
 
   const barsContentReference = React.createRef<Frame>();
   const registeredFrames: HealthFrameSectionInfo[] = [];
@@ -106,7 +109,7 @@ function EntityHealthBar(props: { entity: PlayerEntity }) {
 
         const frame = new Instance("Frame");
         frame.BackgroundTransparency = currState ? FRAME_NORM_TRANSPARENCY : FRAME_HURT_TRANSPARENCY;
-        frame.BackgroundColor3 = new Color3(1, 1, 1);
+        frame.BackgroundColor3 = accentColorBinding.getValue();
         frame.BorderSizePixel = 0;
         frame.Size = FRAME_BARS_SIZE;
         frame.LayoutOrder = i;
@@ -122,6 +125,12 @@ function EntityHealthBar(props: { entity: PlayerEntity }) {
 
     let updateThread: thread | undefined = task.spawn(() => {
       while (defaultEnvironments.entity.isEntityOnMemoryOrImSchizo(props.entity)) {
+        let backgroundColor = colorTable.spectatorsColor;
+        if (props.entity.team === PlayerTeam.Defenders) backgroundColor = colorTable.defendersColor;
+        if (props.entity.team === PlayerTeam.Raiders) backgroundColor = colorTable.raidersColor;
+
+        setAccentColor(ColorUtils.Lighten(Color3.fromHex(backgroundColor), 0.5));
+
         mountFrames();
         defaultEnvironments.lifecycle.YieldForTicks(20);
       }
@@ -143,10 +152,7 @@ function EntityHealthBar(props: { entity: PlayerEntity }) {
   const element = (
     <frame
       AnchorPoint={new Vector2(0.5, 1)}
-      BackgroundColor3={Color3.fromHex("#FFFFFF")}
       BackgroundTransparency={1}
-      BorderColor3={Color3.fromHex("#000000")}
-      BorderSizePixel={0}
       Position={framePositionBinding}
       Size={MASTER_SIZE}
       Visible={frameVisibleBinding}
@@ -154,10 +160,7 @@ function EntityHealthBar(props: { entity: PlayerEntity }) {
       <frame // Bars content
         AnchorPoint={new Vector2(0.5, 1)}
         AutomaticSize={"Y"}
-        BackgroundColor3={Color3.fromHex("#FFFFFF")}
         BackgroundTransparency={1}
-        BorderColor3={Color3.fromHex("#000000")}
-        BorderSizePixel={0}
         Position={UDim2.fromScale(0.5, 1)}
         Size={UDim2.fromScale(1, 0)}
         ref={barsContentReference}
@@ -178,15 +181,12 @@ function EntityHealthBar(props: { entity: PlayerEntity }) {
           Enum.FontStyle.Normal
         )}
         Text={usernameBinding}
-        TextColor3={Color3.fromHex("#FFFFFF")}
+        TextColor3={accentColorBinding}
         TextSize={20}
         TextStrokeTransparency={0.75}
         AnchorPoint={new Vector2(0.5, 0)}
         AutomaticSize={"XY"}
-        BackgroundColor3={Color3.fromHex("#FFFFFF")}
         BackgroundTransparency={1}
-        BorderColor3={Color3.fromHex("#000000")}
-        BorderSizePixel={0}
         Position={UDim2.fromScale(0.5, 1)}
       />
       <uiscale Scale={scaleAmountBinding} />
