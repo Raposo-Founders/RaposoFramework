@@ -9,11 +9,10 @@ import { DoesInstanceExist } from "util/utilfuncs";
 // # Constants & variables
 const TARGET_GROUP = 7203437 as const;
 const ADMIN_ROLES: string[] = [
-  "HOLDER",
-  "PRESIDENT",
+  "OWNER",
+  "LEADER",
   "DIRECTOR",
   "COMMANDER",
-  "WARDEN",
   "DEVELOPER",
   "CAPTAIN",
   "SERGEANT",
