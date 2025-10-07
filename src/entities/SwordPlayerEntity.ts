@@ -50,10 +50,17 @@ const SWORD_MODEL = modelsFolder.WaitForChild("Sword") as BasePart;
 function CheckPlayers<T extends BaseEntity>(attacker: SwordPlayerEntity, victim: T) {
   if (attacker.id === victim.id) return;
   if (!victim.IsA("HealthEntity")) return;
+
   if (victim.IsA("PlayerEntity"))
     if (attacker.team === PlayerTeam.Spectators || victim.team === PlayerTeam.Spectators) return;
-  if (!forcetieEnabled)
-    if (attacker.health <= 0 || victim.health <= 0) return;
+
+  if (attacker.health <= 0 || victim.health <= 0) {
+    if (!forcetieEnabled) return;
+
+    const lastAttacker = victim.attackersList[0];
+    if (!lastAttacker || time() - lastAttacker.time > 0.25) return;
+  }
+
   if (!teamHealingEnabled && victim.IsA("PlayerEntity"))
     if (attacker.team === victim.team) return;
 
@@ -364,15 +371,18 @@ ServerInstance.serverCreated.Connect(server => {
     if (!attackerEntity?.IsA("SwordPlayerEntity")) return;
     if (!victimEntity?.IsA("HealthEntity")) return;
 
-    if (victimEntity.IsA("PlayerEntity") && victimEntity.team === attackerEntity.team) return;
-    if ((victimEntity.IsA("PlayerEntity") && victimEntity.team === PlayerTeam.Spectators) || attackerEntity.team === PlayerTeam.Spectators) return;
+    if (!CheckPlayers(attackerEntity, victimEntity)) return;
+
+    let totalDealingDamage: number = attackerEntity.currentState;
+
+    if (victimEntity.IsA("PlayerEntity"))
+      if (teamHealingEnabled && victimEntity.team === attackerEntity.team)
+        totalDealingDamage = -totalDealingDamage;
+
+    if (totalDealingDamage === 0) return;
 
     if (hitIndex === SWORD_HIT_INDEX.LOCAL) {
       if (attackerEntity.GetUserFromController() !== packet.sender) return;
-      if (attackerEntity.health <= 0) {
-        const latestAttacker = attackerEntity.attackersList[0];
-        if (time() - latestAttacker.time > 0.2) return;
-      }
 
       victimEntity.takeDamage(attackerEntity.currentState, attackerEntity);
       return;
