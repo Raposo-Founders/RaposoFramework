@@ -3,13 +3,12 @@ import { ConsoleFunctionCallback } from "cmd/cvar";
 import { defaultEnvironments } from "defaultinsts";
 import PlayerEntity from "entities/PlayerEntity";
 import { gameValues } from "gamevalues";
-import { sendDirectPacket } from "network";
 import ServerInstance from "serverinst";
 import { BufferReader } from "util/bufferreader";
-import { startBufferCreation, writeBufferString, writeBufferU32 } from "util/bufferwriter";
+import { startBufferCreation, writeBufferString } from "util/bufferwriter";
 
 // # Constants & variables
-const CMD_INDEX_NAME = "cmd_damage";
+const CMD_INDEX_NAME = "cmd_kick";
 
 // # Bindings & execution
 
@@ -19,7 +18,13 @@ ServerInstance.serverCreated.Connect(inst => {
 
     const reader = BufferReader(info.content);
     const entityId = reader.string();
-    const amount = reader.u32();
+    const reason = reader.string();
+
+    // TODO: Properly make this command only available for admins
+    if (!info.sender.GetAttribute(gameValues.adminattr)) {
+      writePlayerReply(info.sender, "Players cannot be kicked by temporary moderators.");
+      return;
+    }
 
     let callerEntity: PlayerEntity | undefined;
     for (const ent of inst.entity.getEntitiesThatIsA("PlayerEntity")) {
@@ -35,30 +40,36 @@ ServerInstance.serverCreated.Connect(inst => {
       return;
     }
 
-    // Check to see if the sender is just someone with tempmod
     if (!defendersCommandCheck(callerEntity, targetEntity)) {
       writePlayerReply(info.sender, gameValues.cmdtempmoddefendersdeny);
       return;
     }
 
-    targetEntity.takeDamage(amount);
+    writePlayerReply(info.sender, `Kicked ${targetEntity.id} - ${targetEntity.GetUserFromController()}`);
 
-    writePlayerReply(info.sender, `Damaged ${targetEntity.GetUserFromController()} by ${amount} points.`);
+    {
+      const targetEntityController = targetEntity.GetUserFromController();
+
+      if (targetEntityController)
+        inst.RemovePlayer(targetEntityController, `Kicked by administrator.\n\n${info.sender.Name}: ${reason}.`);
+      else
+        inst.entity.killThisFucker(targetEntity);
+    }
   });
-});
+}); 
 
-new ConsoleFunctionCallback(["damage", "dmg"], [{ name: "player", type: "player" }, { name: "amount", type: "number" }])
-  .setDescription("Damages a player")
+new ConsoleFunctionCallback(["kick"], [{ name: "player", type: "player" }, { name: "reason", type: "strings" }])
+  .setDescription("Kicks a player from the current session")
   .setCallback((ctx) => {
     const targetPlayers = ctx.getArgument("player", "player").value;
-    const amount = ctx.getArgument("amount", "number").value;
+    const reason = ctx.getArgument("reason", "strings").value;
 
-    assert(targetPlayers[0], "Invalid player entity.");
+    assert(targetPlayers.size() > 0, `Invalid player entity.`);
 
     for (const ent of targetPlayers) {
       startBufferCreation();
       writeBufferString(ent.id);
-      writeBufferU32(amount as number);
+      writeBufferString(reason.join(" "));
       defaultEnvironments.network.sendPacket(CMD_INDEX_NAME);
     }
   });

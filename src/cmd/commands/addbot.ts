@@ -1,4 +1,5 @@
 import { Players, RunService } from "@rbxts/services";
+import { writePlayerReply } from "cmd/cmdutils";
 import { ConsoleFunctionCallback } from "cmd/cvar";
 import { defaultEnvironments } from "defaultinsts";
 import { PlayerTeam } from "entities/PlayerEntity";
@@ -47,6 +48,8 @@ ServerInstance.serverCreated.Connect(inst => {
           });
 
           ent.Spawn();
+
+          writePlayerReply(info.sender!, `Created bot ${ent.id}.`);
         });
   });
 });

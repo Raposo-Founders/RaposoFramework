@@ -3,13 +3,12 @@ import { ConsoleFunctionCallback } from "cmd/cvar";
 import { defaultEnvironments } from "defaultinsts";
 import PlayerEntity from "entities/PlayerEntity";
 import { gameValues } from "gamevalues";
-import { sendDirectPacket } from "network";
 import ServerInstance from "serverinst";
 import { BufferReader } from "util/bufferreader";
-import { startBufferCreation, writeBufferString, writeBufferU32 } from "util/bufferwriter";
+import { startBufferCreation, writeBufferString } from "util/bufferwriter";
 
 // # Constants & variables
-const CMD_INDEX_NAME = "cmd_damage";
+const CMD_INDEX_NAME = "cmd_resetstats";
 
 // # Bindings & execution
 
@@ -19,7 +18,12 @@ ServerInstance.serverCreated.Connect(inst => {
 
     const reader = BufferReader(info.content);
     const entityId = reader.string();
-    const amount = reader.u32();
+
+    // TODO: Make this an integrated UI interface for requesting stats resetting
+    if (!info.sender.GetAttribute(gameValues.adminattr)) {
+      writePlayerReply(info.sender, "The stats you have is what you get. (blame coolergate :P)");
+      return;
+    }
 
     let callerEntity: PlayerEntity | undefined;
     for (const ent of inst.entity.getEntitiesThatIsA("PlayerEntity")) {
@@ -35,30 +39,29 @@ ServerInstance.serverCreated.Connect(inst => {
       return;
     }
 
-    // Check to see if the sender is just someone with tempmod
     if (!defendersCommandCheck(callerEntity, targetEntity)) {
       writePlayerReply(info.sender, gameValues.cmdtempmoddefendersdeny);
       return;
     }
 
-    targetEntity.takeDamage(amount);
+    targetEntity.stats.kills = 0;
+    targetEntity.stats.damage = 0;
+    targetEntity.stats.deaths = 0;
 
-    writePlayerReply(info.sender, `Damaged ${targetEntity.GetUserFromController()} by ${amount} points.`);
+    writePlayerReply(info.sender, `Reset ${targetEntity.GetUserFromController()}'s (${targetEntity.id}) stats.`);
   });
-});
+}); 
 
-new ConsoleFunctionCallback(["damage", "dmg"], [{ name: "player", type: "player" }, { name: "amount", type: "number" }])
-  .setDescription("Damages a player")
+new ConsoleFunctionCallback(["resetstats", "rs"], [{ name: "player", type: "player" }])
+  .setDescription("Resets a player's stats")
   .setCallback((ctx) => {
     const targetPlayers = ctx.getArgument("player", "player").value;
-    const amount = ctx.getArgument("amount", "number").value;
 
-    assert(targetPlayers[0], "Invalid player entity.");
+    assert(targetPlayers.size() > 0, `Invalid player entity.`);
 
     for (const ent of targetPlayers) {
       startBufferCreation();
       writeBufferString(ent.id);
-      writeBufferU32(amount as number);
       defaultEnvironments.network.sendPacket(CMD_INDEX_NAME);
     }
   });

@@ -3,13 +3,12 @@ import { ConsoleFunctionCallback } from "cmd/cvar";
 import { defaultEnvironments } from "defaultinsts";
 import PlayerEntity from "entities/PlayerEntity";
 import { gameValues } from "gamevalues";
-import { sendDirectPacket } from "network";
 import ServerInstance from "serverinst";
 import { BufferReader } from "util/bufferreader";
-import { startBufferCreation, writeBufferString, writeBufferU32 } from "util/bufferwriter";
+import { startBufferCreation, writeBufferString } from "util/bufferwriter";
 
 // # Constants & variables
-const CMD_INDEX_NAME = "cmd_damage";
+const CMD_INDEX_NAME = "cmd_spawn";
 
 // # Bindings & execution
 
@@ -19,7 +18,6 @@ ServerInstance.serverCreated.Connect(inst => {
 
     const reader = BufferReader(info.content);
     const entityId = reader.string();
-    const amount = reader.u32();
 
     let callerEntity: PlayerEntity | undefined;
     for (const ent of inst.entity.getEntitiesThatIsA("PlayerEntity")) {
@@ -34,31 +32,28 @@ ServerInstance.serverCreated.Connect(inst => {
       writePlayerReply(info.sender, `Invalid player entity ${entityId}`);
       return;
     }
-
-    // Check to see if the sender is just someone with tempmod
+    
     if (!defendersCommandCheck(callerEntity, targetEntity)) {
       writePlayerReply(info.sender, gameValues.cmdtempmoddefendersdeny);
       return;
     }
 
-    targetEntity.takeDamage(amount);
+    targetEntity.Spawn();
 
-    writePlayerReply(info.sender, `Damaged ${targetEntity.GetUserFromController()} by ${amount} points.`);
+    writePlayerReply(info.sender, `Spawned ${targetEntity.GetUserFromController()} (${targetEntity.id}).`);
   });
-});
+}); 
 
-new ConsoleFunctionCallback(["damage", "dmg"], [{ name: "player", type: "player" }, { name: "amount", type: "number" }])
-  .setDescription("Damages a player")
+new ConsoleFunctionCallback(["spawn"], [{ name: "player", type: "player" }])
+  .setDescription("Respawns a player(s)")
   .setCallback((ctx) => {
     const targetPlayers = ctx.getArgument("player", "player").value;
-    const amount = ctx.getArgument("amount", "number").value;
 
-    assert(targetPlayers[0], "Invalid player entity.");
+    assert(targetPlayers.size() > 0, `Invalid player entity.`);
 
     for (const ent of targetPlayers) {
       startBufferCreation();
       writeBufferString(ent.id);
-      writeBufferU32(amount as number);
       defaultEnvironments.network.sendPacket(CMD_INDEX_NAME);
     }
   });

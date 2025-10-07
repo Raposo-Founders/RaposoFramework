@@ -46,9 +46,7 @@ ServerInstance.serverCreated.Connect(inst => {
     targetEntity.team = team;
     targetEntity.Spawn();
 
-    startBufferCreation();
-    writeBufferString(`Changed ${targetEntity.GetUserFromController()}'s team to ${PlayerTeam[team]}.`);
-    sendDirectPacket(gameValues.cmdnetinfo, info.sender);
+    writePlayerReply(info.sender, `Changed ${targetEntity.GetUserFromController()}'s (${targetEntity.id}) team to ${PlayerTeam[team]}.`);
   });
 }); 
 

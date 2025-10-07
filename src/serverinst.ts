@@ -109,6 +109,9 @@ class ServerInstance {
     this.network.signedUsers.delete(player);
     this.trackingPlayers.delete(player);
     this.playerLeft.Fire(player, disconnectreason);
+
+    // TODO: Remove this whenever you add an actual main menu to the game, retard.
+    player.Kick(disconnectreason);
   }
 
   BanPlayer(player: Player, reason = "undefined.") {
