@@ -61,25 +61,15 @@ export class LifecycleInstance {
   private _Update(deltaTime: number) {
     if (!this.running) return;
 
-    for (const [, callback] of this._boundUpdateCallbacks) {
-      const [success, errorMessage] = pcall(callback, this, deltaTime);
-      if (success) continue;
-
-      this.running = false;
-      throw errorMessage;
-    }
+    for (const [, callback] of this._boundUpdateCallbacks)
+      task.spawn(callback, this, deltaTime);
   }
 
   private _LateUpdate(deltaTime: number) {
     if (!this.running) return;
 
-    for (const [, callback] of this._boundLateUpdateCallbacks) {
-      const [success, errorMessage] = pcall(callback, this, deltaTime);
-      if (success) continue;
-
-      this.running = false;
-      throw errorMessage;
-    }
+    for (const [, callback] of this._boundLateUpdateCallbacks)
+      task.spawn(callback, this, deltaTime);
   }
 
   private _TickUpdate(deltaTime: number) {

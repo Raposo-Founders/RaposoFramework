@@ -125,6 +125,7 @@ export class EntityManager {
         }
       };
 
+      rawset(entity, "environment", undefined);
       deepClearContent(entity);
 
       // Unbinding signals

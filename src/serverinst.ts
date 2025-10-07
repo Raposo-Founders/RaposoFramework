@@ -1,13 +1,13 @@
-import { Players, RunService, TextChatService } from "@rbxts/services";
+import { Players } from "@rbxts/services";
+import { RaposoConsole } from "logging";
 import { EntityManager } from "./entities";
 import { gameValues } from "./gamevalues";
 import { LifecycleInstance } from "./lifecycle";
-import { NetworkManager } from "./network";
+import { NetworkManager, sendDirectPacket } from "./network";
 import { startBufferCreation, writeBufferString } from "./util/bufferwriter";
 import Signal from "./util/signal";
 import { RandomString } from "./util/utilfuncs";
 import WorldInstance from "./worldrender";
-import { RaposoConsole } from "logging";
 
 // # Class
 class ServerInstance {
@@ -21,6 +21,8 @@ class ServerInstance {
   readonly trackingPlayers = new Set<Player>();
   readonly playerJoined = new Signal<[user: Player, referenceId: string]>();
   readonly playerLeft = new Signal<[Player, string]>();
+
+  readonly bannedPlayers = new Map<Player["UserId"], string>;
 
   constructor(
     readonly id: string,
@@ -102,11 +104,17 @@ class ServerInstance {
 
     startBufferCreation();
     writeBufferString(disconnectreason);
-    this.network.sendPacket("server_disconnected", [player], []);
+    sendDirectPacket("server_disconnected", player);
 
     this.network.signedUsers.delete(player);
     this.trackingPlayers.delete(player);
     this.playerLeft.Fire(player, disconnectreason);
+  }
+
+  BanPlayer(player: Player, reason = "undefined.") {
+    this.bannedPlayers.set(player.UserId, reason);
+
+    this.RemovePlayer(player, `Banned by administrator: ${reason}`);
   }
 
   static GetServersFromPlayer(user: Player) {

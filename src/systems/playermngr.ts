@@ -1,11 +1,10 @@
 import { Players, RunService } from "@rbxts/services";
 import { defaultEnvironments } from "defaultinsts";
-import { PlayerTeam } from "entities/PlayerEntity";
 import { gameValues } from "gamevalues";
 import { getPlayermodelFromEntity } from "playermodel";
 import ServerInstance from "serverinst";
 import { getLocalPlayerEntity } from "util/localent";
-import { DoesInstanceExist, RandomString } from "util/utilfuncs";
+import { DoesInstanceExist } from "util/utilfuncs";
 
 // # Constants & variables
 const TARGET_GROUP = 7203437 as const;
@@ -29,31 +28,24 @@ ServerInstance.serverCreated.Connect(inst => {
     user.SetAttribute(gameValues.modattr, user.GetAttribute(gameValues.adminattr));
 
     inst.entity.createEntity("SwordPlayerEntity", `PlayerEnt_${user.UserId}`, referenceId, user.UserId).andThen(ent => {
-      print(`Player entity created for user ${user.Name} with ID ${ent.id}.`);
-
       ent.died.Connect(() => {
         task.wait(Players.RespawnTime);
         ent.Spawn();
+      });
+
+      let connection: BindableEventConnection | undefined;
+      connection = inst.playerLeft.Connect((leavingUser, reason) => {
+        if (leavingUser !== user) return;
+
+        inst.entity.killThisFucker(ent);
+        connection?.Disconnect();
+        connection = undefined;
       });
 
       task.wait(2);
 
       ent.Spawn(new CFrame(0, 5, 0));
     });
-
-    if (RunService.IsStudio()) {
-      task.wait(2);
-      inst.entity.createEntity("SwordPlayerEntity", undefined, RandomString(3), user.UserId).andThen(ent => {
-
-        ent.died.Connect(() => {
-          task.wait(Players.RespawnTime);
-          ent.Spawn(ent.origin);
-        });
-
-        ent.team = PlayerTeam.Raiders;
-        ent.Spawn(new CFrame(0, 5, 0));
-      });
-    }
   });
 });
 

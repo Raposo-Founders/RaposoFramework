@@ -1,21 +1,17 @@
-import { Players, RunService, TextChatService } from "@rbxts/services";
-import { RaposoConsole } from "logging";
+import { Players, RunService } from "@rbxts/services";
 import { ConsoleFunctionCallback } from "cmd/cvar";
 import { clientSessionConnected, clientSessionDisconnected, defaultEnvironments } from "defaultinsts";
 import { EntityManager } from "entities";
 import { LifecycleInstance } from "lifecycle";
+import { RaposoConsole } from "logging";
 import { listenDirectPacket, NetworkManager, sendDirectPacket } from "network";
 import ServerInstance from "serverinst";
 import { BufferReader } from "util/bufferreader";
-import { startBufferCreation, writeBufferString, writeBufferU64, writeBufferU8 } from "util/bufferwriter";
+import { startBufferCreation, writeBufferBool, writeBufferString, writeBufferU64, writeBufferU8 } from "util/bufferwriter";
+import Signal from "util/signal";
 import WorldInstance from "worldrender";
 
 // # Interfaces & types
-interface ConnectionQueueInfo {
-  sessionId: string;
-  nextCallId: SessionConnectionIds,
-}
-
 interface ServerListingInfo {
   sessionId: string;
   currentMap: string;
@@ -24,20 +20,16 @@ interface ServerListingInfo {
 
 // # Constants & variables
 enum SessionConnectionIds {
-  Request = "d_sessionConnect",
-  GetSessionInfo = "d_sessionGetInfo",
-  MapLoaded = "d_sessionClientMapLoaded",
+  servercon_FetchServers, // Only used for... you know what, so whatever
+  servercon_Request,
+  servercon_GetInfo,
+  servercon_GetMapName, // Only used when connecting
+  servercon_MapReady,
 }
 
-enum SessionConnectionReply {
-  Allowed,
-  Disallowed,
-  NoExist,
-  InternalErr,
-}
-
-const connectionStepCooldown = 1;
-const playersConnectionQueue = new Map<Player, ConnectionQueueInfo>();
+const CONNECTION_STEP_COOLDOWN = 0.5;
+const DISCONNECT_LOCAL = new Signal();
+const usersInConnectionProcess = new Set<Player>();
 
 let canConnect = true;
 let currentConnectionThread: thread | undefined;
@@ -55,39 +47,41 @@ export function clientConnectToServerSession(sessionId: string) {
 
   startBufferCreation();
   writeBufferString(sessionId);
-  sendDirectPacket(SessionConnectionIds.Request, undefined);
+  sendDirectPacket(SessionConnectionIds[SessionConnectionIds.servercon_Request], undefined);
 
-  const connectionResult = coroutine.yield()[0] as SessionConnectionReply;
-  if (connectionResult !== SessionConnectionReply.Allowed) {
-    RaposoConsole.Warn("Failed to connect to the session. ID: ", connectionResult);
+  const [connectionAllowed, negativeReason] = coroutine.yield() as LuaTuple<[boolean, string]>;
+  if (!connectionAllowed) {
+    RaposoConsole.Warn(`Session ${sessionId} has rejected connection. (${negativeReason})`);
+    canConnect = true;
     return;
   }
 
-  task.wait(connectionStepCooldown);
+  task.wait(CONNECTION_STEP_COOLDOWN);
 
   startBufferCreation();
   writeBufferString(sessionId);
-  sendDirectPacket(SessionConnectionIds.GetSessionInfo, undefined);
+  sendDirectPacket(SessionConnectionIds[SessionConnectionIds.servercon_GetMapName], undefined);
 
-  const mapName = tostring(coroutine.yield()[0]);
-
-  task.wait(connectionStepCooldown);
+  const mapName = coroutine.yield()[0] as string;
+  if (mapName === "nil") {
+    canConnect = true;
+    throw "Server has replied MAP_NAME with nil.";
+  }
 
   defaultEnvironments.entity?.murderAllFuckers();
   defaultEnvironments.world.loadMap(mapName);
   defaultEnvironments.world.rootInstance.Parent = workspace;
 
-  task.wait(connectionStepCooldown);
+  task.wait(CONNECTION_STEP_COOLDOWN);
 
   startBufferCreation();
   writeBufferString(sessionId);
-  sendDirectPacket(SessionConnectionIds.MapLoaded, undefined);
+  sendDirectPacket(SessionConnectionIds[SessionConnectionIds.servercon_MapReady], undefined);
 
   canConnect = true;
   currentConnectionThread = undefined;
 
   clientSessionConnected.Fire(sessionId);
-  RaposoConsole.Warn("Finished connection to server!");
 }
 
 export function clientCreateLocalSession() {
@@ -116,23 +110,28 @@ export function clientCreateLocalSession() {
       serverInst.network.insertNetwork(packet);
   });
 
+  const connection = DISCONNECT_LOCAL.Connect(() => {
+    serverInst.Close();
+  });
+
   serverInst.BindToClose(() => {
     serverSessionConnection.Disconnect();
     clientSessionConnection.Disconnect();
 
     defaultEnvironments.network.remoteEnabled = true;
     defaultEnvironments.server = undefined;
+
+    connection.Disconnect();
   });
 
   clientSessionConnected.Fire("local");
 
-  serverInst.playerLeft.Connect(user => {
-    if (user !== Players.LocalPlayer) return; // WHAT?
+  serverInst.playerLeft.Connect(() => {
     serverInst.Close();
   });
 
   task.spawn(() => {
-    task.wait(1);
+    task.wait(CONNECTION_STEP_COOLDOWN);
     serverInst.InsertPlayer(Players.LocalPlayer);
   });
 }
@@ -144,7 +143,7 @@ export function FetchServers() {
   currentServerListFetchThread = coroutine.running();
 
   startBufferCreation();
-  sendDirectPacket("game_getservers", undefined);
+  sendDirectPacket(SessionConnectionIds[SessionConnectionIds.servercon_FetchServers], undefined);
 
   const [serversInfo] = coroutine.yield() as LuaTuple<[ServerListingInfo[]]>;
 
@@ -156,6 +155,8 @@ new ConsoleFunctionCallback(["disconnect", "dc"], [])
   .setDescription("Disconnects from the current session.")
   .setCallback((ctx) => {
     ctx.Reply("Disconnecting from session...");
+
+    DISCONNECT_LOCAL.Fire();
 
     startBufferCreation();
     sendDirectPacket("disconnect_request", undefined);
@@ -175,86 +176,77 @@ new ConsoleFunctionCallback(["connect"], [{ name: "id", type: "string" }])
 
 // Connection requests
 if (RunService.IsServer())
-  listenDirectPacket(SessionConnectionIds.Request, (sender, bfr) => {
+  listenDirectPacket(SessionConnectionIds[SessionConnectionIds.servercon_Request], (sender, bfr) => {
     if (!sender) return;
-    if (playersConnectionQueue.has(sender)) return;
 
     const reader = BufferReader(bfr);
     const sessionId = reader.string();
 
-    if (!ServerInstance.runningInstances.has(sessionId)) {
+    const targetSession = ServerInstance.runningInstances.get(sessionId);
+
+    if (!targetSession) {
       startBufferCreation();
-      writeBufferU8(SessionConnectionReply.NoExist);
-      sendDirectPacket("SESSION_CONNECTION_REPLY", sender);
+      writeBufferBool(false);
+      writeBufferString(`Unknown session ${sessionId}.`);
+      sendDirectPacket(SessionConnectionIds[SessionConnectionIds.servercon_Request], sender);
+
+      return;
+    }
+
+    if (targetSession.bannedPlayers.has(sender.UserId)) {
+      startBufferCreation();
+      writeBufferBool(false);
+      writeBufferString(tostring(targetSession.bannedPlayers.get(sender.UserId)));
+      sendDirectPacket(SessionConnectionIds[SessionConnectionIds.servercon_Request], sender);
 
       return;
     }
 
     startBufferCreation();
-    writeBufferU8(SessionConnectionReply.Allowed);
-    sendDirectPacket("SESSION_CONNECTION_REPLY", sender);
+    writeBufferBool(true);
+    writeBufferString("Allowed.");
+    sendDirectPacket(SessionConnectionIds[SessionConnectionIds.servercon_Request], sender);
 
-    playersConnectionQueue.set(sender, {
-      sessionId: sessionId,
-      nextCallId: SessionConnectionIds.GetSessionInfo,
-    });
+    usersInConnectionProcess.add(sender);
   });
 
-// Getting info from sessions
-if (RunService.IsServer())
-  listenDirectPacket(SessionConnectionIds.GetSessionInfo, (sender, bfr) => {
-    if (!sender) return;
-
-    const reader = BufferReader(bfr);
-    const sessionId = reader.string();
-
-    const info = playersConnectionQueue.get(sender);
-    if (!info || info.sessionId !== sessionId || info.nextCallId !== SessionConnectionIds.GetSessionInfo) return;
-
-    const targetSession = ServerInstance.runningInstances.get(sessionId);
-    if (!targetSession) return; // TODO: Better error handling
-
-    startBufferCreation();
-    writeBufferString("default"); // TODO: Change this.
-    sendDirectPacket("SESSION_INFO_REPLY", sender);
-
-    info.nextCallId = SessionConnectionIds.MapLoaded;
-  });
-
-// Finalize connection
-if (RunService.IsServer())
-  listenDirectPacket(SessionConnectionIds.MapLoaded, (sender, bfr) => {
-    if (!sender) return;
-
-    const reader = BufferReader(bfr);
-    const sessionId = reader.string();
-
-    const info = playersConnectionQueue.get(sender);
-    if (!info || info.sessionId !== sessionId || info.nextCallId !== SessionConnectionIds.MapLoaded) return;
-
-    const targetSession = ServerInstance.runningInstances.get(sessionId);
-    if (!targetSession) return; // TODO: Better error handling
-
-    targetSession.InsertPlayer(sender);
-
-    playersConnectionQueue.delete(sender);
-  });
-
-// Receiving connection reply info
 if (RunService.IsClient())
-  listenDirectPacket("SESSION_CONNECTION_REPLY", (sender, bfr) => {
+  listenDirectPacket(SessionConnectionIds[SessionConnectionIds.servercon_Request], (sender, bfr) => {
     const reader = BufferReader(bfr);
-    const reply = reader.u8() as SessionConnectionReply;
+    const isAllowed = reader.bool();
+    const rejectReason = reader.string();
 
     if (!currentConnectionThread)
       return;
 
-    coroutine.resume(currentConnectionThread, reply);
+    coroutine.resume(currentConnectionThread, isAllowed, rejectReason);
   });
 
-// Receiving connection reply info
+// Getting current map name
+if (RunService.IsServer())
+  listenDirectPacket(SessionConnectionIds[SessionConnectionIds.servercon_GetMapName], (sender, bfr) => {
+    if (!sender) return;
+
+    const reader = BufferReader(bfr);
+    const sessionId = reader.string();
+
+    const targetSession = ServerInstance.runningInstances.get(sessionId);
+
+    if (!targetSession || !usersInConnectionProcess.has(sender)) {
+      startBufferCreation();
+      writeBufferString("nil");
+      sendDirectPacket(SessionConnectionIds[SessionConnectionIds.servercon_GetMapName], sender);
+
+      return;
+    }
+
+    startBufferCreation();
+    writeBufferString(targetSession.world.currentMap);
+    sendDirectPacket(SessionConnectionIds[SessionConnectionIds.servercon_GetMapName], sender);
+  });
+
 if (RunService.IsClient())
-  listenDirectPacket("SESSION_INFO_REPLY", (sender, bfr) => {
+  listenDirectPacket(SessionConnectionIds[SessionConnectionIds.servercon_GetMapName], (sender, bfr) => {
     const reader = BufferReader(bfr);
     const mapName = reader.string();
 
@@ -264,10 +256,25 @@ if (RunService.IsClient())
     coroutine.resume(currentConnectionThread, mapName);
   });
 
+// Finalize connection
+if (RunService.IsServer())
+  listenDirectPacket(SessionConnectionIds[SessionConnectionIds.servercon_MapReady], (sender, bfr) => {
+    if (!sender) return;
+
+    const reader = BufferReader(bfr);
+    const sessionId = reader.string();
+
+    const targetSession = ServerInstance.runningInstances.get(sessionId);
+    if (!targetSession || !usersInConnectionProcess.has(sender)) return;
+
+    targetSession.InsertPlayer(sender);
+    usersInConnectionProcess.delete(sender);
+  });
+
 // Handling disconnections
 if (RunService.IsClient())
-  defaultEnvironments.network.listenPacket("server_disconnected", (packet) => {
-    const reader = BufferReader(packet.content);
+  listenDirectPacket("server_disconnected", (_, content) => {
+    const reader = BufferReader(content);
     const reason = reader.string();
 
     clientSessionDisconnected.Fire(reason, reason);
@@ -275,6 +282,16 @@ if (RunService.IsClient())
     RaposoConsole.Warn("Disconnected from session. Reason:", reason);
 
     defaultEnvironments.entity.murderAllFuckers();
+  });
+
+if (RunService.IsServer())
+  listenDirectPacket("disconnect_request", (sender) => {
+    if (!sender) return;
+
+    const sessionList = ServerInstance.GetServersFromPlayer(sender);
+
+    for (const session of sessionList)
+      session.RemovePlayer(sender, "Disconnected by user.");
   });
 
 // Fetching server list
