@@ -21,6 +21,7 @@ import { DisplayLoadingScreen, HideLoadingScreen } from "UI/loadscreen";
 import { BufferReader } from "util/bufferreader";
 import { ChatWindow, RenderChatMessage } from "UI/chatui/chatwindow";
 import { ConsoleCommandsLogs } from "UI/cmdline/logs";
+import { PlayersTopListing } from "UI/hud/playerteamentry";
 
 
 // # Constants & variables
@@ -172,7 +173,9 @@ if (RunService.IsClient()) {
       <HudPlayerPanel />
 
       <FairzoneTopDisplay>
+        <PlayersTopListing team="Defenders" />
         <FairzoneCounter />
+        <PlayersTopListing team="Raiders" />
       </FairzoneTopDisplay>
 
       <ObjectivesLine />

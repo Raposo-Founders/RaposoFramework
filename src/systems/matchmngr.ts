@@ -40,6 +40,7 @@ ServerInstance.serverCreated.Connect(server => {
   let nextUpdateTime = 0;
   let raidingGroupId = 0;
   let matchStartedTime = 0;
+  let totalTeamSize = 5;
 
   SpawnCapturePoints(server);
 
@@ -71,7 +72,7 @@ ServerInstance.serverCreated.Connect(server => {
     targetPoints = reader.u32();
   });
 
-  server.lifecycle.BindTickrate(ctx => {
+  server.lifecycle.BindTickrate(() => {
     if (!isRunning) return;
 
     const currentTime = time();
@@ -104,10 +105,22 @@ ServerInstance.serverCreated.Connect(server => {
     startBufferCreation();
     writeBufferU32(targetPoints);
     writeBufferU32(raidingGroupId);
+    writeBufferU8(totalTeamSize);
     writeBufferU32(teamPoints.get(PlayerTeam.Defenders) || 0);
     writeBufferU32(teamPoints.get(PlayerTeam.Raiders) || 0);
     writeBufferF32(currentTime - matchStartedTime);
     server.network.sendPacket("match_update");
+  });
+
+  server.network.listenPacket("match_teamamount", info => {
+    if (!info.sender) return;
+
+    const reader = BufferReader(info.content);
+    const playersAmount = reader.u8();
+
+    if (!info.sender.GetAttribute(gameValues.adminattr)) return;
+
+    totalTeamSize = playersAmount;
   });
 
   server.lifecycle.BindTickrate(ctx => {
@@ -128,6 +141,7 @@ if (RunService.IsClient()) {
     const reader = BufferReader(packet.content);
     const targetPoints = reader.u32();
     const raidingGroupId = reader.u32();
+    const matchTeamSize = reader.u8();
     const defendersPoints = reader.u32();
     const raidersPoints = reader.u32();
     const elapsedTime = reader.f32();
@@ -137,6 +151,7 @@ if (RunService.IsClient()) {
     uiValues.hud_raiders_points[1](raidersPoints);
     uiValues.hud_game_time[1](elapsedTime);
     uiValues.hud_gamemode[1]("Fairzone"); // TODO: Replicate current gamemode
+    uiValues.hud_team_size[1](matchTeamSize);
   });
 
   defaultEnvironments.network.listenPacket("cpent_update", (packet) => {
@@ -163,6 +178,16 @@ if (RunService.IsClient()) {
     targetEntity.ApplyStateBuffer(packet.content);
   });
 }
+
+new ConsoleFunctionCallback(["teamsize"], [{ name: "amount", type: "number" }])
+  .setDescription("Changes the amount of players allowed on each playing team")
+  .setCallback((ctx) => {
+    const playersAmount = math.min(ctx.getArgument("amount", "number").value, 255);
+
+    startBufferCreation();
+    writeBufferU8(playersAmount);
+    defaultEnvironments.network.sendPacket("match_teamamount");
+  });
 
 new ConsoleFunctionCallback(["start"], [{ name: "points", type: "number" }, { name: "raidersGroupId", type: "number" }])
   .setDescription("Starts the match with the given points and raiding group ID")

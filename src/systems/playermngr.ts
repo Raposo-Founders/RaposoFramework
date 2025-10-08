@@ -1,5 +1,6 @@
 import { Players, RunService } from "@rbxts/services";
 import { defaultEnvironments } from "defaultinsts";
+import PlayerEntity, { PlayerTeam } from "entities/PlayerEntity";
 import { gameValues } from "gamevalues";
 import { getPlayermodelFromEntity } from "playermodel";
 import ServerInstance from "serverinst";
@@ -19,6 +20,16 @@ const ADMIN_ROLES: string[] = [
 ] as const;
 
 // # Functions
+export function getPlayersFromTeam(environment: T_EntityEnvironment, team: PlayerTeam) {
+  const foundPlayers: PlayerEntity[] = [];
+
+  for (const ent of environment.getEntitiesThatIsA("PlayerEntity")) {
+    if (ent.team !== team) continue;
+    foundPlayers.push(ent);
+  }
+
+  return foundPlayers;
+}
 
 // # Execution
 ServerInstance.serverCreated.Connect(inst => {

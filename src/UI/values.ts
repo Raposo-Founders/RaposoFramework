@@ -46,4 +46,5 @@ export const uiValues = {
   hud_defenders_points: React.createBinding(0),
   hud_raiders_points: React.createBinding(0),
   hud_target_points: React.createBinding(0),
+  hud_team_size: React.createBinding(0),
 };
