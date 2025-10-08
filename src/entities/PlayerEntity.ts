@@ -1,4 +1,4 @@
-import { Players } from "@rbxts/services";
+import { Players, RunService } from "@rbxts/services";
 import { gameValues } from "gamevalues";
 import { BufferReader } from "util/bufferreader";
 import { writeBufferBool, writeBufferString, writeBufferU16, writeBufferU64, writeBufferU8, writeBufferVector } from "util/bufferwriter";
@@ -205,10 +205,19 @@ export default class PlayerEntity extends HealthEntity {
   }
 
   takeDamage(amount: number, attacker?: import("./WorldEntity")): void {
+    if (amount > 0 && this.health <= 0) return;
+
     super.takeDamage(amount, attacker);
 
     if (attacker?.IsA("PlayerEntity") && amount > 0)
       attacker.stats.damage += amount;
+
+    if (this.health <= 0) {
+      this.stats.deaths++;
+
+      if (attacker?.IsA("PlayerEntity"))
+        attacker.stats.kills++;
+    }
   }
 
   Destroy(): void { }

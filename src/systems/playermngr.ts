@@ -57,6 +57,21 @@ ServerInstance.serverCreated.Connect(inst => {
       ent.Spawn(new CFrame(0, 5, 0));
     });
   });
+
+  // Update players ping
+  let nextPingUpdateTime = 0;
+  inst.lifecycle.BindTickrate(() => {
+    const currentTime = 0;
+    if (currentTime < nextPingUpdateTime) return;
+    nextPingUpdateTime = currentTime + 5;
+
+    for (const user of inst.entity.getEntitiesThatIsA("PlayerEntity")) {
+      const controller = user.GetUserFromController();
+      if (!controller) continue;
+
+      user.stats.ping = math.floor(controller.GetNetworkPing() * 1000);
+    }
+  });
 });
 
 if (RunService.IsClient()) {

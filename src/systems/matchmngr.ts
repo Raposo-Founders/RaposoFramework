@@ -27,9 +27,13 @@ function ResetCapturePoints(session: ServerInstance) {
   }
 }
 
-function RespawnPlayers(session: ServerInstance) {
-  for (const ent of session.entity.getEntitiesThatIsA("PlayerEntity"))
+function ResetPlayers(session: ServerInstance) {
+  for (const ent of session.entity.getEntitiesThatIsA("PlayerEntity")) {
+    ent.stats.kills = 0;
+    ent.stats.deaths = 0;
+    ent.stats.damage = 0;
     ent.Spawn();
+  }
 }
 
 // # Bindings & misc
@@ -58,7 +62,7 @@ ServerInstance.serverCreated.Connect(server => {
     teamPoints.clear();
 
     ResetCapturePoints(server);
-    RespawnPlayers(server);
+    ResetPlayers(server);
 
     nextUpdateTime = time() + 1;
     matchStartedTime = time();
