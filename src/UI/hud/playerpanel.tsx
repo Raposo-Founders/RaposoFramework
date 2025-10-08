@@ -87,7 +87,7 @@ export function HudPlayerPanel() {
     <frame
       AnchorPoint={new Vector2(0, 1)}
       BackgroundTransparency={1}
-      Position={UDim2.fromScale(0.125, 0.9)}
+      Position={UDim2.fromScale(0.05, 1)}
       Size={UDim2.fromScale(0.25, 0.25)}
     >
       <uiaspectratioconstraint AspectRatio={2} />
