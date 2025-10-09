@@ -1,10 +1,12 @@
+import ColorUtils from "@rbxts/colour-utils";
 import React from "@rbxts/react";
 import { UserInputService } from "@rbxts/services";
 import { ExecuteCommand } from "cmd";
 import { gameValues } from "gamevalues";
-import Signal from "util/signal";
-import { TintButton } from "../blocks/tintbtn";
 import { sendChatMessage } from "systems/chatmngr";
+import { DefaultButton } from "UI/blocks/btn";
+import { uiValues } from "UI/values";
+import Signal from "util/signal";
 
 // # Constants & variables
 const KEYCODE = Enum.KeyCode.Slash;
@@ -129,8 +131,9 @@ export function ChatButton() {
       setButtonVisible(false);
   });
 
-  return <TintButton
+  return <DefaultButton
     Text="Chat"
+    Color={uiValues.hud_team_color[0].map(val => ColorUtils.Lighten(val, 0.75))}
     Callback={() => toggleChatVisibility.Fire(true)}
     Size={UDim2.fromOffset(80, 40)}
     Position={new UDim2(0, 20, 0.5, 0)}
