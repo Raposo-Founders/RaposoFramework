@@ -23,6 +23,7 @@ class ServerInstance {
   readonly playerLeft = new Signal<[Player, string]>();
 
   readonly bannedPlayers = new Map<Player["UserId"], string>;
+  readonly attributesList = new Map<string, unknown>();
 
   constructor(
     readonly id: string,

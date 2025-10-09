@@ -1,12 +1,12 @@
-import { defendersCommandCheck, writePlayerReply } from "cmd/cmdutils";
+import { writePlayerReply } from "cmd/cmdutils";
 import { ConsoleFunctionCallback } from "cmd/cvar";
 import { defaultEnvironments } from "defaultinsts";
 import PlayerEntity, { PlayerTeam } from "entities/PlayerEntity";
 import { gameValues } from "gamevalues";
-import { sendDirectPacket } from "network";
 import ServerInstance from "serverinst";
 import { BufferReader } from "util/bufferreader";
 import { startBufferCreation, writeBufferString, writeBufferU8 } from "util/bufferwriter";
+import { GetCreatorGroupInfo } from "util/gamecreator";
 
 // # Constants & variables
 const CMD_INDEX_NAME = "cmd_team";
@@ -34,6 +34,7 @@ ServerInstance.serverCreated.Connect(inst => {
       writePlayerReply(info.sender, `Invalid player entity ${entityId}`);
       return;
     }
+    const targetController = targetEntity.GetUserFromController();
 
     // Prevent people with tempmod from messing with the defenders' team
     if (!info.sender.GetAttribute(gameValues.adminattr) && callerEntity.team !== PlayerTeam.Defenders) {
@@ -43,10 +44,25 @@ ServerInstance.serverCreated.Connect(inst => {
       }
     }
 
+    const creatorGroupInfo = GetCreatorGroupInfo();
+    const raidingGroupId = tonumber(inst.attributesList.get("raidingGroupId"));
+
+    if (targetController && creatorGroupInfo && raidingGroupId) {
+      if (team === PlayerTeam.Defenders && !targetController.IsInGroup(creatorGroupInfo.groupInfo.Id)) {
+        writePlayerReply(info.sender, `Unable to team player: ${targetController} is not in the group "${creatorGroupInfo.groupInfo.Name}".`);
+        return;
+      }
+
+      if (team === PlayerTeam.Raiders && !targetController.IsInGroup(raidingGroupId)) {
+        writePlayerReply(info.sender, `Unable to team player: ${targetController} is not in the raiders' group.`);
+        return;
+      }
+    }
+
     targetEntity.team = team;
     targetEntity.Spawn();
 
-    writePlayerReply(info.sender, `Changed ${targetEntity.GetUserFromController()}'s (${targetEntity.id}) team to ${PlayerTeam[team]}.`);
+    writePlayerReply(info.sender, `Changed ${targetController}'s (${targetEntity.id}) team to ${PlayerTeam[team]}.`);
   });
 }); 
 

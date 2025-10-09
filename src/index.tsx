@@ -100,6 +100,9 @@ if (RunService.IsClient())
 
 ParentMaps();
 
+GetCreatorGroupInfo(); // Pre-cache this thing
+GetGameName();
+
 if (RunService.IsClient()) {
   StarterGui.SetCoreGuiEnabled("All", false);
   WaitForServer();

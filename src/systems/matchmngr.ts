@@ -1,4 +1,4 @@
-import { RunService } from "@rbxts/services";
+import { GroupService, RunService } from "@rbxts/services";
 import { ConsoleFunctionCallback } from "cmd/cvar";
 import { defaultEnvironments } from "defaultinsts";
 import { PlayerTeam } from "entities/PlayerEntity";
@@ -7,6 +7,8 @@ import ServerInstance from "serverinst";
 import { uiValues } from "UI/values";
 import { BufferReader } from "util/bufferreader";
 import { startBufferCreation, writeBufferF32, writeBufferU32, writeBufferU8 } from "util/bufferwriter";
+import { getPlayersFromTeam } from "./playermngr";
+import { writePlayerReply } from "cmd/cmdutils";
 
 // # Constants & variables
 
@@ -54,11 +56,9 @@ ServerInstance.serverCreated.Connect(server => {
 
     const reader = BufferReader(packet.content);
     const pointsAmount = reader.u32();
-    const raidersId = reader.u32();
 
     isRunning = true;
     targetPoints = pointsAmount;
-    raidingGroupId = raidersId;
     teamPoints.clear();
 
     ResetCapturePoints(server);
@@ -118,13 +118,36 @@ ServerInstance.serverCreated.Connect(server => {
 
   server.network.listenPacket("match_teamamount", info => {
     if (!info.sender) return;
+    if (!info.sender.GetAttribute(gameValues.adminattr)) return;
 
     const reader = BufferReader(info.content);
     const playersAmount = reader.u8();
 
+    totalTeamSize = playersAmount;
+    server.attributesList.set("totalTeamSize", raidingGroupId);
+  });
+
+  server.network.listenPacket("match_setraiders", info => {
+    if (!info.sender) return;
     if (!info.sender.GetAttribute(gameValues.adminattr)) return;
 
-    totalTeamSize = playersAmount;
+    const reader = BufferReader(info.content);
+    const groupId = reader.u32();
+
+    raidingGroupId = groupId;
+    server.attributesList.set("raidingGroupId", groupId);
+
+    // Check to see if all the raiding players are in the raiding group
+    for (const ent of getPlayersFromTeam(server.entity, PlayerTeam.Raiders)) {
+      const controller = ent.GetUserFromController();
+      if (!controller || controller.IsInGroup(groupId)) continue;
+
+      ent.team = PlayerTeam.Spectators;
+      ent.Spawn();
+
+      for (const user of server.trackingPlayers)
+        writePlayerReply(user, `Player ${controller.Name} moved to spectators: Not in the raiding group.`);
+    }
   });
 
   server.lifecycle.BindTickrate(ctx => {
@@ -183,6 +206,16 @@ if (RunService.IsClient()) {
   });
 }
 
+new ConsoleFunctionCallback(["setraiders"], [{ name: "groupId", type: "number" }])
+  .setDescription("Sets the raiding group's ID")
+  .setCallback(ctx => {
+    const raidingGroupId = ctx.getArgument("groupId", "number");
+
+    startBufferCreation();
+    writeBufferU32(raidingGroupId.value);
+    defaultEnvironments.network.sendPacket("match_setraiders");
+  });
+
 new ConsoleFunctionCallback(["teamsize"], [{ name: "amount", type: "number" }])
   .setDescription("Changes the amount of players allowed on each playing team")
   .setCallback((ctx) => {
@@ -197,10 +230,8 @@ new ConsoleFunctionCallback(["start"], [{ name: "points", type: "number" }, { na
   .setDescription("Starts the match with the given points and raiding group ID")
   .setCallback((ctx) => {
     const pointsAmount = ctx.getArgument("points", "number").value;
-    const raidersGroupId = ctx.getArgument("raidersGroupId", "number").value;
 
     startBufferCreation();
     writeBufferU32(pointsAmount);
-    writeBufferU32(raidersGroupId);
     defaultEnvironments.network.sendPacket("match_start");
   });
