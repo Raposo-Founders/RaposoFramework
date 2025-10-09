@@ -206,6 +206,7 @@ export class SwordPlayerEntity extends PlayerEntity {
     reader.u16();
     reader.u16();
     reader.u16();
+    reader.string();
     /* End-section */
 
     const isEquipped = reader.bool();

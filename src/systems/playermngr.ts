@@ -1,4 +1,4 @@
-import { Players, RunService } from "@rbxts/services";
+import { LocalizationService, Players, RunService } from "@rbxts/services";
 import { defaultEnvironments } from "defaultinsts";
 import PlayerEntity, { PlayerTeam } from "entities/PlayerEntity";
 import { gameValues } from "gamevalues";
@@ -43,19 +43,21 @@ ServerInstance.serverCreated.Connect(inst => {
         ent.Spawn();
       });
 
-      let connection: BindableEventConnection | undefined;
-      connection = inst.playerLeft.Connect((leavingUser, reason) => {
-        if (leavingUser !== user) return;
-
-        inst.entity.killThisFucker(ent);
-        connection?.Disconnect();
-        connection = undefined;
-      });
+      ent.stats.country = LocalizationService.GetCountryRegionForPlayerAsync(user);
 
       task.wait(2);
 
       ent.Spawn(new CFrame(0, 5, 0));
     });
+  });
+
+  inst.playerLeft.Connect(user => {
+    const userSessionId = user.GetAttribute(gameValues.usersessionid);
+
+    for (const ent of inst.entity.getEntitiesThatIsA("PlayerEntity")) {
+      if (ent.controller !== userSessionId) continue;
+      inst.entity.killThisFucker(ent);
+    }
   });
 
   // Update players ping

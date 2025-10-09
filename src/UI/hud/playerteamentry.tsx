@@ -3,6 +3,7 @@ import ReactRoblox from "@rbxts/react-roblox";
 import { defaultEnvironments } from "defaultinsts";
 import { PlayerTeam } from "entities/PlayerEntity";
 import { getPlayersFromTeam } from "systems/playermngr";
+import countryFlags from "UI/countries";
 import { colorTable, uiValues } from "UI/values";
 
 // # Constants & variables
@@ -16,12 +17,49 @@ function formatUserImageLabel(userId: number) {
   return string.format("rbxthumb://type=AvatarBust&id=%i&w=100&h=100", userId);
 }
 
-function PlayerExpandedTopEntryInfo(props: { entityId: React.Binding<string> }) {
-  const [killsBind, SetKills] = React.createBinding(99);
-  const [deathsBind, SetDeaths] = React.createBinding(99);
-  const [pingBind, SetPing] = React.createBinding(99);
+function ExpandedEntryInfo(props: { visible: React.Binding<boolean>, entityId: React.Binding<string> }) {
+  const [usernameBind, SetUsername] = React.createBinding("");
+  const [killsBind, SetKills] = React.createBinding(0);
+  const [deathsBind, SetDeaths] = React.createBinding(0);
+  const [pingBind, SetPing] = React.createBinding(0);
   const [flagBind, SetFlag] = React.createBinding("");
   const [accentColor, SetAccentColor] = React.createBinding(Color3.fromHex(colorTable.spectatorsColor));
+
+  const binding1 = defaultEnvironments.lifecycle.BindTickrate(() => {
+    const entity = defaultEnvironments.entity.entities.get(props.entityId.getValue());
+    if (!entity?.IsA("PlayerEntity")) {
+      SetUsername("");
+      SetKills(0);
+      SetDeaths(0);
+      SetPing(0);
+      SetFlag("");
+      SetAccentColor(Color3.fromHex(colorTable.spectatorsColor));
+
+      return;
+    }
+
+    const controller = entity.GetUserFromController();
+    
+    SetUsername(controller ? controller.Name : entity.id);
+    SetKills(entity.stats.kills);
+    SetDeaths(entity.stats.deaths);
+    SetPing(entity.stats.ping);
+    SetFlag(countryFlags.get(entity.stats.country)?.Decal ?? "");
+
+    {
+      let teamColor = colorTable.spectatorsColor;
+      if (props.entityId.getValue() !== "" && entity.team === PlayerTeam.Defenders) teamColor = colorTable.defendersColor;
+      if (props.entityId.getValue() !== "" && entity.team === PlayerTeam.Raiders) teamColor = colorTable.raidersColor;
+
+      SetAccentColor(Color3.fromHex(teamColor));
+    }
+  });
+
+  useEffect(() => {
+    return () => {
+      binding1();
+    };
+  });
 
   const DisplayLabel = (props: { Text: React.Binding<string>, LayoutOrder: number }) => {
     return <textlabel // Kills
@@ -50,6 +88,7 @@ function PlayerExpandedTopEntryInfo(props: { entityId: React.Binding<string> }) 
       BorderSizePixel={0}
       Position={new UDim2(0.5, 0, 1, 40)}
       Size={UDim2.fromOffset(150, 150)}
+      Visible={props.visible}
     >
       <uicorner
         CornerRadius={new UDim(0, 12)}
@@ -65,7 +104,7 @@ function PlayerExpandedTopEntryInfo(props: { entityId: React.Binding<string> }) 
             Enum.FontWeight.SemiBold,
             Enum.FontStyle.Normal
           )}
-          Text={"OnlyTwentyCharacters"}
+          Text={usernameBind}
           TextColor3={Color3.fromHex("#FFFFFF")}
           TextSize={14}
           TextTruncate={"AtEnd"}
@@ -134,18 +173,26 @@ function PlayerTopTeamEntry(props: { entityId: React.Binding<EntityId>, layoutOr
   const [userDeadBinding, SetUserDead] = React.createBinding(false);
   const [userDisconnected, SetUserDisconnected] = React.createBinding(false);
 
+  const [expandedInfoVisible, SetExpandedInfoVisible] = React.createBinding(false);
+
+  let mouseInFrame = false;
+
   const binding1 = defaultEnvironments.lifecycle.BindTickrate(() => {
     const entity = defaultEnvironments.entity.entities.get(props.entityId.getValue());
     if (!entity?.IsA("PlayerEntity")) {
       SetUserDead(true);
       SetUserDisconnected(true);
       SetUserImage(DEFAULT_USER_IMAGE);
+      SetStatsText("");
+      SetExpandedInfoVisible(false);
+      SetTeamColor(Color3.fromHex(colorTable.spectatorsColor));
       return;
     }
 
     SetUserDisconnected(false);
     SetUserDead(entity.health <= 0);
     SetStatsText(`${entity.stats.kills} / ${entity.stats.deaths}`);
+    SetExpandedInfoVisible(mouseInFrame);
 
     {
       let teamColor = colorTable.spectatorsColor;
@@ -169,6 +216,10 @@ function PlayerTopTeamEntry(props: { entityId: React.Binding<EntityId>, layoutOr
       BackgroundTransparency={1}
       Size={UDim2.fromOffset(50, 50)}
       LayoutOrder={props.layoutOrder}
+      Event={{
+        MouseEnter: () => mouseInFrame = true,
+        MouseLeave: () => mouseInFrame = false,
+      }}
     >
       <frame // Masked content
         BackgroundTransparency={1}
@@ -277,6 +328,8 @@ function PlayerTopTeamEntry(props: { entityId: React.Binding<EntityId>, layoutOr
           Size={UDim2.fromScale(0.75, 0.75)}
         />
       </frame>
+
+      <ExpandedEntryInfo visible={expandedInfoVisible} entityId={props.entityId} />
     </frame>
   );
 }

@@ -51,6 +51,7 @@ export default class PlayerEntity extends HealthEntity {
     deaths: 0,
     ping: 0,
     damage: 0,
+    country: "US",
   };
 
   constructor(public controller: string, public appearanceId = 1) {
@@ -87,6 +88,7 @@ export default class PlayerEntity extends HealthEntity {
     writeBufferU16(this.stats.deaths);
     writeBufferU16(this.stats.ping);
     writeBufferU16(this.stats.damage);
+    writeBufferString(this.stats.country);
   }
 
   ApplyStateBuffer(state: buffer): void {
@@ -112,6 +114,7 @@ export default class PlayerEntity extends HealthEntity {
     const deaths = reader.u16();
     const ping = reader.u16();
     const damage = reader.u16();
+    const country = reader.string();
 
     let vectorPosition = new Vector3(position.x, position.y, position.z);
     const rotationCFrame = CFrame.Angles(math.rad(rotation.y), math.rad(rotation.x), math.rad(rotation.z));
@@ -159,6 +162,7 @@ export default class PlayerEntity extends HealthEntity {
       this.stats.deaths = deaths;
       this.stats.ping = ping;
       this.stats.damage = damage;
+      this.stats.country = country;
 
       this.team = teamIndex;
       this.controller = controllerId;
