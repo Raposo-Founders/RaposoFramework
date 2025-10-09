@@ -41,10 +41,13 @@ export const uiValues = {
   hud_current_team: React.createBinding(PlayerTeam.Spectators),
   hud_team_color: React.createBinding(Color3.fromHex(colorTable.spectatorsColor)),
 
+  hud_raiders_group: React.createBinding(0),
   hud_gamemode: React.createBinding("Fairzone"),
   hud_game_time: React.createBinding(0),
   hud_defenders_points: React.createBinding(0),
   hud_raiders_points: React.createBinding(0),
   hud_target_points: React.createBinding(0),
   hud_team_size: React.createBinding(0),
+
+  hud_gameplay_visible: React.createBinding(true),
 };

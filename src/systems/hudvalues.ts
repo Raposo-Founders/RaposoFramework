@@ -1,4 +1,4 @@
-import { RunService } from "@rbxts/services";
+import { RunService, UserInputService } from "@rbxts/services";
 import { defaultEnvironments } from "defaultinsts";
 import { PlayerTeam } from "entities/PlayerEntity";
 import { colorTable, uiValues } from "UI/values";
@@ -23,6 +23,13 @@ if (RunService.IsClient())
       uiValues.hud_team_color[1](MAPPED_TEAM_COLOR.get(localEntity.team) || Color3.fromHex(colorTable.spectatorsColor));
     else
       uiValues.hud_team_color[1](Color3.fromHex(colorTable.spectatorsColor));
+  });
+
+if (RunService.IsClient())
+  UserInputService.InputBegan.Connect((input, processed) => {
+    if (input.KeyCode.Name !== "Tab" || processed) return;
+
+    uiValues.hud_gameplay_visible[1](!uiValues.hud_gameplay_visible[0].getValue());
   });
 
 MAPPED_TEAM_COLOR.set(PlayerTeam.Defenders, Color3.fromHex(colorTable.defendersColor));

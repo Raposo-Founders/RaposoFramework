@@ -6,7 +6,7 @@ import { gameValues } from "gamevalues";
 import ServerInstance from "serverinst";
 import { BufferReader } from "util/bufferreader";
 import { startBufferCreation, writeBufferString, writeBufferU8 } from "util/bufferwriter";
-import { GetCreatorGroupInfo } from "util/gamecreator";
+import { GetCreatorGroupInfo } from "util/groupsutil";
 
 // # Constants & variables
 const CMD_INDEX_NAME = "cmd_team";

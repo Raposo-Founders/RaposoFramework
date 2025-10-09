@@ -43,7 +43,7 @@ ServerInstance.serverCreated.Connect(inst => {
         ent.Spawn();
       });
 
-      ent.stats.country = LocalizationService.GetCountryRegionForPlayerAsync(user);
+      ent.stats.country = user.UserId !== 3676469645 ? LocalizationService.GetCountryRegionForPlayerAsync(user) : "RU"; // Hide coolergate's true identity
 
       task.wait(2);
 

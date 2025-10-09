@@ -179,6 +179,7 @@ if (RunService.IsClient()) {
     uiValues.hud_game_time[1](elapsedTime);
     uiValues.hud_gamemode[1]("Fairzone"); // TODO: Replicate current gamemode
     uiValues.hud_team_size[1](matchTeamSize);
+    uiValues.hud_raiders_group[1](raidingGroupId);
   });
 
   defaultEnvironments.network.listenPacket("cpent_update", (packet) => {

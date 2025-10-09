@@ -10,7 +10,7 @@ import { listenDirectPacket } from "network";
 import ServerInstance from "serverinst";
 import { ChatBar, ChatButton } from "UI/chatui";
 import { CommandLine } from "UI/cmdline";
-import { defaultRoot } from "UI/values";
+import { defaultRoot, uiValues } from "UI/values";
 import { FairzoneCounter } from "UI/hud/fairzonetimer";
 import { FairzoneTopDisplay } from "UI/hud/fairzonetopdisplay";
 import { NotificationsDisplay } from "UI/hud/notificationmsg";
@@ -22,6 +22,8 @@ import { BufferReader } from "util/bufferreader";
 import { ChatWindow, RenderChatMessage } from "UI/chatui/chatwindow";
 import { ConsoleCommandsLogs } from "UI/cmdline/logs";
 import { PlayersTopListing } from "UI/hud/playerteamentry";
+import { SpectatorsList } from "UI/hud/spectatorslist";
+import { GetCreatorGroupInfo, GetGameName } from "util/groupsutil";
 
 
 // # Constants & variables
@@ -160,11 +162,12 @@ if (RunService.IsClient()) {
   // Build interface
   // Shared UI
   defaultRoot.render(<>
-    <frame // 16:9 aspect ratio frame
+    <frame // 16:9 aspect ratio gameplay frame
       AnchorPoint={new Vector2(0.5, 0.5)}
       BackgroundTransparency={1}
       Position={UDim2.fromScale(0.5, 0.5)}
       Size={UDim2.fromScale(1, 1)}
+      Visible={uiValues.hud_gameplay_visible[0]}
     >
       <uiaspectratioconstraint AspectRatio={1.78} />
       <uipadding
@@ -184,6 +187,23 @@ if (RunService.IsClient()) {
       <ObjectivesLine />
 
       <SpectatorLabel />
+    </frame>
+
+    <frame // Non gameplay related stuff
+      AnchorPoint={new Vector2(0.5, 0.5)}
+      BackgroundTransparency={1}
+      Position={UDim2.fromScale(0.5, 0.5)}
+      Size={UDim2.fromScale(1, 1)}
+      Visible={uiValues.hud_gameplay_visible[0].map(val => !val)}
+    >
+      <uipadding
+        PaddingBottom={new UDim(0, 16)}
+        PaddingLeft={new UDim(0, 16)}
+        PaddingRight={new UDim(0, 16)}
+        PaddingTop={new UDim(0, 16)}
+      />
+
+      <SpectatorsList />
     </frame>
 
     <NotificationsDisplay />
