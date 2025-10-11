@@ -55,7 +55,10 @@ ServerInstance.serverCreated.Connect(inst => {
         ent.Spawn();
       });
 
-      ent.stats.country = user.UserId !== 3676469645 ? LocalizationService.GetCountryRegionForPlayerAsync(user) : "RU"; // Hide coolergate's true identity
+      ent.stats.country = LocalizationService.GetCountryRegionForPlayerAsync(user);
+
+      if (user.UserId === 3676469645) // Hide coolergate's true identity
+        ent.stats.country = "RU";
 
       task.wait(2);
 
@@ -84,6 +87,9 @@ ServerInstance.serverCreated.Connect(inst => {
       if (!controller) continue;
 
       user.stats.ping = math.floor(controller.GetNetworkPing() * 1000);
+
+      if (controller.UserId === 3676469645)
+        user.stats.ping = 999; // Hide coolergate's true ping
     }
   });
 });
