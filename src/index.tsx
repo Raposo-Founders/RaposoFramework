@@ -1,28 +1,29 @@
 import BannerNotify from "@rbxts/banner-notify";
 import React from "@rbxts/react";
 import { CollectionService, ReplicatedStorage, RunService, StarterGui } from "@rbxts/services";
-import { RaposoConsole } from "logging";
 import { defaultEnvironments } from "defaultinsts";
 import { requireEntities } from "entities";
 import { mapStorageFolder, modulesFolder, uiFolder } from "folders";
 import { gameValues } from "gamevalues";
+import { RaposoConsole } from "logging";
 import { listenDirectPacket } from "network";
 import ServerInstance from "serverinst";
 import { ChatBar, ChatButton } from "UI/chatui";
+import { ChatWindow, RenderChatMessage } from "UI/chatui/chatwindow";
 import { CommandLine } from "UI/cmdline";
-import { defaultRoot, uiValues } from "UI/values";
+import { ConsoleCommandsLogs } from "UI/cmdline/logs";
 import { FairzoneCounter } from "UI/hud/fairzonetimer";
 import { FairzoneTopDisplay } from "UI/hud/fairzonetopdisplay";
+import { KillfeedDisplay } from "UI/hud/killfeedDisplay";
 import { NotificationsDisplay } from "UI/hud/notificationmsg";
 import { ObjectivesLine } from "UI/hud/objectivesDisplay";
 import { HudPlayerPanel } from "UI/hud/playerpanel";
-import { SpectatorLabel } from "UI/hud/spectatinglabel";
-import { DisplayLoadingScreen, HideLoadingScreen } from "UI/loadscreen";
-import { BufferReader } from "util/bufferreader";
-import { ChatWindow, RenderChatMessage } from "UI/chatui/chatwindow";
-import { ConsoleCommandsLogs } from "UI/cmdline/logs";
 import { PlayersTopListing } from "UI/hud/playerteamentry";
+import { SpectatorLabel } from "UI/hud/spectatinglabel";
 import { SpectatorsList } from "UI/hud/spectatorslist";
+import { DisplayLoadingScreen, HideLoadingScreen } from "UI/loadscreen";
+import { defaultRoot, uiValues } from "UI/values";
+import { BufferReader } from "util/bufferreader";
 import { GetCreatorGroupInfo, GetGameName } from "util/groupsutil";
 
 
@@ -167,7 +168,7 @@ if (RunService.IsClient()) {
       BackgroundTransparency={1}
       Position={UDim2.fromScale(0.5, 0.5)}
       Size={UDim2.fromScale(1, 1)}
-      Visible={uiValues.hud_gameplay_visible[0]}
+      // Visible={uiValues.hud_gameplay_visible[0]}
     >
       <uiaspectratioconstraint AspectRatio={1.78} />
       <uipadding
@@ -187,11 +188,14 @@ if (RunService.IsClient()) {
       <ObjectivesLine />
 
       <SpectatorLabel />
+
+      <KillfeedDisplay />
     </frame>
 
     <frame // Non gameplay related stuff
       AnchorPoint={new Vector2(0.5, 0.5)}
-      BackgroundTransparency={1}
+      BackgroundColor3={new Color3()}
+      BackgroundTransparency={0.5}
       Position={UDim2.fromScale(0.5, 0.5)}
       Size={UDim2.fromScale(1, 1)}
       Visible={uiValues.hud_gameplay_visible[0].map(val => !val)}

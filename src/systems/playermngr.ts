@@ -4,6 +4,7 @@ import PlayerEntity, { PlayerTeam } from "entities/PlayerEntity";
 import { gameValues } from "gamevalues";
 import { getPlayermodelFromEntity } from "playermodel";
 import ServerInstance from "serverinst";
+import { startBufferCreation, writeBufferF32, writeBufferString } from "util/bufferwriter";
 import { getLocalPlayerEntity } from "util/localent";
 import { DoesInstanceExist } from "util/utilfuncs";
 
@@ -38,7 +39,18 @@ ServerInstance.serverCreated.Connect(inst => {
     user.SetAttribute(gameValues.modattr, user.GetAttribute(gameValues.adminattr));
 
     inst.entity.createEntity("SwordPlayerEntity", `PlayerEnt_${user.UserId}`, referenceId, user.UserId).andThen(ent => {
-      ent.died.Connect(() => {
+      ent.died.Connect(attacker => {
+
+        if (attacker?.IsA("PlayerEntity")) {
+          const distance = ent.origin.Position.sub(attacker.origin.Position).Magnitude;
+
+          startBufferCreation();
+          writeBufferF32(distance);
+          writeBufferString(attacker.id);
+          writeBufferString(ent.id);
+          inst.network.sendPacket("game_killfeed");
+        }
+
         task.wait(Players.RespawnTime);
         ent.Spawn();
       });
