@@ -1,10 +1,10 @@
 import React from "@rbxts/react";
 import { defaultEnvironments } from "defaultinsts";
 import CapturePointEntity from "entities/CapturePointEntity";
-import { PlayerTeam } from "entities/PlayerEntity";
 import { colorTable } from "UI/values";
 
 const ICON_ID = "rbxassetid://103434352040367";
+const ICON_SIZE = UDim2.fromOffset(80, 80);
 
 export function CapturePointMeter(props: { entityId: string }) {
   const [captureProgress, setCaptureProgress] = React.createBinding(0);
@@ -37,7 +37,7 @@ export function CapturePointMeter(props: { entityId: string }) {
       ImageColor3={Color3.fromHex(colorTable.defendersColor)}
       ScaleType={"Fit"}
       BackgroundTransparency={1}
-      Size={UDim2.fromOffset(60, 60)}
+      Size={ICON_SIZE}
     >
       <frame // Mask frame
         AnchorPoint={new Vector2(1, 0)}
@@ -53,7 +53,7 @@ export function CapturePointMeter(props: { entityId: string }) {
           AnchorPoint={new Vector2(1, 0)}
           BackgroundTransparency={1}
           Position={UDim2.fromScale(1, 0)}
-          Size={UDim2.fromOffset(60, 60)}
+          Size={ICON_SIZE}
         />
       </frame>
     </imagelabel>
