@@ -131,7 +131,7 @@ ServerInstance.serverCreated.Connect(server => {
     const playersAmount = reader.u8();
 
     totalTeamSize = playersAmount;
-    server.attributesList.set("totalTeamSize", raidingGroupId);
+    server.attributesList.set("totalTeamSize", playersAmount);
   });
 
   server.network.listenPacket("match_setraiders", info => {

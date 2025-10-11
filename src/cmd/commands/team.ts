@@ -4,6 +4,7 @@ import { defaultEnvironments } from "defaultinsts";
 import PlayerEntity, { PlayerTeam } from "entities/PlayerEntity";
 import { gameValues } from "gamevalues";
 import ServerInstance from "serverinst";
+import { getPlayersFromTeam } from "systems/playermngr";
 import { BufferReader } from "util/bufferreader";
 import { startBufferCreation, writeBufferString, writeBufferU8 } from "util/bufferwriter";
 import { GetCreatorGroupInfo } from "util/groupsutil";
@@ -55,6 +56,17 @@ ServerInstance.serverCreated.Connect(inst => {
 
       if (team === PlayerTeam.Raiders && !targetController.IsInGroup(raidingGroupId)) {
         writePlayerReply(info.sender, `Unable to team player: ${targetController} is not in the raiders' group.`);
+        return;
+      }
+    }
+
+    // Check if the amount of players exceedes the team size
+    {
+      const playersOnTeam = getPlayersFromTeam(inst.entity, team);
+      const totalDefinedSize = tonumber(inst.attributesList.get("totalTeamSize")) || 999;
+
+      if (playersOnTeam.size() + 1 > totalDefinedSize) {
+        writePlayerReply(info.sender, `Unable to team player: Maximum amount of players on the team exceeds ${totalDefinedSize}.`);
         return;
       }
     }
