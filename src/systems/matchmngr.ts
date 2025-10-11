@@ -45,9 +45,10 @@ ServerInstance.serverCreated.Connect(server => {
   let targetPoints = 600;
   let nextUpdateTime = 0;
   let raidingGroupId = 0;
-  let matchStartedTime = 0;
   let totalTeamSize = 5;
-
+  
+  let elapsedMatchTime = 0;
+  
   SpawnCapturePoints(server);
 
   server.network.listenPacket("match_start", (packet) => {
@@ -65,7 +66,7 @@ ServerInstance.serverCreated.Connect(server => {
     ResetPlayers(server);
 
     nextUpdateTime = time() + 1;
-    matchStartedTime = time();
+    elapsedMatchTime = 0;
   });
 
   server.network.listenPacket("match_changepts", (packet) => {
@@ -76,8 +77,11 @@ ServerInstance.serverCreated.Connect(server => {
     targetPoints = reader.u32();
   });
 
-  server.lifecycle.BindTickrate(() => {
+  // Core logic loop
+  server.lifecycle.BindTickrate((dt) => {
     if (!isRunning) return;
+
+    elapsedMatchTime += dt.tickrate;
 
     const currentTime = time();
     if (currentTime < nextUpdateTime) return;
@@ -105,15 +109,18 @@ ServerInstance.serverCreated.Connect(server => {
         break;
       }
     }
+  });
 
+  // Match status update
+  server.lifecycle.BindTickrate(ctx => {
     startBufferCreation();
     writeBufferU32(targetPoints);
     writeBufferU32(raidingGroupId);
     writeBufferU8(totalTeamSize);
     writeBufferU32(teamPoints.get(PlayerTeam.Defenders) || 0);
     writeBufferU32(teamPoints.get(PlayerTeam.Raiders) || 0);
-    writeBufferF32(currentTime - matchStartedTime);
-    server.network.sendPacket("match_update");
+    writeBufferF32(elapsedMatchTime);
+    server.network.sendPacket("match_update", undefined, undefined, true);
   });
 
   server.network.listenPacket("match_teamamount", info => {
