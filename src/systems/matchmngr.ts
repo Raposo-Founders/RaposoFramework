@@ -100,11 +100,11 @@ ServerInstance.serverCreated.Connect(server => {
         isRunning = false;
 
         startBufferCreation();
-        writeBufferU32(targetPoints);
+        // writeBufferU32(targetPoints);
         writeBufferU8(teamIndex);
         writeBufferU32(teamPoints.get(PlayerTeam.Defenders) || 0);
         writeBufferU32(teamPoints.get(PlayerTeam.Raiders) || 0);
-        server.network.sendPacket("match_team_won");
+        server.network.sendPacket("match_ended");
 
         break;
       }
