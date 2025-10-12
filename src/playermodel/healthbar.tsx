@@ -5,7 +5,6 @@ import { Players, RunService, TweenService } from "@rbxts/services";
 import { defaultEnvironments } from "defaultinsts";
 import PlayerEntity, { PlayerTeam } from "entities/PlayerEntity";
 import { colorTable } from "UI/values";
-import { getLocalPlayerEntity } from "util/localent";
 
 // # Types & interfaces
 interface HealthFrameSectionInfo {

@@ -2,7 +2,7 @@ import { RunService, UserInputService } from "@rbxts/services";
 import { defaultEnvironments } from "defaultinsts";
 import { PlayerTeam } from "entities/PlayerEntity";
 import { colorTable, uiValues } from "UI/values";
-import { getLocalPlayerEntity } from "util/localent";
+import { getLocalPlayerEntity } from "systems/localent";
 
 // # Constants & variables
 const MAPPED_TEAM_COLOR = new Map<PlayerTeam, Color3>();
@@ -12,7 +12,7 @@ const MAPPED_TEAM_COLOR = new Map<PlayerTeam, Color3>();
 // # Bindings & execution
 if (RunService.IsClient())
   defaultEnvironments.lifecycle.BindTickrate(() => {
-    const localEntity = getLocalPlayerEntity(defaultEnvironments.entity);
+    const localEntity = getLocalPlayerEntity();
 
     uiValues.hud_player_weapon[1]("Sword"); // TODO: Rework this when adding TPS gamemode support
     uiValues.hud_player_health[1](localEntity ? localEntity.health : 0);

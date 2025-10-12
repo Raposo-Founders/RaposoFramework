@@ -109,13 +109,7 @@ export async function createPlayermodelForEntity(entity: PlayerEntity) {
       for (const inst of playermodel.rig.GetChildren()) {
         if (!inst.IsA("BasePart")) continue;
 
-        inst.AssemblyLinearVelocity = new Vector3(
-          // math.random(-20, 20),
-          0,
-          50,
-          0
-          // math.random(-20, 20),
-        );
+        inst.AssemblyLinearVelocity = new Vector3(0, 50, 0);
         inst.AssemblyAngularVelocity = new Vector3(
           math.random(-45, 45),
           math.random(-45, 45),

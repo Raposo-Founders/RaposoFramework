@@ -5,7 +5,7 @@ import { defaultEnvironments } from "defaultinsts";
 import { cacheFolder } from "folders";
 import { Playermodel } from "playermodel/rig";
 import { uiValues } from "UI/values";
-import { getLocalPlayerEntity } from "util/localent";
+import { getLocalPlayerEntity } from "systems/localent";
 import WorldInstance from "worldrender";
 
 const defaultDescription = new Instance("HumanoidDescription");
@@ -50,7 +50,7 @@ export function HudPlayerPanel() {
     defaultEnvironments.lifecycle.BindTickrate(() => {
       let playerEntity = defaultEnvironments.entity.entities.get(currentEntity);
       if (!playerEntity || !playerEntity.IsA("PlayerEntity")) {
-        playerEntity = getLocalPlayerEntity(defaultEnvironments.entity);
+        playerEntity = getLocalPlayerEntity();
         if (!playerEntity || !playerEntity.IsA("PlayerEntity")) return;
       }
 
