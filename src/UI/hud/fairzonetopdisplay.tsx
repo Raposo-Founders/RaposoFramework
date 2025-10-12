@@ -1,7 +1,16 @@
 import React from "@rbxts/react";
+import { UserInputService } from "@rbxts/services";
 import { uiValues } from "UI/values";
 
 export function FairzoneTopDisplay(props: React.PropsWithChildren) {
+  const scaleReference = React.createRef<UIScale>();
+
+  UserInputService.InputBegan.Connect(() => {
+    if (!scaleReference.current) return;
+
+    scaleReference.current.Scale = UserInputService.TouchEnabled ? 0.75 : 1;
+  });
+
   return (
     <frame
       AnchorPoint={new Vector2(0.5, 0)}
@@ -16,6 +25,7 @@ export function FairzoneTopDisplay(props: React.PropsWithChildren) {
         HorizontalAlignment={"Center"}
         SortOrder={"LayoutOrder"}
       />
+      <uiscale ref={scaleReference} />
       {props.children}
     </frame>
   );
