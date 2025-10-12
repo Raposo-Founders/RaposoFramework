@@ -177,7 +177,7 @@ if (RunService.IsClient()) {
         PaddingRight={new UDim(0, 16)}
         PaddingTop={new UDim(0, 16)}
       />
-      <HudPlayerPanel />
+      {/* <HudPlayerPanel /> */}
 
       <FairzoneTopDisplay>
         <PlayersTopListing team="Defenders" />

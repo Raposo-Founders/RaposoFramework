@@ -42,7 +42,7 @@ function EntityHealthBar(props: { entity: PlayerEntity }) {
   const registeredFrames: HealthFrameSectionInfo[] = [];
 
   let defaultLifecycleUnbind: Callback | undefined = defaultEnvironments.lifecycle.BindLateUpdate(() => {
-    if (props.entity.health <= 0 || props.entity.GetUserFromController() === Players.LocalPlayer) {
+    if (props.entity.health <= 0) {
       setVisible(false);
       return;
     }
