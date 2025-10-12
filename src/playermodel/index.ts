@@ -54,8 +54,6 @@ export function getPlayermodelFromEntity(entityId: EntityId) {
 }
 
 export async function createPlayermodelForEntity(entity: PlayerEntity) {
-  print("Creating character rig for entity:", entity.classname, entity.id);
-
   const playermodel = new Playermodel(entity.environment.world);
   playermodel.SetMaterial();
   playermodel.SetTransparency();
@@ -72,8 +70,6 @@ export async function createPlayermodelForEntity(entity: PlayerEntity) {
   }
 
   entity.spawned.Connect(() => {
-    print("Entity", entity.id, "spawned!");
-
     playermodel.SetMaterial();
     playermodel.SetTransparency();
     playermodel.SetCollisionGroup("Players");
@@ -91,8 +87,6 @@ export async function createPlayermodelForEntity(entity: PlayerEntity) {
   });
 
   entity.died.Connect(() => {
-    print("Entity", entity.id, "died.");
-
     if (entity.GetUserFromController() !== Services.Players.LocalPlayer) {
       playermodel.SetCollisionGroup("DeadPlayers");
       playermodel.SetMaterial(Enum.Material.ForceField);
