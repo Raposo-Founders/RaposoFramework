@@ -17,6 +17,10 @@ const ADMIN_ROLES: string[] = [
 ] as const;
 
 // # Functions
+function formatEntityId(userId: number) {
+  return string.format("PlayerEnt_%i", userId);
+}
+
 export function getPlayersFromTeam(environment: T_EntityEnvironment, team: PlayerTeam) {
   const foundPlayers: PlayerEntity[] = [];
 
@@ -34,7 +38,7 @@ ServerInstance.serverCreated.Connect(inst => {
     user.SetAttribute(gameValues.adminattr, ADMIN_ROLES.includes(user.GetRoleInGroup(TARGET_GROUP).upper()) || RunService.IsStudio());
     user.SetAttribute(gameValues.modattr, user.GetAttribute(gameValues.adminattr));
 
-    inst.entity.createEntity("SwordPlayerEntity", `PlayerEnt_${user.UserId}`, referenceId, user.UserId).andThen(ent => {
+    inst.entity.createEntity("SwordPlayerEntity", formatEntityId(user.UserId), referenceId, user.UserId).andThen(ent => {
       ent.died.Connect(attacker => {
 
         if (attacker?.IsA("PlayerEntity")) {
@@ -63,12 +67,10 @@ ServerInstance.serverCreated.Connect(inst => {
   });
 
   inst.playerLeft.Connect(user => {
-    const userSessionId = user.GetAttribute(gameValues.usersessionid);
+    const targetEntity = inst.entity.entities.get(formatEntityId(user.UserId));
+    if (!targetEntity?.IsA("PlayerEntity")) return;
 
-    for (const ent of inst.entity.getEntitiesThatIsA("PlayerEntity")) {
-      if (ent.controller !== userSessionId) continue;
-      inst.entity.killThisFucker(ent);
-    }
+    inst.entity.killThisFucker(targetEntity);
   });
 
   // Update players ping
