@@ -1,5 +1,12 @@
 local signal = require("./util/signal")
 
+type PacketInfo = {
+	id: string,
+	sender: Player?,
+	timestamp: number,
+	content: buffer,
+}
+
 export type NetworkModule = {
 	startDirectMessage: (id: string, user: Player | nil, unreliable: boolean?) -> nil,
 	finishDirectMessage: () -> nil,
@@ -25,7 +32,7 @@ export type NetworkClass = {
 	) -> nil,
 	finishWritingMessage: (self: NetworkClass) -> nil,
 
-	listenPacket: (self: NetworkClass, id: string, callback: (sender: Player | nil, bfr: buffer) -> any) -> nil,
+	listenPacket: (self: NetworkClass, id: string, callback: (sender: Player | nil, info: PacketInfo) -> any) -> nil,
 
 	Destroy: (self: NetworkClass) -> nil,
 }
