@@ -32,7 +32,7 @@ export type NetworkClass = {
 	) -> nil,
 	finishWritingMessage: (self: NetworkClass) -> nil,
 
-	listenPacket: (self: NetworkClass, id: string, callback: (sender: Player | nil, info: PacketInfo) -> any) -> nil,
+	listenPacket: (self: NetworkClass, id: string, callback: (info: PacketInfo) -> any) -> nil,
 
 	Destroy: (self: NetworkClass) -> nil,
 }
