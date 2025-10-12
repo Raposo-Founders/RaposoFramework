@@ -30,9 +30,9 @@ enum SwordState {
   Lunge = 30,
 }
 
-enum SWORD_HIT_INDEX {
-  LOCAL,
-  OTHER,
+enum NetworkSwordHitIndex {
+  LocalToOther,
+  OtherToLocal,
 }
 
 const forcetieEnabled = getInstanceDefinedValue("ForcetieEnabled", false);
@@ -42,29 +42,27 @@ const NETWORK_ID = "sword_";
 const SWORD_MODEL = modelsFolder.WaitForChild("Sword") as BasePart;
 
 // # Functions
-function CheckPlayers<T extends BaseEntity>(attacker: SwordPlayerEntity, victim: T) {
-  if (attacker.id === victim.id) return;
-  if (!victim.IsA("HealthEntity")) return;
+function CheckPlayers<T extends BaseEntity>(entity1: SwordPlayerEntity, entity2: T) {
+  if (entity1.id === entity2.id) return;
+  if (!entity2.IsA("HealthEntity")) return;
 
-  if (victim.IsA("PlayerEntity"))
-    if (attacker.team === PlayerTeam.Spectators || victim.team === PlayerTeam.Spectators) return;
+  if (entity2.IsA("PlayerEntity"))
+    if (entity1.team === PlayerTeam.Spectators || entity2.team === PlayerTeam.Spectators) return;
 
-  if (attacker.health <= 0 || victim.health <= 0) {
+  if (entity1.health <= 0 || entity2.health <= 0) {
     if (!forcetieEnabled) return;
 
-    const lastAttacker = victim.attackersList[0];
+    const lastAttacker = entity2.attackersList[0];
     if (!lastAttacker || time() - lastAttacker.time > 0.25) return;
   }
 
-  if (!teamHealingEnabled && victim.IsA("PlayerEntity"))
-    if (attacker.team === victim.team) return;
+  if (!teamHealingEnabled && entity2.IsA("PlayerEntity"))
+    if (entity1.team === entity2.team) return;
 
   return true;
 }
 
-function ClientHandleHitboxTouched(attacker: SwordPlayerEntity, victim: HealthEntity, part: BasePart, network: NetworkManager) {
-  if (!CheckPlayers(attacker, victim)) return;
-
+function ClientHandleHitboxTouched(attacker: SwordPlayerEntity, target: HealthEntity, part: BasePart, network: NetworkManager) {
   task.spawn(() => {
     const highlight = new Instance("Highlight");
     highlight.FillTransparency = 0;
@@ -84,23 +82,23 @@ function ClientHandleHitboxTouched(attacker: SwordPlayerEntity, victim: HealthEn
 
   // If the attacker is another player
   if (attacker.GetUserFromController() !== Services.Players.LocalPlayer) {
-    if (victim.IsA("PlayerEntity") && victim.GetUserFromController() === Services.Players.LocalPlayer) {
+    if (!target.IsA("PlayerEntity") || target.GetUserFromController() !== Services.Players.LocalPlayer) return;
 
-      startBufferCreation();
-      writeBufferU8(SWORD_HIT_INDEX.OTHER);
-      writeBufferString(attacker.id);
-      writeBufferString(victim.id);
-      network.sendPacket(`${NETWORK_ID}hit`);
-    }
+    startBufferCreation();
+    writeBufferU8(NetworkSwordHitIndex.OtherToLocal);
+    writeBufferString(attacker.id);
+    network.sendPacket(`${NETWORK_ID}hit`);
 
     return;
   }
 
-  startBufferCreation();
-  writeBufferU8(SWORD_HIT_INDEX.LOCAL);
-  writeBufferString(attacker.id);
-  writeBufferString(victim.id);
-  network.sendPacket(`${NETWORK_ID}hit`);
+  // If we're the ones attacking
+  if (attacker.GetUserFromController() === Services.Players.LocalPlayer) {
+    startBufferCreation();
+    writeBufferU8(NetworkSwordHitIndex.LocalToOther);
+    writeBufferString(target.id);
+    network.sendPacket(`${NETWORK_ID}hit`);
+  }
 }
 
 // # Class
@@ -156,7 +154,6 @@ export class SwordPlayerEntity extends PlayerEntity {
             if (!ent.IsA("HealthEntity") || ent.id === this.id) continue;
             this.hitboxTouched.Fire(ent, other);
           }
-
         }));
 
         this.instancesList.push(hitboxPart, hitboxMotor);
@@ -357,35 +354,41 @@ ServerInstance.serverCreated.Connect(server => {
 
   // Listening for damage
   server.network.listenPacket(`${NETWORK_ID}hit`, (packet) => {
+    if (!packet.sender) return;
+
     const reader = BufferReader(packet.content);
     const hitIndex = reader.u8();
-    const attackerId = reader.string();
-    const victimId = reader.string();
+    const entityId = reader.string();
 
-    const attackerEntity = server.entity.entities.get(attackerId);
-    const victimEntity = server.entity.entities.get(victimId);
-    if (!attackerEntity?.IsA("SwordPlayerEntity")) return;
-    if (!victimEntity?.IsA("HealthEntity")) return;
+    const entity = getPlayerEntityFromController(server.entity, tostring(packet.sender.GetAttribute(gameValues.usersessionid)));
+    if (!entity || !entity.IsA("SwordPlayerEntity")) return;
 
-    if (!CheckPlayers(attackerEntity, victimEntity)) return;
+    const targetEntity = server.entity.entities.get(entityId);
+    if (!targetEntity?.IsA("HealthEntity")) return;
 
-    let totalDealingDamage: number = attackerEntity.currentState;
+    if (!CheckPlayers(entity, targetEntity)) return;
 
-    if (victimEntity.IsA("PlayerEntity"))
-      if (teamHealingEnabled && victimEntity.team === attackerEntity.team)
-        totalDealingDamage = -totalDealingDamage;
+    let totalDealingDamage = 0;
 
-    if (totalDealingDamage === 0) return;
+    if (hitIndex === NetworkSwordHitIndex.LocalToOther) {
+      totalDealingDamage = entity.currentState;
 
-    if (hitIndex === SWORD_HIT_INDEX.LOCAL) {
-      if (attackerEntity.GetUserFromController() !== packet.sender) return;
+      if (teamHealingEnabled && targetEntity.IsA("PlayerEntity"))
+        if (targetEntity.team === entity.team)
+          totalDealingDamage = -totalDealingDamage;
 
-      victimEntity.takeDamage(attackerEntity.currentState, attackerEntity);
-      return;
+      targetEntity.takeDamage(totalDealingDamage, entity);
     }
 
-    if (hitIndex === SWORD_HIT_INDEX.OTHER && victimEntity.IsA("PlayerEntity") && victimEntity.GetUserFromController() === packet.sender) {
-      victimEntity.takeDamage(attackerEntity.currentState, attackerEntity);
+    if (hitIndex === NetworkSwordHitIndex.OtherToLocal) {
+      if (!targetEntity.IsA("SwordPlayerEntity")) return;
+
+      totalDealingDamage = entity.currentState;
+
+      if (teamHealingEnabled && targetEntity.team === entity.team)
+        totalDealingDamage = -totalDealingDamage;
+
+      entity.takeDamage(totalDealingDamage, targetEntity);
     }
   });
 
@@ -448,13 +451,7 @@ if (Services.RunService.IsClient()) {
 
       defaultEnvironments.entity.createEntity("SwordPlayerEntity", entityId, controllerId, appearanceId)
         .andThen(ent => {
-          ent.hitboxTouched.Connect((target, other) => {
-            if (ent.GetUserFromController() === Services.Players.LocalPlayer) 
-              ClientHandleHitboxTouched(ent, target, other, defaultEnvironments.network);
-
-            if (ent.GetUserFromController() !== Services.Players.LocalPlayer && target.IsA("SwordPlayerEntity"))
-              ClientHandleHitboxTouched(target, ent, other, defaultEnvironments.network);
-          });
+          ent.hitboxTouched.Connect((target, part) => ClientHandleHitboxTouched(ent, target, part, defaultEnvironments.network));
         }).finally(() => {
           entitiesInQueue.delete(entityId);
         });

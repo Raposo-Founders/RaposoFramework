@@ -37,12 +37,27 @@ ServerInstance.serverCreated.Connect(inst => {
         .andThen(ent => {
           ent.team = PlayerTeam.Raiders;
 
+          let currentThread: thread | undefined;
+
           ent.spawned.Connect(() => {
-            ent.health = 1000;
-            ent.maxHealth = 1000;
+            if (currentThread)
+              task.cancel(currentThread);
+
+            ent.Equip();
+
+            currentThread = task.spawn(() => {
+              while (ent.health > 0) {
+                ent.Attack1();
+                inst.lifecycle.YieldForTicks(1);
+              }
+            });
           });
 
           ent.died.Connect(() => {
+            if (currentThread)
+              task.cancel(currentThread);
+            currentThread = undefined;
+
             task.wait(Players.RespawnTime);
             ent.Spawn();
           });
