@@ -93,11 +93,13 @@ export async function createPlayermodelForEntity(entity: PlayerEntity) {
   entity.died.Connect(() => {
     print("Entity", entity.id, "died.");
 
-    playermodel.SetCollisionGroup("DeadPlayers");
-    playermodel.SetMaterial(Enum.Material.ForceField);
-    playermodel.SetTransparency(0.5);
-
     if (entity.GetUserFromController() !== Services.Players.LocalPlayer) {
+      playermodel.SetCollisionGroup("DeadPlayers");
+      playermodel.SetMaterial(Enum.Material.ForceField);
+      playermodel.SetTransparency(1);
+    }
+
+    if (entity.GetUserFromController() === Services.Players.LocalPlayer) {
       playermodel.SetMaterial();
       playermodel.SetTransparency();
       playermodel.SetRigJointsEnabled(false);
@@ -160,7 +162,9 @@ export async function createPlayermodelForEntity(entity: PlayerEntity) {
 
     playermodel.animator.is_grounded = entity.grounded;
     playermodel.animator.Update();
-    playermodel.rig.Parent = entity.attributesList.has("INVISIBLE") ? Services.ReplicatedStorage : entity.environment.world.objects;
+
+    if (entity.GetUserFromController() !== Services.Players.LocalPlayer)
+      playermodel.rig.Parent = entity.health <= 0 ? Services.ReplicatedStorage : entity.environment.world.objects;
   });
 
   entity.OnDelete(() => {
