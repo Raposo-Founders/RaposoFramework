@@ -5,10 +5,10 @@ import { gameValues, getInstanceDefinedValue } from "gamevalues";
 import { NetworkManager } from "network";
 import { createPlayermodelForEntity, getPlayermodelFromEntity } from "playermodel";
 import ServerInstance from "serverinst";
+import { getLocalPlayerEntity, getLocalPlayermodel } from "systems/localent";
 import { CWorldSoundInstance } from "systems/sound";
 import { BufferReader } from "util/bufferreader";
 import { startBufferCreation, writeBufferBool, writeBufferString, writeBufferU32, writeBufferU64, writeBufferU8 } from "util/bufferwriter";
-import { getLocalPlayerEntity } from "systems/localent";
 import Signal from "util/signal";
 import { DoesInstanceExist } from "util/utilfuncs";
 import { registerEntityClass } from ".";
@@ -482,13 +482,13 @@ if (Services.RunService.IsClient()) {
   // Client state update
   defaultEnvironments.lifecycle.BindTickrate(() => {
     const entity = getLocalPlayerEntity();
-    const playermodel = entity ? getPlayermodelFromEntity(entity.id) : undefined;
+    const playermodel = getLocalPlayermodel();
     if (!entity || !entity.IsA("SwordPlayerEntity") || !playermodel || !DoesInstanceExist(playermodel.rig)) return;
     if (entity.health <= 0) return;
 
     startBufferCreation();
     entity.WriteStateBuffer();
-    defaultEnvironments.network.sendPacket(`${NETWORK_ID}c_stateupd`);
+    defaultEnvironments.network.sendPacket(`${NETWORK_ID}c_stateupd`, undefined, undefined, true);
   });
 
   // Sword / attack changes

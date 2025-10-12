@@ -1,12 +1,8 @@
 import { LocalizationService, Players, RunService } from "@rbxts/services";
-import { defaultEnvironments } from "defaultinsts";
 import PlayerEntity, { PlayerTeam } from "entities/PlayerEntity";
 import { gameValues } from "gamevalues";
-import { getPlayermodelFromEntity } from "playermodel";
 import ServerInstance from "serverinst";
-import { getLocalPlayerEntity } from "systems/localent";
 import { startBufferCreation, writeBufferF32, writeBufferString } from "util/bufferwriter";
-import { DoesInstanceExist } from "util/utilfuncs";
 
 // # Constants & variables
 const TARGET_GROUP = 7203437 as const;
