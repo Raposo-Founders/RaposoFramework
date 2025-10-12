@@ -62,7 +62,7 @@ ServerInstance.serverCreated.Connect(inst => {
 
       task.wait(2);
 
-      ent.Spawn(new CFrame(0, 5, 0));
+      ent.Spawn();
     });
   });
 
