@@ -24,15 +24,10 @@ declare global {
 }
 
 // # Constants & variables
-// enum SwordState {
-//   Idle = 5,
-//   Swing = 10,
-//   Lunge = 30,
-// }
 enum SwordState {
-  Idle = 2,
-  Swing = 5,
-  Lunge = 15,
+  Idle = 5,
+  Swing = 10,
+  Lunge = 30,
 }
 
 enum SWORD_HIT_INDEX {
