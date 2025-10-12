@@ -1,6 +1,6 @@
 import BannerNotify from "@rbxts/banner-notify";
 import React from "@rbxts/react";
-import { CollectionService, ReplicatedStorage, RunService, StarterGui } from "@rbxts/services";
+import { CollectionService, Players, ReplicatedStorage, RunService, StarterGui } from "@rbxts/services";
 import { defaultEnvironments } from "defaultinsts";
 import { requireEntities } from "entities";
 import { mapStorageFolder, modulesFolder, uiFolder } from "folders";
@@ -178,7 +178,6 @@ if (RunService.IsClient()) {
         PaddingRight={new UDim(0, 16)}
         PaddingTop={new UDim(0, 16)}
       />
-      {/* <HudPlayerPanel /> */}
 
       <FairzoneTopDisplay>
         <PlayersTopListing team="Defenders" />
@@ -220,6 +219,19 @@ if (RunService.IsClient()) {
     <ChatButton />
     <ChatWindow />
   </>);
+
+  // Import interface from storage and execute modules
+  for (const inst of uiFolder.GetChildren()) {
+    inst.Parent = Players.LocalPlayer.WaitForChild("PlayerGui");
+
+    if (!inst.IsA("ScreenGui")) continue;
+
+    const executeModuleAttribute = tostring(inst.GetAttribute("ExecuteModule"));
+    const targetModule = inst.WaitForChild(executeModuleAttribute, 1);
+
+    if (!targetModule?.IsA("ModuleScript")) continue;
+    task.spawn(() => require(targetModule));
+  }
 }
 
 if (!RunService.IsStudio())
