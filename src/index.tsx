@@ -63,6 +63,7 @@ function ImportSystems() {
       Chatmngr: import("systems/chatmngr").expect(),
       Matchmngr: import("systems/matchmngr").expect(),
       HudMngr: import("systems/hudvalues").expect(),
+      UserInput: import("systems/UserInput").expect(),
     },
     Environment: {
       Folders: import("folders").expect(),
