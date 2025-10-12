@@ -91,14 +91,13 @@ export class NetworkManager {
         for (const packet of content)
           this.insertNetwork(packet);
       });
-      unreliableConnection = UNREL_REMOTE_EVENT.OnServerEvent.Connect((user, content) => {
-        if (!t.array(ASSERT_PACKET_CHECK)(content)) {
-          HandleInfraction(user, content);
+      unreliableConnection = UNREL_REMOTE_EVENT.OnServerEvent.Connect((user, packet) => {
+        if (!ASSERT_PACKET_CHECK(packet)) {
+          HandleInfraction(user, packet);
           return;
         }
 
-        for (const packet of content)
-          this.insertNetwork(packet);
+        this.insertNetwork(packet);
       });
     } else {
       reliableConnection = REMOTE_EVENT.OnClientEvent.Connect((content) => {
@@ -110,14 +109,13 @@ export class NetworkManager {
         for (const packet of content)
           this.insertNetwork(packet);
       });
-      unreliableConnection = UNREL_REMOTE_EVENT.OnClientEvent.Connect((content) => {
-        if (!t.array(ASSERT_PACKET_CHECK)(content)) {
-          HandleInfraction(undefined, content);
+      unreliableConnection = UNREL_REMOTE_EVENT.OnClientEvent.Connect((packet) => {
+        if (!ASSERT_PACKET_CHECK(packet)) {
+          HandleInfraction(undefined, packet);
           return;
         }
 
-        for (const packet of content)
-          this.insertNetwork(packet);
+        this.insertNetwork(packet);
       });
     }
 
@@ -169,9 +167,9 @@ export class NetworkManager {
 
       for (const packet of clonedOutgoingPacketsList) {
         if (packet.unreliable)
-          outgoingReliable.push(packet.packet);
-        else
           outgoingUnreliable.push(packet.packet);
+        else
+          outgoingReliable.push(packet.packet);
 
         totalOutgoingPackets.push(packet.packet);
       }
@@ -179,7 +177,13 @@ export class NetworkManager {
       this.packetsPosted.Fire(totalOutgoingPackets);
       if (this.remoteEnabled) {
         if (outgoingReliable.size() > 0) REMOTE_EVENT.FireServer(outgoingReliable);
-        if (outgoingUnreliable.size() > 0) UNREL_REMOTE_EVENT.FireServer(outgoingUnreliable);
+
+        // Since unreliable remote events cannot handle data over 80 bytes,
+        // send them one by one individually
+        // ! Might result in heavy data loss !
+        if (outgoingUnreliable.size() > 0)
+          for (const packet of outgoingUnreliable)
+            UNREL_REMOTE_EVENT.FireServer(packet);
       }
 
       outgoingReliable.clear();
@@ -212,7 +216,11 @@ export class NetworkManager {
         if (packetList[0].size() > 0)
           REMOTE_EVENT.FireClient(user, packetList[0]);
         if (packetList[1].size() > 0)
-          UNREL_REMOTE_EVENT.FireClient(user, packetList[1]);
+          // Since unreliable remote events cannot handle data over 80 bytes,
+          // send them one by one individually
+          // ! Might result in heavy data loss !
+          for (const packet of packetList[1])
+            UNREL_REMOTE_EVENT.FireClient(user, packet);
       }
 
       // print("Reached end.", clonedOutgoingPacketsList);
