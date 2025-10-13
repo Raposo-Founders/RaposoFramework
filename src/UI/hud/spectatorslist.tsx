@@ -7,7 +7,7 @@ import { getPlayersFromTeam } from "systems/playermngr";
 import { BlankWindow } from "UI/blocks/window";
 import countryFlags from "UI/countries";
 import { uiValues } from "UI/values";
-import { GetCreatorGroupInfo, GetGroupInfo, IsPlayerInGroup } from "util/groupsutil";
+import { GetCreatorGroupInfo, GetGroupInfo, IsPlayerInGroup } from "providers/GroupsProvider";
 
 // # Constants & variables
 

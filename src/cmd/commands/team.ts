@@ -7,7 +7,7 @@ import ServerInstance from "serverinst";
 import { getPlayersFromTeam } from "systems/playermngr";
 import { BufferReader } from "util/bufferreader";
 import { startBufferCreation, writeBufferString, writeBufferU8 } from "util/bufferwriter";
-import { GetCreatorGroupInfo } from "util/groupsutil";
+import { GetCreatorGroupInfo } from "providers/GroupsProvider";
 
 // # Constants & variables
 const CMD_INDEX_NAME = "cmd_team";

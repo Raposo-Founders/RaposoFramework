@@ -24,7 +24,7 @@ import { SpectatorsList } from "UI/hud/spectatorslist";
 import { DisplayLoadingScreen, HideLoadingScreen } from "UI/loadscreen";
 import { defaultRoot, uiValues } from "UI/values";
 import { BufferReader } from "util/bufferreader";
-import { GetCreatorGroupInfo, GetGameName } from "util/groupsutil";
+import { GetCreatorGroupInfo, GetGameName } from "providers/GroupsProvider";
 
 
 // # Constants & variables
