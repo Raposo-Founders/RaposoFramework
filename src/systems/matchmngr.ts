@@ -9,6 +9,7 @@ import { BufferReader } from "util/bufferreader";
 import { startBufferCreation, writeBufferF32, writeBufferU32, writeBufferU8 } from "util/bufferwriter";
 import { getPlayersFromTeam } from "./playermngr";
 import { sendSystemChatMessage } from "./ChatSystem";
+import { GetGroupInfo } from "providers/GroupsProvider";
 
 // # Constants & variables
 
@@ -148,6 +149,8 @@ ServerInstance.serverCreated.Connect(server => {
 
     raidingGroupId = groupId;
     server.attributesList.set("raidingGroupId", groupId);
+
+    sendSystemChatMessage(`Set raiders' group to: ${GetGroupInfo(groupId).Name} (${groupId}).`);
 
     // Check to see if all the raiding players are in the raiding group
     for (const ent of getPlayersFromTeam(server.entity, PlayerTeam.Raiders)) {
