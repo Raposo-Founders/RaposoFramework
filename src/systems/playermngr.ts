@@ -76,7 +76,7 @@ ServerInstance.serverCreated.Connect(inst => {
   // Update players ping
   let nextPingUpdateTime = 0;
   inst.lifecycle.BindTickrate(() => {
-    const currentTime = 0;
+    const currentTime = time();
     if (currentTime < nextPingUpdateTime) return;
     nextPingUpdateTime = currentTime + 1;
 
