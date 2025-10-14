@@ -45,8 +45,8 @@ ServerInstance.serverCreated.Connect(inst => {
   });
 }); 
 
-new ConsoleFunctionCallback(["resetstats", "rs"], [{ name: "player", type: "player" }])
-  .setDescription("Resets a player's stats")
+new ConsoleFunctionCallback(["tempmod"], [{ name: "player", type: "player" }])
+  .setDescription("Gives a player temporary moderation privileges")
   .setCallback((ctx) => {
     const targetPlayers = ctx.getArgument("player", "player").value;
 
