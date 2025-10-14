@@ -1,7 +1,7 @@
 import { Players, RunService } from "@rbxts/services";
 import { defaultEnvironments } from "defaultinsts";
-import { getPlayermodelFromEntity } from "playermodel";
-import { Playermodel } from "playermodel/rig";
+import { getPlayermodelFromEntity } from "providers/PlayermodelProvider";
+import { Playermodel } from "providers/PlayermodelProvider/rig";
 import { DoesInstanceExist } from "util/utilfuncs";
 
 // # Constants & variables

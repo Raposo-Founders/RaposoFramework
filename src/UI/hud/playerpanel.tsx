@@ -3,7 +3,7 @@ import React from "@rbxts/react";
 import { Players } from "@rbxts/services";
 import { defaultEnvironments } from "defaultinsts";
 import { cacheFolder } from "folders";
-import { Playermodel } from "playermodel/rig";
+import { Playermodel } from "providers/PlayermodelProvider/rig";
 import { uiValues } from "UI/values";
 import { getLocalPlayerEntity } from "systems/localent";
 import WorldInstance from "worldrender";

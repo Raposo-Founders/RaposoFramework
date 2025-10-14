@@ -3,7 +3,7 @@ import { defaultEnvironments } from "defaultinsts";
 import { cacheFolder, modelsFolder } from "folders";
 import { gameValues, getInstanceDefinedValue } from "gamevalues";
 import { NetworkManager } from "network";
-import { createPlayermodelForEntity, getPlayermodelFromEntity } from "playermodel";
+import { createPlayermodelForEntity, getPlayermodelFromEntity } from "providers/PlayermodelProvider";
 import ServerInstance from "serverinst";
 import { getLocalPlayerEntity, getLocalPlayermodel } from "systems/localent";
 import { CWorldSoundInstance } from "systems/sound";
