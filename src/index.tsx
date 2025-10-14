@@ -25,6 +25,7 @@ import { DisplayLoadingScreen, HideLoadingScreen } from "UI/loadscreen";
 import { defaultRoot, uiValues } from "UI/values";
 import { BufferReader } from "util/bufferreader";
 import { GetCreatorGroupInfo, GetGameName } from "providers/GroupsProvider";
+import { sendSystemChatMessage } from "systems/ChatSystem";
 
 
 // # Constants & variables
@@ -60,7 +61,7 @@ function ImportSystems() {
       Sound: import("systems/sound").expect(),
       Playermngr: import("systems/playermngr").expect(),
       Sessionmngr: import("systems/sessionmngr").expect(),
-      Chatmngr: import("systems/chatmngr").expect(),
+      Chatmngr: import("systems/ChatSystem").expect(),
       Matchmngr: import("systems/matchmngr").expect(),
       HudMngr: import("systems/hudvalues").expect(),
       UserInput: import("systems/UserInput").expect(),
@@ -158,7 +159,7 @@ if (RunService.IsClient()) {
     const message = reader.string();
   
     RaposoConsole.Info(message);
-    RenderChatMessage(message);
+    sendSystemChatMessage(message);
   });
   
   // Build interface

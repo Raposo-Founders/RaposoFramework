@@ -4,7 +4,7 @@ import { UserInputService } from "@rbxts/services";
 import { ExecuteCommand } from "cmd";
 import { defaultEnvironments } from "defaultinsts";
 import { gameValues } from "gamevalues";
-import { sendChatMessage } from "systems/chatmngr";
+import { sendChatMessage } from "systems/ChatSystem";
 import { DefaultButton } from "UI/blocks/btn";
 import { uiValues } from "UI/values";
 import Signal from "util/signal";

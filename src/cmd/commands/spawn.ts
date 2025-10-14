@@ -1,9 +1,10 @@
-import { defendersCommandCheck, writePlayerReply } from "cmd/cmdutils";
+import { defendersCommandCheck } from "cmd/cmdutils";
 import { ConsoleFunctionCallback } from "cmd/cvar";
 import { defaultEnvironments } from "defaultinsts";
 import PlayerEntity from "entities/PlayerEntity";
 import { gameValues } from "gamevalues";
 import ServerInstance from "serverinst";
+import { sendSystemChatMessage } from "systems/ChatSystem";
 import { BufferReader } from "util/bufferreader";
 import { startBufferCreation, writeBufferString } from "util/bufferwriter";
 
@@ -29,18 +30,18 @@ ServerInstance.serverCreated.Connect(inst => {
 
     const targetEntity = inst.entity.entities.get(entityId);
     if (!targetEntity || !targetEntity.IsA("PlayerEntity")) {
-      writePlayerReply(info.sender, `Invalid player entity ${entityId}`);
+      sendSystemChatMessage(`Invalid player entity ${entityId}`, [info.sender]);
       return;
     }
     
     if (!defendersCommandCheck(callerEntity, targetEntity)) {
-      writePlayerReply(info.sender, gameValues.cmdtempmoddefendersdeny);
+      sendSystemChatMessage(gameValues.cmdtempmoddefendersdeny, [info.sender]);
       return;
     }
 
     targetEntity.Spawn();
 
-    writePlayerReply(info.sender, `Spawned ${targetEntity.GetUserFromController()} (${targetEntity.id}).`);
+    sendSystemChatMessage(`Spawned ${targetEntity.GetUserFromController()} (${targetEntity.id}).`);
   });
 }); 
 

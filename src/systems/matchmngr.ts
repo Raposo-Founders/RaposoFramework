@@ -8,7 +8,7 @@ import { uiValues } from "UI/values";
 import { BufferReader } from "util/bufferreader";
 import { startBufferCreation, writeBufferF32, writeBufferU32, writeBufferU8 } from "util/bufferwriter";
 import { getPlayersFromTeam } from "./playermngr";
-import { writePlayerReply } from "cmd/cmdutils";
+import { sendSystemChatMessage } from "./ChatSystem";
 
 // # Constants & variables
 
@@ -67,6 +67,11 @@ ServerInstance.serverCreated.Connect(server => {
 
     nextUpdateTime = time() + 1;
     elapsedMatchTime = 0;
+
+    // SPAMMMMMM
+    sendSystemChatMessage("!!! MATCH STARTED !!!");
+    sendSystemChatMessage("!!! MATCH STARTED !!!");
+    sendSystemChatMessage("!!! MATCH STARTED !!!");
   });
 
   server.network.listenPacket("match_changepts", (packet) => {
@@ -152,8 +157,7 @@ ServerInstance.serverCreated.Connect(server => {
       ent.team = PlayerTeam.Spectators;
       ent.Spawn();
 
-      for (const user of server.trackingPlayers)
-        writePlayerReply(user, `Player ${controller.Name} moved to spectators: Not in the raiding group.`);
+      sendSystemChatMessage(`Player ${controller.Name} moved to spectators: Not in the raiding group.`);
     }
   });
 

@@ -1,9 +1,9 @@
 import { Players, RunService } from "@rbxts/services";
-import { writePlayerReply } from "cmd/cmdutils";
 import { ConsoleFunctionCallback } from "cmd/cvar";
 import { defaultEnvironments } from "defaultinsts";
 import { PlayerTeam } from "entities/PlayerEntity";
 import ServerInstance from "serverinst";
+import { sendSystemChatMessage } from "systems/ChatSystem";
 import { BufferReader } from "util/bufferreader";
 import { startBufferCreation, writeBufferString } from "util/bufferwriter";
 
@@ -64,7 +64,7 @@ ServerInstance.serverCreated.Connect(inst => {
 
           ent.Spawn();
 
-          writePlayerReply(info.sender!, `Created bot ${ent.id}.`);
+          sendSystemChatMessage(`Created bot ${ent.id}.`, [info.sender!]);
         });
   });
 });

@@ -2,9 +2,12 @@ import ColorUtils from "@rbxts/colour-utils";
 import { Players, RunService, TextChatService, UserInputService } from "@rbxts/services";
 import { defaultEnvironments } from "defaultinsts";
 import PlayerEntity, { PlayerTeam } from "entities/PlayerEntity";
+import { listenDirectPacket, sendDirectPacket } from "network";
 import ServerInstance from "serverinst";
 import { RenderChatMessage } from "UI/chatui/chatwindow";
 import { colorTable, uiValues } from "UI/values";
+import { BufferReader } from "util/bufferreader";
+import { startBufferCreation, writeBufferString } from "util/bufferwriter";
 import { ReplicatedInstance } from "util/utilfuncs";
 
 // # Types
@@ -12,6 +15,7 @@ type ChatMessageAttributes = "Shout" | "TeamOnly";
 
 // # Constants & variables
 const ATTRIBUTES_SEPARATOR = ";";
+const CHAT_SYSMSG_NETID = "chatsys_sysmsg";
 
 const CHANNELS_FOLDER = ReplicatedInstance(TextChatService, "ServerChannels", "Folder");
 const DEFAULT_CHANNEL = ReplicatedInstance(CHANNELS_FOLDER, "RAPOSO_CHANNEL_DEFAULT", "TextChannel");
@@ -25,10 +29,36 @@ function formatString(text: string) {
 }
 
 export function sendChatMessage(text: string, attributes: ChatMessageAttributes[]) {
+  assert(RunService.IsClient(), "Function can only be called from the client.");
+
   DEFAULT_CHANNEL.SendAsync(formatString(text), attributes.join(ATTRIBUTES_SEPARATOR));
 }
 
-// # Bindings & misc
+export function sendSystemChatMessage(text: string, targetPlayers: Player[] = Players.GetPlayers(), ignorePlayers: Player[] = []) {
+  if (RunService.IsServer()) {
+    for (const user of targetPlayers) {
+      if (ignorePlayers.includes(user) || !user.IsDescendantOf(Players)) continue;
+
+      startBufferCreation();
+      writeBufferString(text);
+      sendDirectPacket(CHAT_SYSMSG_NETID, user);
+    }
+
+    return;
+  }
+
+  DEFAULT_CHANNEL.DisplaySystemMessage(text);
+}
+
+// # Execution
+if (RunService.IsClient())
+  listenDirectPacket(CHAT_SYSMSG_NETID, (_, bfr) => {
+    const reader = BufferReader(bfr);
+    const message = reader.string();
+
+    DEFAULT_CHANNEL.DisplaySystemMessage(message);
+  });
+
 if (RunService.IsServer()) {
   Players.PlayerAdded.Connect(user => {
     DEFAULT_CHANNEL.AddUserAsync(user.UserId);
@@ -97,4 +127,4 @@ if (RunService.IsClient()) {
   });
 }
 
-CUSTOM_USER_PREFIXES.set(3676469645, `<font color="#55ff7f"><i>[The snake]</i></font>`); // coolergate
+CUSTOM_USER_PREFIXES.set(3676469645, `<font color="#55ff7f"><i>[Snake]</i></font>`); // coolergate

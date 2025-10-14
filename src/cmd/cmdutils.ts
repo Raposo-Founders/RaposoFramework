@@ -1,7 +1,5 @@
 import PlayerEntity, { PlayerTeam } from "entities/PlayerEntity";
 import { gameValues } from "gamevalues";
-import { sendDirectPacket } from "network";
-import { startBufferCreation, writeBufferString } from "util/bufferwriter";
 
 export function defendersCommandCheck(callerEntity: PlayerEntity, targetEntity: PlayerEntity) {
   const caller = callerEntity.GetUserFromController();
@@ -17,10 +15,4 @@ export function defendersCommandCheck(callerEntity: PlayerEntity, targetEntity: 
   if (targetEntity.team === PlayerTeam.Defenders) return false;
 
   return true;
-}
-
-export function writePlayerReply(target: Player, reply: string) {
-  startBufferCreation();
-  writeBufferString(reply);
-  sendDirectPacket(gameValues.cmdnetinfo, target);
 }

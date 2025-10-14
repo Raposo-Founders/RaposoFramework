@@ -1,10 +1,11 @@
-import { defendersCommandCheck, writePlayerReply } from "cmd/cmdutils";
+import { defendersCommandCheck } from "cmd/cmdutils";
 import { ConsoleFunctionCallback } from "cmd/cvar";
 import { defaultEnvironments } from "defaultinsts";
 import PlayerEntity from "entities/PlayerEntity";
 import { gameValues } from "gamevalues";
 import { sendDirectPacket } from "network";
 import ServerInstance from "serverinst";
+import { sendSystemChatMessage } from "systems/ChatSystem";
 import { BufferReader } from "util/bufferreader";
 import { startBufferCreation, writeBufferString, writeBufferU32 } from "util/bufferwriter";
 
@@ -31,19 +32,19 @@ ServerInstance.serverCreated.Connect(inst => {
 
     const targetEntity = inst.entity.entities.get(entityId);
     if (!targetEntity || !targetEntity.IsA("PlayerEntity")) {
-      writePlayerReply(info.sender, `Invalid player entity ${entityId}`);
+      sendSystemChatMessage(`Invalid player entity ${entityId}`, [info.sender]);
       return;
     }
 
     // Check to see if the sender is just someone with tempmod
     if (!defendersCommandCheck(callerEntity, targetEntity)) {
-      writePlayerReply(info.sender, gameValues.cmdtempmoddefendersdeny);
+      sendSystemChatMessage(gameValues.cmdtempmoddefendersdeny, [info.sender]);
       return;
     }
 
     targetEntity.takeDamage(amount);
 
-    writePlayerReply(info.sender, `Damaged ${targetEntity.GetUserFromController()} by ${amount} points.`);
+    sendSystemChatMessage(`Damaged ${targetEntity.GetUserFromController()} for ${amount} points.`, [info.sender]);
   });
 });
 
@@ -52,8 +53,6 @@ new ConsoleFunctionCallback(["damage", "dmg"], [{ name: "player", type: "player"
   .setCallback((ctx) => {
     const targetPlayers = ctx.getArgument("player", "player").value;
     const amount = ctx.getArgument("amount", "number").value;
-
-    assert(targetPlayers[0], "Invalid player entity.");
 
     for (const ent of targetPlayers) {
       startBufferCreation();

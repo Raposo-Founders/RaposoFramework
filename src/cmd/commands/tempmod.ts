@@ -1,9 +1,9 @@
-import { defendersCommandCheck, writePlayerReply } from "cmd/cmdutils";
 import { ConsoleFunctionCallback } from "cmd/cvar";
 import { defaultEnvironments } from "defaultinsts";
 import PlayerEntity from "entities/PlayerEntity";
 import { gameValues } from "gamevalues";
 import ServerInstance from "serverinst";
+import { sendSystemChatMessage } from "systems/ChatSystem";
 import { BufferReader } from "util/bufferreader";
 import { startBufferCreation, writeBufferString } from "util/bufferwriter";
 
@@ -29,19 +29,19 @@ ServerInstance.serverCreated.Connect(inst => {
 
     const targetEntity = inst.entity.entities.get(entityId);
     if (!targetEntity || !targetEntity.IsA("PlayerEntity")) {
-      writePlayerReply(info.sender, `Invalid player entity ${entityId}`);
+      sendSystemChatMessage(`Invalid player entity ${entityId}`, [info.sender]);
       return;
     }
 
     const controller = targetEntity.GetUserFromController();
     if (!controller) {
-      writePlayerReply(info.sender, `PlayerEntity ${targetEntity.id} has no controller.`);
+      sendSystemChatMessage(`PlayerEntity ${targetEntity.id} has no controller.`, [info.sender]);
       return;
     }
 
     controller.SetAttribute(gameValues.modattr, true);
 
-    writePlayerReply(info.sender, `Gave ${targetEntity.GetUserFromController()} temporary moderation privileges.`);
+    sendSystemChatMessage(`Gave ${targetEntity.GetUserFromController()} temporary moderation privileges.`);
   });
 }); 
 

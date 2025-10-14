@@ -1,4 +1,3 @@
-import { writePlayerReply } from "cmd/cmdutils";
 import { ConsoleFunctionCallback } from "cmd/cvar";
 import { defaultEnvironments } from "defaultinsts";
 import PlayerEntity, { PlayerTeam } from "entities/PlayerEntity";
@@ -8,6 +7,8 @@ import { getPlayersFromTeam } from "systems/playermngr";
 import { BufferReader } from "util/bufferreader";
 import { startBufferCreation, writeBufferString, writeBufferU8 } from "util/bufferwriter";
 import { GetCreatorGroupInfo } from "providers/GroupsProvider";
+import { colorTable } from "UI/values";
+import { sendSystemChatMessage } from "systems/ChatSystem";
 
 // # Constants & variables
 const CMD_INDEX_NAME = "cmd_team";
@@ -32,7 +33,7 @@ ServerInstance.serverCreated.Connect(inst => {
 
     const targetEntity = inst.entity.entities.get(entityId);
     if (!targetEntity || !targetEntity.IsA("PlayerEntity")) {
-      writePlayerReply(info.sender, `Invalid player entity ${entityId}`);
+      sendSystemChatMessage(`Invalid player entity ${entityId}`, [info.sender]);
       return;
     }
     const targetController = targetEntity.GetUserFromController();
@@ -40,7 +41,7 @@ ServerInstance.serverCreated.Connect(inst => {
     // Prevent people with tempmod from messing with the defenders' team
     if (!info.sender.GetAttribute(gameValues.adminattr) && callerEntity.team !== PlayerTeam.Defenders) {
       if (team === PlayerTeam.Defenders || targetEntity.team === PlayerTeam.Defenders) {
-        writePlayerReply(info.sender, gameValues.cmdtempmoddefendersdeny);
+        sendSystemChatMessage(gameValues.cmdtempmoddefendersdeny, [info.sender]);
         return;
       }
     }
@@ -50,12 +51,12 @@ ServerInstance.serverCreated.Connect(inst => {
 
     if (targetController && creatorGroupInfo && raidingGroupId) {
       if (team === PlayerTeam.Defenders && !targetController.IsInGroup(creatorGroupInfo.groupInfo.Id)) {
-        writePlayerReply(info.sender, `Unable to team player: ${targetController} is not in the group "${creatorGroupInfo.groupInfo.Name}".`);
+        sendSystemChatMessage(`Unable to team player: ${targetController} is not in the "${creatorGroupInfo.groupInfo.Name}" group.`);
         return;
       }
 
       if (team === PlayerTeam.Raiders && !targetController.IsInGroup(raidingGroupId)) {
-        writePlayerReply(info.sender, `Unable to team player: ${targetController} is not in the raiders' group.`);
+        sendSystemChatMessage(`Unable to team player: ${targetController} is not in the raiders' group.`);
         return;
       }
     }
@@ -66,7 +67,7 @@ ServerInstance.serverCreated.Connect(inst => {
       const totalDefinedSize = tonumber(inst.attributesList.get("totalTeamSize")) || 999;
 
       if (playersOnTeam.size() + 1 > totalDefinedSize) {
-        writePlayerReply(info.sender, `Unable to team player: Maximum amount of players on the team exceeds ${totalDefinedSize}.`);
+        sendSystemChatMessage(`Unable to team player: Maximum amount of players on the team exceeds ${totalDefinedSize}.`, [info.sender]);
         return;
       }
     }
@@ -74,7 +75,12 @@ ServerInstance.serverCreated.Connect(inst => {
     targetEntity.team = team;
     targetEntity.Spawn();
 
-    writePlayerReply(info.sender, `Changed ${targetController}'s (${targetEntity.id}) team to ${PlayerTeam[team]}.`);
+    // Write reply
+    let teamColor = colorTable.spectatorsColor;
+    if (team === PlayerTeam.Defenders) teamColor = colorTable.defendersColor;
+    if (team === PlayerTeam.Raiders) teamColor = colorTable.raidersColor;
+
+    sendSystemChatMessage(`${targetController} (${targetEntity.id}) joined the <font color="${teamColor}">${PlayerTeam[team]}</font> team.`);
   });
 }); 
 

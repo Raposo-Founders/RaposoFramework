@@ -6,11 +6,6 @@ import { uiValues } from "UI/values";
 import Signal from "util/signal";
 
 // # Types
-interface ChatMessageConfig {
-  sender: number;
-  additionalTags: string[];
-}
-
 // # Constants & variables
 const CHAT_FOCUSED = new Signal<[focused: boolean]>();
 const CHAT_DISPLAY_TIME = 5;
@@ -19,15 +14,7 @@ const TWEEN_INFO = new TweenInfo(0.125, Enum.EasingStyle.Linear);
 let currentReference: Instance | undefined;
 
 // # Functions
-export function RenderChatMessage(text: string, config?: Partial<ChatMessageConfig>) {
-  if (config) {
-    if (config.sender !== undefined && config.sender !== 0) {
-      const player = Players.GetPlayerByUserId(config.sender);
-      if (player)
-        text = `<${player.Name}> ${text}`;
-    }
-  }
-
+export function RenderChatMessage(text: string) {
   let temporaryVisibility = 0;
   let focusVisibility = 1;
 
