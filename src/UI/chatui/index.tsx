@@ -2,6 +2,7 @@ import ColorUtils from "@rbxts/colour-utils";
 import React from "@rbxts/react";
 import { UserInputService } from "@rbxts/services";
 import { ExecuteCommand } from "cmd";
+import { defaultEnvironments } from "defaultinsts";
 import { gameValues } from "gamevalues";
 import { sendChatMessage } from "systems/chatmngr";
 import { DefaultButton } from "UI/blocks/btn";
@@ -9,7 +10,7 @@ import { uiValues } from "UI/values";
 import Signal from "util/signal";
 
 // # Constants & variables
-const KEYCODE = Enum.KeyCode.Slash;
+const KEYCODES: Enum.KeyCode[] = [Enum.KeyCode.Slash, Enum.KeyCode.KeypadDivide];
 
 const toggleChatVisibility = new Signal<[visible?: boolean]>();
 
@@ -27,6 +28,8 @@ export function ChatBar() {
 
     toggleChatVisibility.Connect(visible => {
       if (!reference.current) return;
+
+      defaultEnvironments.lifecycle.YieldForTicks(2);
 
       if (visible === undefined)
         reference.current.Visible = !reference.current.Visible;
@@ -69,8 +72,10 @@ export function ChatBar() {
           if (text.sub(1, 1) === gameValues.cmdprefix) {
             const split = text.split(gameValues.cmdprefix);
 
-            for (const argument of split) {
-              ExecuteCommand(argument);
+            for (const cmd of split) {
+              if (cmd === "") continue;
+
+              ExecuteCommand(cmd).expect();
               task.wait();
               task.wait(); // Double trouble :)
             }
@@ -143,7 +148,7 @@ export function ChatButton() {
 
 // # Bindings & misc
 UserInputService.InputBegan.Connect((input, busy) => {
-  if (busy || input.KeyCode !== KEYCODE) return;
+  if (busy || !KEYCODES.includes(input.KeyCode)) return;
 
   toggleChatVisibility.Fire();
 });
