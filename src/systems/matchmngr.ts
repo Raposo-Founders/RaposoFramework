@@ -10,6 +10,7 @@ import { startBufferCreation, writeBufferF32, writeBufferU32, writeBufferU8 } fr
 import { getPlayersFromTeam } from "./playermngr";
 import { sendSystemChatMessage } from "./ChatSystem";
 import { GetGroupInfo } from "providers/GroupsProvider";
+import { webhookLogEvent } from "./WebhookSystem";
 
 // # Constants & variables
 
@@ -111,6 +112,13 @@ ServerInstance.serverCreated.Connect(server => {
         writeBufferU32(teamPoints.get(PlayerTeam.Defenders) || 0);
         writeBufferU32(teamPoints.get(PlayerTeam.Raiders) || 0);
         server.network.sendPacket("match_ended");
+
+        webhookLogEvent(
+          teamIndex,
+          teamPoints.get(PlayerTeam.Defenders) || 0,
+          teamPoints.get(PlayerTeam.Raiders) || 0,
+          server.entity,
+        );
 
         break;
       }

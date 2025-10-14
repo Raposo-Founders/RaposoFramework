@@ -3,7 +3,6 @@ import { defaultEnvironments } from "defaultinsts";
 import { gameValues } from "gamevalues";
 import ServerInstance from "serverinst";
 import { sendSystemChatMessage } from "systems/ChatSystem";
-import { BufferReader } from "util/bufferreader";
 import { startBufferCreation, writeBufferString } from "util/bufferwriter";
 
 // # Constants & variables
@@ -14,8 +13,6 @@ const CMD_INDEX_NAME = "cmd_joke";
 ServerInstance.serverCreated.Connect(inst => {
   inst.network.listenPacket(CMD_INDEX_NAME, info => {
     if (!info.sender || !info.sender.GetAttribute(gameValues.modattr)) return;
-
-    const reader = BufferReader(info.content);
 
     sendSystemChatMessage(`Nice try ${info.sender.Name}, but this is not Kohl's admin.`);
   });
