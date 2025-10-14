@@ -5,6 +5,7 @@ import PlayerEntity from "entities/PlayerEntity";
 import { gameValues } from "gamevalues";
 import ServerInstance from "serverinst";
 import { sendSystemChatMessage } from "systems/ChatSystem";
+import { colorTable } from "UI/values";
 import { BufferReader } from "util/bufferreader";
 import { startBufferCreation, writeBufferString } from "util/bufferwriter";
 
@@ -66,7 +67,10 @@ new ConsoleFunctionCallback(["kick"], [{ name: "player", type: "player" }, { nam
     const targetPlayers = ctx.getArgument("player", "player").value;
     const reason = ctx.getArgument("reason", "strings").value;
 
-    assert(targetPlayers.size() > 0, `Invalid player entity.`);
+    if (targetPlayers.size() <= 0) {
+      sendSystemChatMessage(`<b><font color="${colorTable.errorneousColor}">Argument #1 unknown player.</font></b>`);
+      return;
+    }
 
     for (const ent of targetPlayers) {
       startBufferCreation();

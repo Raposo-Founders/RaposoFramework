@@ -1,8 +1,9 @@
-import { HttpService, RunService } from "@rbxts/services";
-import { t } from "@rbxts/t";
-import Signal from "util/signal";
-import { ConsoleFunctionCallback, createdCVars, cvarFlags, CFUNC_REPLY_POST } from "./cvar";
+import { RunService } from "@rbxts/services";
 import { RaposoConsole } from "logging";
+import Signal from "util/signal";
+import { CFUNC_REPLY_POST, ConsoleFunctionCallback, createdCVars, cvarFlags } from "./cvar";
+import { sendSystemChatMessage } from "systems/ChatSystem";
+import { colorTable } from "UI/values";
 
 // # Constants & variables
 export const COMMAND_EXECUTED = new Signal<[name: string, args: string[]]>();
@@ -58,7 +59,11 @@ export async function ExecuteCommand(content: string) {
 
   if (targetCallback) {
     COMMAND_EXECUTED.Fire(targetCallback.names[0], args);
-    targetCallback.execute(args);
+ 
+    const [success, errorMessage] = pcall(() => targetCallback.execute(args));
+    if (!success)
+      sendSystemChatMessage(`Command error: <b><font color="${colorTable.errorneousColor}">${errorMessage}</font></b>`);
+
     return;
   }
 

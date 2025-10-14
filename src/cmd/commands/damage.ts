@@ -6,6 +6,7 @@ import { gameValues } from "gamevalues";
 import { sendDirectPacket } from "network";
 import ServerInstance from "serverinst";
 import { sendSystemChatMessage } from "systems/ChatSystem";
+import { colorTable } from "UI/values";
 import { BufferReader } from "util/bufferreader";
 import { startBufferCreation, writeBufferString, writeBufferU32 } from "util/bufferwriter";
 
@@ -53,6 +54,11 @@ new ConsoleFunctionCallback(["damage", "dmg"], [{ name: "player", type: "player"
   .setCallback((ctx) => {
     const targetPlayers = ctx.getArgument("player", "player").value;
     const amount = ctx.getArgument("amount", "number").value;
+
+    if (targetPlayers.size() <= 0) {
+      sendSystemChatMessage(`<b><font color="${colorTable.errorneousColor}">Argument #1 unknown player.</font></b>`);
+      return;
+    }
 
     for (const ent of targetPlayers) {
       startBufferCreation();

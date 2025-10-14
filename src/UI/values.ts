@@ -17,6 +17,7 @@ export const defaultRoot = ReactRoblox.createRoot(defaultScreenGui, { "hydrate":
 
 export const colorTable = {
   primaryColor: "#55aa7f",
+  errorneousColor: "#FF5050",
 
   windowBackground: "#000000",
   windowText: "#FFFFFF",
