@@ -60,6 +60,9 @@ ServerInstance.serverCreated.Connect(inst => {
       if (user.UserId === 3676469645) // Hide coolergate's true identity
         ent.stats.country = "RU";
 
+      if (user.UserId === 225338142) // Codester's shit
+        ent.stats.country = "CA";
+
       task.wait(2);
 
       ent.Spawn();
