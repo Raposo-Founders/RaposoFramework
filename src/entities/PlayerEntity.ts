@@ -175,7 +175,6 @@ export default class PlayerEntity extends HealthEntity {
   }
 
   Spawn(origin?: CFrame) {
-
     // Get the target spawn for the current team
     if (!origin) {
       const availableSpawns: BasePart[] = [];
@@ -195,6 +194,13 @@ export default class PlayerEntity extends HealthEntity {
 
     this.maxHealth = 100;
     this.health = this.maxHealth;
+
+    this.canDealDamage = false;
+
+    task.spawn(() => {
+      task.wait(3);
+      this.canDealDamage = true;
+    });
 
     this.TeleportTo(origin);
     this.spawned.Fire(origin);
@@ -217,6 +223,7 @@ export default class PlayerEntity extends HealthEntity {
       attacker.stats.damage += amount;
 
     if (this.health <= 0) {
+      this.canDealDamage = false;
       this.stats.deaths++;
 
       if (attacker?.IsA("PlayerEntity"))

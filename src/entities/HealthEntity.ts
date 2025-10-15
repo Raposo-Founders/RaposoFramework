@@ -16,6 +16,8 @@ abstract class HealthEntity extends WorldEntity {
   abstract health: number;
   abstract maxHealth: number;
 
+  canDealDamage = true;
+
   readonly tookDamage = new Signal<[old: number, new: number, attacker?: WorldEntity]>();
   readonly died = new Signal<[attacker?: WorldEntity]>();
   readonly attackersList: AttackerInfo[] = [];
@@ -27,6 +29,8 @@ abstract class HealthEntity extends WorldEntity {
   }
 
   takeDamage(amount: number, attacker?: WorldEntity) {
+    if (!this.canDealDamage) return;
+
     const previousHealthAmount = this.health;
 
     this.health -= amount;
