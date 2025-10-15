@@ -1,6 +1,7 @@
 import ColorUtils from "@rbxts/colour-utils";
 import React, { useEffect } from "@rbxts/react";
 import { Players, RunService, TweenService, UserInputService } from "@rbxts/services";
+import { RaposoConsole } from "logging";
 import { BlankWindow } from "UI/blocks/window";
 import { uiValues } from "UI/values";
 import Signal from "util/signal";
@@ -102,7 +103,7 @@ export function RenderChatMessage(text: string) {
 
   if (currentReference) {
     textLabel.Parent = currentReference;
-    textLabel.LayoutOrder = -currentReference.GetChildren().size();
+    textLabel.LayoutOrder = currentReference.GetChildren().size();
   }
 }
 
@@ -115,6 +116,23 @@ export function ChatWindow() {
 
   backgroundValue.Value = 1;
   backgroundValue.Changed.Connect(val => SetBackgroundTransparency(val));
+
+  let isOnBottom = false;
+
+  const updateCanvasSize = (inst: ScrollingFrame) => {
+    const childElements: GuiBase2d[] = [];
+    let totalVerticalSize = 0;
+
+    for (const child of inst.GetChildren()) {
+      if (!child.IsA("GuiBase2d")) continue;
+      childElements.push(child);
+    }
+
+    for (const child of childElements)
+      totalVerticalSize += child.AbsoluteSize.Y;
+
+    inst.CanvasSize = new UDim2(0, 0, 0, totalVerticalSize);
+  };
 
   useEffect(() => {
     currentReference = parentFrameRef.current;
@@ -142,22 +160,48 @@ export function ChatWindow() {
       }}
     >
       <scrollingframe
-        AutomaticCanvasSize={"Y"}
-        CanvasSize={new UDim2()}
+        // AutomaticCanvasSize={"Y"}
+        CanvasSize={new UDim2(0, 0, 0, 0)}
         ScrollBarThickness={0}
         Active={true}
         BackgroundTransparency={1}
         Size={UDim2.fromScale(1, 1)}
+        Event={{
+          ChildAdded: scrollingFrame => {
+            task.wait();
+
+            updateCanvasSize(scrollingFrame);
+
+            if (isOnBottom) {
+              const absoluteY = scrollingFrame.AbsoluteSize.Y;
+              const offset = scrollingFrame.AbsoluteCanvasSize.Y - absoluteY;
+
+              scrollingFrame.CanvasPosition = new Vector2(0, offset);
+            }
+          },
+          ChildRemoved: scrollingFrame => {
+            task.wait();
+            updateCanvasSize(scrollingFrame);
+          },
+        }}
+        Change={{
+          CanvasPosition: scrollingFrame => {
+            const absoluteY = scrollingFrame.AbsoluteSize.Y;
+            const currentVerticalPos = scrollingFrame.CanvasPosition.Y;
+            const offset = scrollingFrame.AbsoluteCanvasSize.Y - absoluteY;
+
+            isOnBottom = currentVerticalPos === offset;
+          },
+        }}
         ref={parentFrameRef}
       >
         <uilistlayout
           SortOrder={"LayoutOrder"}
+          VerticalAlignment={"Bottom"}
         />
         <uipadding
-          PaddingBottom={new UDim(0, 10)}
           PaddingLeft={new UDim(0, 8)}
           PaddingRight={new UDim(0, 10)}
-          PaddingTop={new UDim(0, 4)}
         />
       </scrollingframe>
     </BlankWindow>
