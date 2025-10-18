@@ -1,17 +1,15 @@
 import React from "@rbxts/react";
 import ReactRoblox from "@rbxts/react-roblox";
 import { Players, RunService } from "@rbxts/services";
-import Vide from "@rbxts/vide";
 import { PlayerTeam } from "entities/PlayerEntity";
 
-export const defaultScreenGui = Vide.create("ScreenGui")({
-  Name: "React Default",
-  Parent: RunService.IsClient() ? Players.LocalPlayer.WaitForChild("PlayerGui") : undefined,
-  Enabled: true,
-  ResetOnSpawn: false,
-  IgnoreGuiInset: true,
-  DisplayOrder: 99,
-});
+export const defaultScreenGui = new Instance("ScreenGui");
+defaultScreenGui.Name = "React Default";
+defaultScreenGui.Parent = RunService.IsClient() ? Players.LocalPlayer.WaitForChild("PlayerGui") : undefined;
+defaultScreenGui.Enabled = true;
+defaultScreenGui.ResetOnSpawn = false;
+defaultScreenGui.IgnoreGuiInset = true;
+defaultScreenGui.DisplayOrder = 99;
 
 export const defaultRoot = ReactRoblox.createRoot(defaultScreenGui, { "hydrate": true });
 

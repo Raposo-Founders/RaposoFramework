@@ -1,4 +1,3 @@
-import BannerNotify from "@rbxts/banner-notify";
 import React from "@rbxts/react";
 import { CollectionService, Players, ReplicatedStorage, RunService, StarterGui } from "@rbxts/services";
 import { defaultEnvironments } from "defaultinsts";
@@ -125,11 +124,6 @@ ImportSystems();
 ExecuteModules();
 
 // Misc & other shit
-if (RunService.IsServer())
-  BannerNotify.InitServer(); // Why the fuck does the server need to be initialized?
-else
-  BannerNotify.InitClient();
-
 if (RunService.IsClient()) {
   defaultEnvironments.lifecycle.BindTickrate((_, dt) => {
     defaultEnvironments.network.processPackets();

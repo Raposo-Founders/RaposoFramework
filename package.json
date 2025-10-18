@@ -22,7 +22,6 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
-    "@rbxts/banner-notify": "^1.0.1",
     "@rbxts/colour-utils": "^1.4.1",
     "@rbxts/discord-webhook": "^1.1.2",
     "@rbxts/object-utils": "^1.0.4",
@@ -30,7 +29,6 @@
     "@rbxts/react": "^17.2.3",
     "@rbxts/react-roblox": "^17.2.3",
     "@rbxts/services": "^1.5.5",
-    "@rbxts/t": "^3.2.1",
-    "@rbxts/vide": "^0.5.7"
+    "@rbxts/t": "^3.2.1"
   }
 }
