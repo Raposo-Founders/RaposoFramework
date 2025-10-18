@@ -2,13 +2,13 @@ import { ConsoleFunctionCallback } from "cmd/cvar";
 import { defaultEnvironments } from "defaultinsts";
 import PlayerEntity, { PlayerTeam } from "entities/PlayerEntity";
 import { gameValues } from "gamevalues";
+import { GetCreatorGroupInfo } from "providers/GroupsProvider";
 import ServerInstance from "serverinst";
+import ChatSystem from "systems/ChatSystem";
 import { getPlayersFromTeam } from "systems/playermngr";
+import { colorTable } from "UI/values";
 import { BufferReader } from "util/bufferreader";
 import { startBufferCreation, writeBufferString, writeBufferU8 } from "util/bufferwriter";
-import { GetCreatorGroupInfo } from "providers/GroupsProvider";
-import { colorTable } from "UI/values";
-import { sendSystemChatMessage } from "systems/ChatSystem";
 
 // # Constants & variables
 const CMD_INDEX_NAME = "cmd_team";
@@ -33,7 +33,7 @@ ServerInstance.serverCreated.Connect(inst => {
 
     const targetEntity = inst.entity.entities.get(entityId);
     if (!targetEntity || !targetEntity.IsA("PlayerEntity")) {
-      sendSystemChatMessage(`Invalid player entity ${entityId}`, [info.sender]);
+      ChatSystem.sendSystemMessage(`Invalid player entity ${entityId}`, [info.sender]);
       return;
     }
     const targetController = targetEntity.GetUserFromController();
@@ -41,7 +41,7 @@ ServerInstance.serverCreated.Connect(inst => {
     // Prevent people with tempmod from messing with the defenders' team
     if (!info.sender.GetAttribute(gameValues.adminattr) && callerEntity.team !== PlayerTeam.Defenders) {
       if (team === PlayerTeam.Defenders || targetEntity.team === PlayerTeam.Defenders) {
-        sendSystemChatMessage(gameValues.cmdtempmoddefendersdeny, [info.sender]);
+        ChatSystem.sendSystemMessage(gameValues.cmdtempmoddefendersdeny);
         return;
       }
     }
@@ -51,12 +51,12 @@ ServerInstance.serverCreated.Connect(inst => {
 
     if (targetController && creatorGroupInfo && raidingGroupId) {
       if (team === PlayerTeam.Defenders && !targetController.IsInGroup(creatorGroupInfo.groupInfo.Id)) {
-        sendSystemChatMessage(`Unable to team player: ${targetController} is not in the "${creatorGroupInfo.groupInfo.Name}" group.`);
+        ChatSystem.sendSystemMessage(`Unable to team player: ${targetController} is not in the "${creatorGroupInfo.groupInfo.Name}" group.`);
         return;
       }
 
       if (team === PlayerTeam.Raiders && !targetController.IsInGroup(raidingGroupId)) {
-        sendSystemChatMessage(`Unable to team player: ${targetController} is not in the raiders' group.`);
+        ChatSystem.sendSystemMessage(`Unable to team player: ${targetController} is not in the raiders' group.`);
         return;
       }
     }
@@ -67,7 +67,7 @@ ServerInstance.serverCreated.Connect(inst => {
       const totalDefinedSize = tonumber(inst.attributesList.get("totalTeamSize")) || 999;
 
       if (playersOnTeam.size() + 1 > totalDefinedSize) {
-        sendSystemChatMessage(`Unable to team player: Maximum amount of players on the team exceeds ${totalDefinedSize}.`, [info.sender]);
+        ChatSystem.sendSystemMessage(`Unable to team player: Maximum amount of players on the team exceeds ${totalDefinedSize}.`);
         return;
       }
     }
@@ -80,7 +80,7 @@ ServerInstance.serverCreated.Connect(inst => {
     if (team === PlayerTeam.Defenders) teamColor = colorTable.defendersColor;
     if (team === PlayerTeam.Raiders) teamColor = colorTable.raidersColor;
 
-    sendSystemChatMessage(`${targetController} (${targetEntity.id}) joined the <font color="${teamColor}">${PlayerTeam[team]}</font> team.`);
+    ChatSystem.sendSystemMessage(`${targetController} (${targetEntity.id}) joined the <font color="${teamColor}">${PlayerTeam[team]}</font> team.`);
   });
 }); 
 
@@ -91,7 +91,7 @@ new ConsoleFunctionCallback(["team"], [{ name: "player", type: "player" }, { nam
     const team = ctx.getArgument("team", "team").value;
 
     if (targetPlayers.size() <= 0) {
-      sendSystemChatMessage(`<b><font color="${colorTable.errorneousColor}">Argument #1 unknown player.</font></b>`);
+      ChatSystem.sendSystemMessage(`<b><font color="${colorTable.errorneousColor}">Argument #1 unknown player.</font></b>`);
       return;
     }
 

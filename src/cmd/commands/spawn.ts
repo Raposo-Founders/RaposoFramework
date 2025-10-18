@@ -4,7 +4,7 @@ import { defaultEnvironments } from "defaultinsts";
 import PlayerEntity from "entities/PlayerEntity";
 import { gameValues } from "gamevalues";
 import ServerInstance from "serverinst";
-import { sendSystemChatMessage } from "systems/ChatSystem";
+import ChatSystem from "systems/ChatSystem";
 import { colorTable } from "UI/values";
 import { BufferReader } from "util/bufferreader";
 import { startBufferCreation, writeBufferString } from "util/bufferwriter";
@@ -31,18 +31,18 @@ ServerInstance.serverCreated.Connect(inst => {
 
     const targetEntity = inst.entity.entities.get(entityId);
     if (!targetEntity || !targetEntity.IsA("PlayerEntity")) {
-      sendSystemChatMessage(`Invalid player entity ${entityId}`, [info.sender]);
+      ChatSystem.sendSystemMessage(`Invalid player entity ${entityId}`, [info.sender]);
       return;
     }
     
     if (!defendersCommandCheck(callerEntity, targetEntity)) {
-      sendSystemChatMessage(gameValues.cmdtempmoddefendersdeny, [info.sender]);
+      ChatSystem.sendSystemMessage(gameValues.cmdtempmoddefendersdeny);
       return;
     }
 
     targetEntity.Spawn();
 
-    sendSystemChatMessage(`Spawned ${targetEntity.GetUserFromController()} (${targetEntity.id}).`);
+    ChatSystem.sendSystemMessage(`Spawned ${targetEntity.GetUserFromController()} (${targetEntity.id}).`);
   });
 }); 
 
@@ -52,7 +52,7 @@ new ConsoleFunctionCallback(["spawn"], [{ name: "player", type: "player" }])
     const targetPlayers = ctx.getArgument("player", "player").value;
 
     if (targetPlayers.size() <= 0) {
-      sendSystemChatMessage(`<b><font color="${colorTable.errorneousColor}">Argument #1 unknown player.</font></b>`);
+      ChatSystem.sendSystemMessage(`<b><font color="${colorTable.errorneousColor}">Argument #1 unknown player.</font></b>`);
       return;
     }
 

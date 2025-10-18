@@ -4,7 +4,7 @@ import { UserInputService } from "@rbxts/services";
 import { ExecuteCommand } from "cmd";
 import { defaultEnvironments } from "defaultinsts";
 import { gameValues } from "gamevalues";
-import { sendChatMessage } from "systems/ChatSystem";
+import ChatSystem from "systems/ChatSystem";
 import { DefaultButton } from "UI/blocks/btn";
 import { uiValues } from "UI/values";
 import Signal from "util/signal";
@@ -67,7 +67,9 @@ export function ChatBar() {
           inst.Text = "";
           inst.CursorPosition = -1;
 
-          sendChatMessage(text, []);
+          if (text === "") return;
+
+          ChatSystem.sendMessage(text, []);
 
           if (text.sub(1, 1) === gameValues.cmdprefix) {
             const split = text.split(gameValues.cmdprefix);

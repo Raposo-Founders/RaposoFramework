@@ -3,9 +3,8 @@ import { ConsoleFunctionCallback } from "cmd/cvar";
 import { defaultEnvironments } from "defaultinsts";
 import PlayerEntity from "entities/PlayerEntity";
 import { gameValues } from "gamevalues";
-import { sendDirectPacket } from "network";
 import ServerInstance from "serverinst";
-import { sendSystemChatMessage } from "systems/ChatSystem";
+import ChatSystem from "systems/ChatSystem";
 import { colorTable } from "UI/values";
 import { BufferReader } from "util/bufferreader";
 import { startBufferCreation, writeBufferString, writeBufferU32 } from "util/bufferwriter";
@@ -33,19 +32,19 @@ ServerInstance.serverCreated.Connect(inst => {
 
     const targetEntity = inst.entity.entities.get(entityId);
     if (!targetEntity || !targetEntity.IsA("PlayerEntity")) {
-      sendSystemChatMessage(`Invalid player entity ${entityId}`, [info.sender]);
+      ChatSystem.sendSystemMessage(`Invalid player entity ${entityId}`, [info.sender]);
       return;
     }
 
     // Check to see if the sender is just someone with tempmod
     if (!defendersCommandCheck(callerEntity, targetEntity)) {
-      sendSystemChatMessage(gameValues.cmdtempmoddefendersdeny, [info.sender]);
+      ChatSystem.sendSystemMessage(gameValues.cmdtempmoddefendersdeny, [info.sender]);
       return;
     }
 
     targetEntity.takeDamage(amount);
 
-    sendSystemChatMessage(`Damaged ${targetEntity.GetUserFromController()} for ${amount} points.`, [info.sender]);
+    ChatSystem.sendSystemMessage(`Damaged ${targetEntity.GetUserFromController()} for ${amount} points.`, [info.sender]);
   });
 });
 
@@ -56,7 +55,7 @@ new ConsoleFunctionCallback(["damage", "dmg"], [{ name: "player", type: "player"
     const amount = ctx.getArgument("amount", "number").value;
 
     if (targetPlayers.size() <= 0) {
-      sendSystemChatMessage(`<b><font color="${colorTable.errorneousColor}">Argument #1 unknown player.</font></b>`);
+      ChatSystem.sendSystemMessage(`<b><font color="${colorTable.errorneousColor}">Argument #1 unknown player.</font></b>`);
       return;
     }
 

@@ -7,9 +7,11 @@ import { mapStorageFolder, modulesFolder, uiFolder } from "folders";
 import { gameValues } from "gamevalues";
 import { RaposoConsole } from "logging";
 import { listenDirectPacket } from "network";
+import { GetCreatorGroupInfo, GetGameName } from "providers/GroupsProvider";
 import ServerInstance from "serverinst";
+import ChatSystem from "systems/ChatSystem";
 import { ChatBar, ChatButton } from "UI/chatui";
-import { ChatWindow, RenderChatMessage } from "UI/chatui/chatwindow";
+import { ChatWindow } from "UI/chatui/chatwindow";
 import { CommandLine } from "UI/cmdline";
 import { ConsoleCommandsLogs } from "UI/cmdline/logs";
 import { FairzoneCounter } from "UI/hud/fairzonetimer";
@@ -17,15 +19,12 @@ import { FairzoneTopDisplay } from "UI/hud/fairzonetopdisplay";
 import { KillfeedDisplay } from "UI/hud/killfeedDisplay";
 import { NotificationsDisplay } from "UI/hud/notificationmsg";
 import { ObjectivesLine } from "UI/hud/objectivesDisplay";
-import { HudPlayerPanel } from "UI/hud/playerpanel";
 import { PlayersTopListing } from "UI/hud/playerteamentry";
 import { SpectatorLabel } from "UI/hud/spectatinglabel";
 import { SpectatorsList } from "UI/hud/spectatorslist";
 import { DisplayLoadingScreen, HideLoadingScreen } from "UI/loadscreen";
 import { defaultRoot, uiValues } from "UI/values";
 import { BufferReader } from "util/bufferreader";
-import { GetCreatorGroupInfo, GetGameName } from "providers/GroupsProvider";
-import { sendSystemChatMessage } from "systems/ChatSystem";
 
 
 // # Constants & variables
@@ -159,7 +158,7 @@ if (RunService.IsClient()) {
     const message = reader.string();
   
     RaposoConsole.Info(message);
-    sendSystemChatMessage(message);
+    ChatSystem.sendSystemMessage(message);
   });
   
   // Build interface

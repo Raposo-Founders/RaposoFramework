@@ -3,7 +3,7 @@ import { ConsoleFunctionCallback } from "cmd/cvar";
 import { defaultEnvironments } from "defaultinsts";
 import { PlayerTeam } from "entities/PlayerEntity";
 import ServerInstance from "serverinst";
-import { sendSystemChatMessage } from "systems/ChatSystem";
+import ChatSystem from "systems/ChatSystem";
 import { BufferReader } from "util/bufferreader";
 import { startBufferCreation, writeBufferString } from "util/bufferwriter";
 
@@ -64,7 +64,7 @@ ServerInstance.serverCreated.Connect(inst => {
 
           ent.Spawn();
 
-          sendSystemChatMessage(`Created bot ${ent.id}.`, [info.sender!]);
+          ChatSystem.sendSystemMessage(`Spawned bot ${ent.id}.`);
         });
   });
 });

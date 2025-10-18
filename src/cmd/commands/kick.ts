@@ -4,7 +4,7 @@ import { defaultEnvironments } from "defaultinsts";
 import PlayerEntity from "entities/PlayerEntity";
 import { gameValues } from "gamevalues";
 import ServerInstance from "serverinst";
-import { sendSystemChatMessage } from "systems/ChatSystem";
+import ChatSystem from "systems/ChatSystem";
 import { colorTable } from "UI/values";
 import { BufferReader } from "util/bufferreader";
 import { startBufferCreation, writeBufferString } from "util/bufferwriter";
@@ -24,7 +24,7 @@ ServerInstance.serverCreated.Connect(inst => {
 
     // TODO: Properly make this command only available for admins
     if (!info.sender.GetAttribute(gameValues.adminattr)) {
-      sendSystemChatMessage("Players cannot be kicked by temporary moderators.", [info.sender]);
+      ChatSystem.sendSystemMessage("Players cannot be kicked by temporary moderators.");
       return;
     }
 
@@ -38,17 +38,17 @@ ServerInstance.serverCreated.Connect(inst => {
 
     const targetEntity = inst.entity.entities.get(entityId);
     if (!targetEntity || !targetEntity.IsA("PlayerEntity")) {
-      sendSystemChatMessage(`Invalid player entity ${entityId}`, [info.sender]);
+      ChatSystem.sendSystemMessage(`Invalid player entity ${entityId}`, [info.sender]);
       return;
     }
 
     if (!defendersCommandCheck(callerEntity, targetEntity)) {
-      sendSystemChatMessage(gameValues.cmdtempmoddefendersdeny, [info.sender]);
+      ChatSystem.sendSystemMessage(gameValues.cmdtempmoddefendersdeny);
       return;
     }
 
     // Send kick message to all players
-    sendSystemChatMessage(`Kicked ${targetEntity.GetUserFromController()} (${targetEntity.id}): ${reason}`);
+    ChatSystem.sendSystemMessage(`Kicked ${targetEntity.GetUserFromController()} (${targetEntity.id}): ${reason}`);
 
     {
       const targetEntityController = targetEntity.GetUserFromController();
@@ -68,7 +68,7 @@ new ConsoleFunctionCallback(["kick"], [{ name: "player", type: "player" }, { nam
     const reason = ctx.getArgument("reason", "strings").value;
 
     if (targetPlayers.size() <= 0) {
-      sendSystemChatMessage(`<b><font color="${colorTable.errorneousColor}">Argument #1 unknown player.</font></b>`);
+      ChatSystem.sendSystemMessage(`<b><font color="${colorTable.errorneousColor}">Argument #1 unknown player.</font></b>`);
       return;
     }
 

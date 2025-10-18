@@ -28,26 +28,29 @@ function formatString(text: string) {
   return text.gsub("^%s+", "")[0].gsub("%s+$", "")[0];
 }
 
-export function sendChatMessage(text: string, attributes: ChatMessageAttributes[]) {
-  assert(RunService.IsClient(), "Function can only be called from the client.");
+// # Namespace
+namespace ChatSystem {
+  export function sendMessage(text: string, attributes: ChatMessageAttributes[]) {
+    assert(RunService.IsClient(), "Function can only be called from the client.");
 
-  DEFAULT_CHANNEL.SendAsync(formatString(text), attributes.join(ATTRIBUTES_SEPARATOR));
-}
-
-export function sendSystemChatMessage(text: string, targetPlayers: Player[] = Players.GetPlayers(), ignorePlayers: Player[] = []) {
-  if (RunService.IsServer()) {
-    for (const user of targetPlayers) {
-      if (ignorePlayers.includes(user) || !user.IsDescendantOf(Players)) continue;
-
-      startBufferCreation();
-      writeBufferString(text);
-      sendDirectPacket(CHAT_SYSMSG_NETID, user);
-    }
-
-    return;
+    DEFAULT_CHANNEL.SendAsync(formatString(text), attributes.join(ATTRIBUTES_SEPARATOR));
   }
 
-  DEFAULT_CHANNEL.DisplaySystemMessage(text);
+  export function sendSystemMessage(text: string, targetPlayers: Player[] = Players.GetPlayers(), ignorePlayers: Player[] = []) {
+    if (RunService.IsServer()) {
+      for (const user of targetPlayers) {
+        if (ignorePlayers.includes(user) || !user.IsDescendantOf(Players)) continue;
+
+        startBufferCreation();
+        writeBufferString(text);
+        sendDirectPacket(CHAT_SYSMSG_NETID, user);
+      }
+
+      return;
+    }
+
+    DEFAULT_CHANNEL.DisplaySystemMessage(text);
+  }
 }
 
 // # Execution
@@ -128,3 +131,5 @@ if (RunService.IsClient()) {
 }
 
 CUSTOM_USER_PREFIXES.set(3676469645, `<font color="#55ff7f"><i>[Snake]</i></font>`); // coolergate
+
+export = ChatSystem;
