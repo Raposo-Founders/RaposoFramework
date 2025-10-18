@@ -47,7 +47,7 @@ SessionInstance.sessionCreated.Connect(inst => {
     }
 
     const creatorGroupInfo = GetCreatorGroupInfo();
-    const raidingGroupId = tonumber(inst.attributesList.get("raidingGroupId"));
+    const raidingGroupId = tonumber(inst.attributes.raidingGroupId);
 
     if (targetController && creatorGroupInfo && raidingGroupId) {
       if (team === PlayerTeam.Defenders && !targetController.IsInGroup(creatorGroupInfo.groupInfo.Id)) {
@@ -64,7 +64,7 @@ SessionInstance.sessionCreated.Connect(inst => {
     // Check if the amount of players exceedes the team size
     {
       const playersOnTeam = getPlayersFromTeam(inst.entity, team);
-      const totalDefinedSize = tonumber(inst.attributesList.get("totalTeamSize")) || 999;
+      const totalDefinedSize = tonumber(inst.attributes.totalTeamSize) || 999;
 
       if (playersOnTeam.size() + 1 > totalDefinedSize) {
         ChatSystem.sendSystemMessage(`Unable to team player: Maximum amount of players on the team exceeds ${totalDefinedSize}.`);

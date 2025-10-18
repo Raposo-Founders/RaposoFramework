@@ -145,7 +145,7 @@ SessionInstance.sessionCreated.Connect(server => {
     const playersAmount = reader.u8();
 
     totalTeamSize = playersAmount;
-    server.attributesList.set("totalTeamSize", playersAmount);
+    server.attributes.totalTeamSize = playersAmount;
   });
 
   server.network.listenPacket("match_setraiders", info => {
@@ -156,7 +156,7 @@ SessionInstance.sessionCreated.Connect(server => {
     const groupId = reader.u32();
 
     raidingGroupId = groupId;
-    server.attributesList.set("raidingGroupId", groupId);
+    server.attributes.raidingGroupId = groupId;
 
     ChatSystem.sendSystemMessage(`Set raiders' group to: ${GetGroupInfo(groupId).Name} (${groupId}).`);
 

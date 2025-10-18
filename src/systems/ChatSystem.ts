@@ -75,7 +75,7 @@ if (RunService.IsServer()) {
     if (!receivingUser) return false;
 
     for (const server of SessionInstance.GetServersFromPlayer(senderUser)) {
-      if (!server.trackingPlayers.has(receivingUser)) continue;
+      if (!server.players.has(receivingUser)) continue;
       return true;
     }
 

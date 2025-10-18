@@ -9,6 +9,12 @@ import Signal from "../util/signal";
 import { RandomString } from "../util/utilfuncs";
 import WorldInstance from "../worldrender";
 
+/* # Sessions #
+  Sessions is what we use for executing server code, which is also compatible with the client.
+  And yes, I do mean executing server code on the client...
+  One example is for when you want to make a local server on the client, to minimize the lag or something.
+*/
+
 // # Class
 class SessionInstance {
   static instances = new Map<string, SessionInstance>();
@@ -18,12 +24,12 @@ class SessionInstance {
   private readonly connections: RBXScriptConnection[] = [];
   private networkLifecycleDisconnect: Callback | undefined;
 
-  readonly trackingPlayers = new Set<Player>();
+  readonly players = new Set<Player>();
   readonly playerJoined = new Signal<[user: Player, referenceId: string]>();
   readonly playerLeft = new Signal<[Player, string]>();
 
-  readonly bannedPlayers = new Map<Player["UserId"], string>;
-  readonly attributesList = new Map<string, unknown>();
+  readonly blockedPlayers = new Map<Player["UserId"], string>; // UserId, reason
+  readonly attributes: Record<string, unknown> = {};
 
   constructor(
     readonly id: string,
@@ -53,7 +59,7 @@ class SessionInstance {
     this.lifecycle.Destroy();
     SessionInstance.instances.delete(this.id);
 
-    for (const user of this.trackingPlayers)
+    for (const user of this.players)
       this.RemovePlayer(user, "Instance closing.");
 
     this.networkLifecycleDisconnect?.();
@@ -84,7 +90,7 @@ class SessionInstance {
     this.closingConnections.push(callback);
   }
 
-  InsertPlayer(player: Player) {
+  RegisterPlayer(player: Player) {
     // const referenceId = HttpService.GenerateGUID(false);
     const referenceId = RandomString(10);
 
@@ -93,12 +99,12 @@ class SessionInstance {
     player.SetAttribute(gameValues.usersessionid, referenceId);
 
     this.network.signedUsers.add(player);
-    this.trackingPlayers.add(player);
+    this.players.add(player);
     this.playerJoined.Fire(player, referenceId);
   }
 
   RemovePlayer(player: Player, disconnectreason = "") {
-    if (!this.trackingPlayers.has(player)) return;
+    if (!this.players.has(player)) return;
 
     print(`${player.Name} has left the server ${this.id}. (${disconnectreason})`);
     player.SetAttribute(gameValues.usersessionid, undefined);
@@ -108,15 +114,15 @@ class SessionInstance {
     sendDirectPacket("server_disconnected", player);
 
     this.network.signedUsers.delete(player);
-    this.trackingPlayers.delete(player);
+    this.players.delete(player);
     this.playerLeft.Fire(player, disconnectreason);
 
     // TODO: Remove this whenever you add an actual main menu to the game, retard.
     player.Kick(disconnectreason);
   }
 
-  BanPlayer(player: Player, reason = "undefined.") {
-    this.bannedPlayers.set(player.UserId, reason);
+  BlockPlayer(player: Player, reason = "undefined.") {
+    this.blockedPlayers.set(player.UserId, reason);
 
     this.RemovePlayer(player, `Banned by administrator: ${reason}`);
   }
@@ -125,7 +131,7 @@ class SessionInstance {
     const list = new Array<SessionInstance>();
 
     for (const [, server] of this.instances)
-      if (server.trackingPlayers.has(user)) list.push(server);
+      if (server.players.has(user)) list.push(server);
 
     return list;
   }

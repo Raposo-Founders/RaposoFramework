@@ -132,7 +132,7 @@ export function clientCreateLocalSession() {
 
   task.spawn(() => {
     task.wait(CONNECTION_STEP_COOLDOWN);
-    serverInst.InsertPlayer(Players.LocalPlayer);
+    serverInst.RegisterPlayer(Players.LocalPlayer);
   });
 }
 
@@ -193,10 +193,10 @@ if (RunService.IsServer())
       return;
     }
 
-    if (targetSession.bannedPlayers.has(sender.UserId)) {
+    if (targetSession.blockedPlayers.has(sender.UserId)) {
       startBufferCreation();
       writeBufferBool(false);
-      writeBufferString(tostring(targetSession.bannedPlayers.get(sender.UserId)));
+      writeBufferString(tostring(targetSession.blockedPlayers.get(sender.UserId)));
       sendDirectPacket(SessionConnectionIds[SessionConnectionIds.servercon_Request], sender);
 
       return;
@@ -267,7 +267,7 @@ if (RunService.IsServer())
     const targetSession = SessionInstance.instances.get(sessionId);
     if (!targetSession || !usersInConnectionProcess.has(sender)) return;
 
-    targetSession.InsertPlayer(sender);
+    targetSession.RegisterPlayer(sender);
     usersInConnectionProcess.delete(sender);
   });
 
@@ -305,8 +305,8 @@ if (RunService.IsServer())
       writeBufferString(serverId);
       writeBufferString(inst.world.currentMap);
 
-      writeBufferU8(inst.trackingPlayers.size());
-      for (const user of inst.trackingPlayers)
+      writeBufferU8(inst.players.size());
+      for (const user of inst.players)
         writeBufferU64(user.UserId);
     }
     sendDirectPacket("game_getservers_reply", sender);

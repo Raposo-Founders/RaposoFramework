@@ -110,7 +110,7 @@ SessionInstance.sessionCreated.Connect(inst => {
     const name = reader.string();
     const args = reader.string();
 
-    for (const user of inst.trackingPlayers) {
+    for (const user of inst.players) {
       if (user === info.sender) continue;
 
       startBufferCreation();
