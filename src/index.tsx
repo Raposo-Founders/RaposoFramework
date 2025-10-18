@@ -1,5 +1,6 @@
 import React from "@rbxts/react";
 import { CollectionService, Players, ReplicatedStorage, RunService, StarterGui } from "@rbxts/services";
+import StartControllers from "controllers";
 import { defaultEnvironments } from "defaultinsts";
 import { requireEntities } from "entities";
 import { mapStorageFolder, modulesFolder, uiFolder } from "folders";
@@ -8,6 +9,7 @@ import { RaposoConsole } from "logging";
 import { listenDirectPacket } from "network";
 import { GetCreatorGroupInfo, GetGameName } from "providers/GroupsProvider";
 import SessionInstance from "providers/SessionProvider";
+import StartSystems from "systems";
 import ChatSystem from "systems/ChatSystem";
 import { ChatBar, ChatButton } from "UI/chatui";
 import { ChatWindow } from "UI/chatui/chatwindow";
@@ -24,6 +26,7 @@ import { SpectatorsList } from "UI/hud/spectatorslist";
 import { DisplayLoadingScreen, HideLoadingScreen } from "UI/loadscreen";
 import { defaultRoot, uiValues } from "UI/values";
 import { BufferReader } from "util/bufferreader";
+import { getInstanceFromPath } from "util/instancepath";
 
 
 // # Constants & variables
@@ -53,35 +56,7 @@ function WaitForServer() {
   while (!ReplicatedStorage.GetAttribute("ServerRunning")) task.wait();
 }
 
-function ImportSystems() {
-  _G.Raposo = {
-    Systems: {
-      SoundSystem: import("systems/sound").expect(),
-      ChatSystem: import("systems/ChatSystem").expect(),
-      CameraSystem: import("systems/CameraSystem").expect(),
-      WebhookSystem: import("systems/WebhookSystem").expect(),
-    },
-    Controllers: {
-      PlayerController: import("controllers/PlayerController").expect(),
-      SessionController: import("controllers/SessionController").expect(),
-      MatchController: import("controllers/MatchController").expect(),
-      InterfaceValuesController: import("controllers/InterfaceValuesController").expect(),
-      PlayerInputController: import("controllers/PlayerInputController").expect(),
-    },
-    Environment: {
-      Folders: import("folders").expect(),
-      Sessions: import("providers/SessionProvider").expect(),
-      Network: import("network").expect(),
-      defaultEnvironments,
-      util: {
-        BufferReader: BufferReader,
-        BufferWriter: import("util/bufferwriter").expect(),
-      }
-    }
-  };
-}
-
-function ExecuteModules() {
+function ExecuteGameModules() {
   for (const inst of modulesFolder.GetChildren()) {
     if (!inst.IsA("ModuleScript")) continue;
     if (!inst.GetAttribute(`Execute${RunService.IsServer() ? "Server" : "Client"}`)) continue;
@@ -120,8 +95,23 @@ requireEntities();
 if (RunService.IsServer())
   CleanUpWorkspace();
 
-ImportSystems();
-ExecuteModules();
+_G.Raposo = {
+  Systems: {},
+  Controllers: {},
+  Environment: {
+    Folders: import("folders").expect(),
+    Sessions: import("providers/SessionProvider").expect(),
+    Network: import("network").expect(),
+    defaultEnvironments,
+    util: {
+      BufferReader: BufferReader,
+      BufferWriter: import("util/bufferwriter").expect(),
+    }
+  }
+};
+StartSystems(_G.Raposo.Systems);
+StartControllers(_G.Raposo.Controllers);
+ExecuteGameModules();
 
 // Misc & other shit
 if (RunService.IsClient()) {

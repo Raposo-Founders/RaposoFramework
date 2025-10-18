@@ -8,6 +8,7 @@ local buffers = require("@self/util/buffer")
 
 type RaposoGlobal = {
 	Systems: {}, -- TODO
+	Controllers: {}, -- TODO
 	Environment: {
 		Folders: {
 			cacheFolder: Folder,
