@@ -3,6 +3,7 @@ import { defaultEnvironments } from "defaultinsts";
 import { getPlayermodelFromEntity } from "providers/PlayermodelProvider";
 import { Playermodel } from "providers/PlayermodelProvider/rig";
 import { DoesInstanceExist } from "util/utilfuncs";
+import { CameraSystem } from "./CameraSystem";
 
 // # Constants & variables
 
@@ -53,7 +54,8 @@ if (RunService.IsClient())
       task.wait();
     }
 
-    workspace.CurrentCamera!.CameraSubject = playermodel.rig.Humanoid;
-    workspace.CurrentCamera!.CameraType = Enum.CameraType.Custom;
     Players.LocalPlayer.Character = playermodel.rig;
+
+    CameraSystem.setTrackingEntity(ent.id);
+    CameraSystem.setDistance(10);
   });

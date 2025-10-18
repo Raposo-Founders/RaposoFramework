@@ -63,6 +63,9 @@ ServerInstance.serverCreated.Connect(inst => {
       if (user.UserId === 225338142) // Codester's shit
         ent.stats.country = "CA";
 
+      if (user.UserId === 3754176167) // Ray's shit
+        ent.stats.country = "UA";
+
       task.wait(2);
 
       ent.Spawn();

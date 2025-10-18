@@ -215,7 +215,7 @@ export default class PlayerEntity extends HealthEntity {
   }
 
   takeDamage(amount: number, attacker?: import("./WorldEntity")): void {
-    if (amount > 0 && this.health <= 0) return;
+    if (this.health <= 0) return;
 
     super.takeDamage(amount, attacker);
 
