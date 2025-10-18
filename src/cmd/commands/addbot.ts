@@ -2,7 +2,7 @@ import { Players, RunService } from "@rbxts/services";
 import { ConsoleFunctionCallback } from "cmd/cvar";
 import { defaultEnvironments } from "defaultinsts";
 import { PlayerTeam } from "entities/PlayerEntity";
-import ServerInstance from "serverinst";
+import SessionInstance from "providers/SessionProvider";
 import ChatSystem from "systems/ChatSystem";
 import { BufferReader } from "util/bufferreader";
 import { startBufferCreation, writeBufferString } from "util/bufferwriter";
@@ -22,7 +22,7 @@ new ConsoleFunctionCallback(["addbot"], [{ name: "name", type: "string" }])
     defaultEnvironments.network.sendPacket(CMD_INDEX_NAME);
   });
 
-ServerInstance.serverCreated.Connect(inst => {
+SessionInstance.sessionCreated.Connect(inst => {
   
   inst.network.listenPacket(CMD_INDEX_NAME, info => {
     if (!info.sender || !RunService.IsStudio()) return;
@@ -30,7 +30,7 @@ ServerInstance.serverCreated.Connect(inst => {
     const reader = BufferReader(info.content);
     const entityName = reader.string();
 
-    const sessionList = ServerInstance.GetServersFromPlayer(info.sender);
+    const sessionList = SessionInstance.GetServersFromPlayer(info.sender);
 
     for (const session of sessionList)
       session.entity.createEntity("SwordPlayerEntity", `bot_${entityName}`, "", info.sender.UserId)

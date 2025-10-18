@@ -8,7 +8,7 @@ import { gameValues } from "gamevalues";
 import { RaposoConsole } from "logging";
 import { listenDirectPacket } from "network";
 import { GetCreatorGroupInfo, GetGameName } from "providers/GroupsProvider";
-import ServerInstance from "serverinst";
+import SessionInstance from "providers/SessionProvider";
 import ChatSystem from "systems/ChatSystem";
 import { ChatBar, ChatButton } from "UI/chatui";
 import { ChatWindow } from "UI/chatui/chatwindow";
@@ -71,7 +71,7 @@ function ImportSystems() {
     },
     Environment: {
       Folders: import("folders").expect(),
-      Sessions: import("serverinst").expect(),
+      Sessions: import("providers/SessionProvider").expect(),
       Network: import("network").expect(),
       defaultEnvironments,
       util: {
@@ -145,7 +145,7 @@ if (RunService.IsServer()) {
 
   defaultEnvironments.lifecycle.running = true;
   defaultEnvironments.entity.isServer = true;
-  defaultEnvironments.server = new ServerInstance(
+  defaultEnvironments.server = new SessionInstance(
     "default",
     defaultEnvironments.world,
     defaultEnvironments.network,

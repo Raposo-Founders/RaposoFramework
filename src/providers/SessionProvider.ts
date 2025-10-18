@@ -1,20 +1,20 @@
 import { Players } from "@rbxts/services";
 import { RaposoConsole } from "logging";
-import { EntityManager } from "./entities";
-import { gameValues } from "./gamevalues";
-import { LifecycleInstance } from "./lifecycle";
-import { NetworkManager, sendDirectPacket } from "./network";
-import { startBufferCreation, writeBufferString } from "./util/bufferwriter";
-import Signal from "./util/signal";
-import { RandomString } from "./util/utilfuncs";
-import WorldInstance from "./worldrender";
+import { EntityManager } from "../entities";
+import { gameValues } from "../gamevalues";
+import { LifecycleInstance } from "../lifecycle";
+import { NetworkManager, sendDirectPacket } from "../network";
+import { startBufferCreation, writeBufferString } from "../util/bufferwriter";
+import Signal from "../util/signal";
+import { RandomString } from "../util/utilfuncs";
+import WorldInstance from "../worldrender";
 
 // # Class
-class ServerInstance {
-  static runningInstances = new Map<string, ServerInstance>();
-  static serverCreated = new Signal<[inst: ServerInstance]>();
+class SessionInstance {
+  static instances = new Map<string, SessionInstance>();
+  static sessionCreated = new Signal<[inst: SessionInstance]>();
 
-  private readonly closingConnections = new Array<(environment: ServerInstance) => void>();
+  private readonly closingConnections = new Array<(environment: SessionInstance) => void>();
   private readonly connections: RBXScriptConnection[] = [];
   private networkLifecycleDisconnect: Callback | undefined;
 
@@ -32,9 +32,9 @@ class ServerInstance {
     readonly entity: EntityManager,
     readonly lifecycle: LifecycleInstance,
   ) {
-    RaposoConsole.Warn(`Spawning server ${id}`);
+    RaposoConsole.Warn(`Creating session ${id}`);
 
-    ServerInstance.runningInstances.set(id, this);
+    SessionInstance.instances.set(id, this);
 
     this.networkLifecycleDisconnect = lifecycle.BindTickrate(() => network.processPackets());
     this.connections.push(Players.PlayerRemoving.Connect(user => this.RemovePlayer(user, "Left the game.")));
@@ -44,14 +44,14 @@ class ServerInstance {
       this.RemovePlayer(packet.sender, "Disconnected by user.");
     });
 
-    ServerInstance.serverCreated.Fire(this);
+    SessionInstance.sessionCreated.Fire(this);
   }
 
   async Close() {
     print(`Closing server instance ${this.id}...`);
 
     this.lifecycle.Destroy();
-    ServerInstance.runningInstances.delete(this.id);
+    SessionInstance.instances.delete(this.id);
 
     for (const user of this.trackingPlayers)
       this.RemovePlayer(user, "Instance closing.");
@@ -80,7 +80,7 @@ class ServerInstance {
     table.clear(this);
   }
 
-  BindToClose(callback: (server: ServerInstance) => void) {
+  BindToClose(callback: (server: SessionInstance) => void) {
     this.closingConnections.push(callback);
   }
 
@@ -122,9 +122,9 @@ class ServerInstance {
   }
 
   static GetServersFromPlayer(user: Player) {
-    const list = new Array<ServerInstance>();
+    const list = new Array<SessionInstance>();
 
-    for (const [, server] of this.runningInstances)
+    for (const [, server] of this.instances)
       if (server.trackingPlayers.has(user)) list.push(server);
 
     return list;
@@ -132,4 +132,4 @@ class ServerInstance {
 }
 
 // * Export
-export = ServerInstance;
+export = SessionInstance;

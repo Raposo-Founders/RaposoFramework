@@ -3,7 +3,7 @@ import { ConsoleFunctionCallback } from "cmd/cvar";
 import { defaultEnvironments } from "defaultinsts";
 import { PlayerTeam } from "entities/PlayerEntity";
 import { gameValues } from "gamevalues";
-import ServerInstance from "serverinst";
+import SessionInstance from "providers/SessionProvider";
 import { uiValues } from "UI/values";
 import { BufferReader } from "util/bufferreader";
 import { startBufferCreation, writeBufferF32, writeBufferU32, writeBufferU8 } from "util/bufferwriter";
@@ -15,7 +15,7 @@ import ChatSystem from "../systems/ChatSystem";
 // # Constants & variables
 
 // # Functions
-function SpawnCapturePoints(session: ServerInstance) {
+function SpawnCapturePoints(session: SessionInstance) {
   for (const obj of session.world.objects.GetChildren()) {
     if (!obj.IsA("BasePart")) continue;
     if (obj.Name !== "ent_objective_capturepoint") continue;
@@ -24,14 +24,14 @@ function SpawnCapturePoints(session: ServerInstance) {
   }
 }
 
-function ResetCapturePoints(session: ServerInstance) {
+function ResetCapturePoints(session: SessionInstance) {
   for (const ent of session.entity.getEntitiesThatIsA("CapturePointEntity")) {
     ent.capture_progress = 0;
     ent.current_team = PlayerTeam.Spectators;
   }
 }
 
-function ResetPlayers(session: ServerInstance) {
+function ResetPlayers(session: SessionInstance) {
   for (const ent of session.entity.getEntitiesThatIsA("PlayerEntity")) {
     ent.stats.kills = 0;
     ent.stats.deaths = 0;
@@ -41,7 +41,7 @@ function ResetPlayers(session: ServerInstance) {
 }
 
 // # Bindings & misc
-ServerInstance.serverCreated.Connect(server => {
+SessionInstance.sessionCreated.Connect(server => {
   const teamPoints = new Map<PlayerTeam, number>();
   let isRunning = false;
   let targetPoints = 600;

@@ -3,7 +3,7 @@ import { defaultEnvironments } from "defaultinsts";
 import PlayerEntity, { PlayerTeam } from "entities/PlayerEntity";
 import { gameValues } from "gamevalues";
 import { GetCreatorGroupInfo } from "providers/GroupsProvider";
-import ServerInstance from "serverinst";
+import SessionInstance from "providers/SessionProvider";
 import ChatSystem from "systems/ChatSystem";
 import { getPlayersFromTeam } from "controllers/PlayerController";
 import { colorTable } from "UI/values";
@@ -15,7 +15,7 @@ const CMD_INDEX_NAME = "cmd_team";
 
 // # Bindings & execution
 
-ServerInstance.serverCreated.Connect(inst => {
+SessionInstance.sessionCreated.Connect(inst => {
   inst.network.listenPacket(CMD_INDEX_NAME, info => {
     if (!info.sender || !info.sender.GetAttribute(gameValues.modattr)) return;
 

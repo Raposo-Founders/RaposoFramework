@@ -1,7 +1,7 @@
 import { EntityManager } from "./entities";
 import { LifecycleInstance } from "./lifecycle";
 import { NetworkManager } from "./network";
-import ServerInstance from "./serverinst";
+import SessionInstance from "./providers/SessionProvider";
 import Signal from "./util/signal";
 import WorldInstance from "./worldrender";
 
@@ -17,5 +17,5 @@ export const defaultEnvironments = {
   lifecycle: new LifecycleInstance(),
   entity: new EntityManager(defaultWorldInstance),
 
-  server: undefined as ServerInstance | undefined,
+  server: undefined as SessionInstance | undefined,
 };

@@ -3,7 +3,7 @@ import { Players, RunService, TextChatService, UserInputService } from "@rbxts/s
 import { defaultEnvironments } from "defaultinsts";
 import PlayerEntity, { PlayerTeam } from "entities/PlayerEntity";
 import { listenDirectPacket, sendDirectPacket } from "network";
-import ServerInstance from "serverinst";
+import SessionInstance from "providers/SessionProvider";
 import { RenderChatMessage } from "UI/chatui/chatwindow";
 import { colorTable, uiValues } from "UI/values";
 import { BufferReader } from "util/bufferreader";
@@ -74,7 +74,7 @@ if (RunService.IsServer()) {
     const receivingUser = Players.GetPlayerByUserId(source.UserId);
     if (!receivingUser) return false;
 
-    for (const server of ServerInstance.GetServersFromPlayer(senderUser)) {
+    for (const server of SessionInstance.GetServersFromPlayer(senderUser)) {
       if (!server.trackingPlayers.has(receivingUser)) continue;
       return true;
     }

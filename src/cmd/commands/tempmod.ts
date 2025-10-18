@@ -2,7 +2,7 @@ import { ConsoleFunctionCallback } from "cmd/cvar";
 import { defaultEnvironments } from "defaultinsts";
 import PlayerEntity from "entities/PlayerEntity";
 import { gameValues } from "gamevalues";
-import ServerInstance from "serverinst";
+import SessionInstance from "providers/SessionProvider";
 import ChatSystem from "systems/ChatSystem";
 import { colorTable } from "UI/values";
 import { BufferReader } from "util/bufferreader";
@@ -13,7 +13,7 @@ const CMD_INDEX_NAME = "cmd_tempmod";
 
 // # Bindings & execution
 
-ServerInstance.serverCreated.Connect(inst => {
+SessionInstance.sessionCreated.Connect(inst => {
   inst.network.listenPacket(CMD_INDEX_NAME, info => {
     if (!info.sender || !info.sender.GetAttribute(gameValues.adminattr)) return;
 

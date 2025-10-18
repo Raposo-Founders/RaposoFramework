@@ -6,7 +6,7 @@ import { COMMAND_EXECUTED } from "cmd";
 import { ConsoleFunctionCallback } from "cmd/cvar";
 import { defaultEnvironments } from "defaultinsts";
 import { gameValues } from "gamevalues";
-import ServerInstance from "serverinst";
+import SessionInstance from "providers/SessionProvider";
 import { Window } from "UI/blocks/window";
 import { uiValues } from "UI/values";
 import { BufferReader } from "util/bufferreader";
@@ -102,7 +102,7 @@ if (RunService.IsClient())
     registerCommandExecutionLog(name, args, Players.GetPlayerByUserId(executor));
   });
 
-ServerInstance.serverCreated.Connect(inst => {
+SessionInstance.sessionCreated.Connect(inst => {
   inst.network.listenPacket(COMMAND_NETWORK_ID, info => {
     if (!info.sender) return;
 

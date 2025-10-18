@@ -1,7 +1,7 @@
 import { LocalizationService, Players, RunService } from "@rbxts/services";
 import PlayerEntity, { PlayerTeam } from "entities/PlayerEntity";
 import { gameValues } from "gamevalues";
-import ServerInstance from "serverinst";
+import SessionInstance from "providers/SessionProvider";
 import { startBufferCreation, writeBufferF32, writeBufferString } from "util/bufferwriter";
 
 // # Constants & variables
@@ -33,7 +33,7 @@ export function getPlayersFromTeam(environment: T_EntityEnvironment, team: Playe
 }
 
 // # Execution
-ServerInstance.serverCreated.Connect(inst => {
+SessionInstance.sessionCreated.Connect(inst => {
   inst.playerJoined.Connect((user, referenceId) => {
     user.SetAttribute(gameValues.adminattr, ADMIN_ROLES.includes(user.GetRoleInGroup(TARGET_GROUP).upper()) || RunService.IsStudio());
     user.SetAttribute(gameValues.modattr, user.GetAttribute(gameValues.adminattr));

@@ -6,7 +6,7 @@ import { ConsoleFunctionCallback } from "cmd/cvar";
 import { defaultEnvironments } from "defaultinsts";
 import PlayerEntity, { PlayerTeam } from "entities/PlayerEntity";
 import { gameValues } from "gamevalues";
-import ServerInstance from "serverinst";
+import SessionInstance from "providers/SessionProvider";
 import { colorTable } from "UI/values";
 import { BufferReader } from "util/bufferreader";
 import { startBufferCreation, writeBufferString } from "util/bufferwriter";
@@ -207,7 +207,7 @@ new ConsoleFunctionCallback(["shout", "message", "m"], [{ name: "message", type:
     defaultEnvironments.network.sendPacket("message_shout");
   });
 
-ServerInstance.serverCreated.Connect(inst => {
+SessionInstance.sessionCreated.Connect(inst => {
 
   inst.network.listenPacket("message_shout", (info) => {
     if (!info.sender) return;

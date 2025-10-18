@@ -5,7 +5,7 @@ import { EntityManager } from "entities";
 import { LifecycleInstance } from "lifecycle";
 import { RaposoConsole } from "logging";
 import { listenDirectPacket, NetworkManager, sendDirectPacket } from "network";
-import ServerInstance from "serverinst";
+import SessionInstance from "providers/SessionProvider";
 import { BufferReader } from "util/bufferreader";
 import { startBufferCreation, writeBufferBool, writeBufferString, writeBufferU64, writeBufferU8 } from "util/bufferwriter";
 import Signal from "util/signal";
@@ -89,7 +89,7 @@ export function clientCreateLocalSession() {
 
   const worldInstance = new WorldInstance("default");
 
-  const serverInst = new ServerInstance(
+  const serverInst = new SessionInstance(
     "local",
     worldInstance,
     new NetworkManager(),
@@ -182,7 +182,7 @@ if (RunService.IsServer())
     const reader = BufferReader(bfr);
     const sessionId = reader.string();
 
-    const targetSession = ServerInstance.runningInstances.get(sessionId);
+    const targetSession = SessionInstance.instances.get(sessionId);
 
     if (!targetSession) {
       startBufferCreation();
@@ -230,7 +230,7 @@ if (RunService.IsServer())
     const reader = BufferReader(bfr);
     const sessionId = reader.string();
 
-    const targetSession = ServerInstance.runningInstances.get(sessionId);
+    const targetSession = SessionInstance.instances.get(sessionId);
 
     if (!targetSession || !usersInConnectionProcess.has(sender)) {
       startBufferCreation();
@@ -264,7 +264,7 @@ if (RunService.IsServer())
     const reader = BufferReader(bfr);
     const sessionId = reader.string();
 
-    const targetSession = ServerInstance.runningInstances.get(sessionId);
+    const targetSession = SessionInstance.instances.get(sessionId);
     if (!targetSession || !usersInConnectionProcess.has(sender)) return;
 
     targetSession.InsertPlayer(sender);
@@ -288,7 +288,7 @@ if (RunService.IsServer())
   listenDirectPacket("disconnect_request", (sender) => {
     if (!sender) return;
 
-    const sessionList = ServerInstance.GetServersFromPlayer(sender);
+    const sessionList = SessionInstance.GetServersFromPlayer(sender);
 
     for (const session of sessionList)
       session.RemovePlayer(sender, "Disconnected by user.");
@@ -300,8 +300,8 @@ if (RunService.IsServer())
     if (!sender) return;
 
     startBufferCreation();
-    writeBufferU8(ServerInstance.runningInstances.size());
-    for (const [serverId, inst] of ServerInstance.runningInstances) {
+    writeBufferU8(SessionInstance.instances.size());
+    for (const [serverId, inst] of SessionInstance.instances) {
       writeBufferString(serverId);
       writeBufferString(inst.world.currentMap);
 

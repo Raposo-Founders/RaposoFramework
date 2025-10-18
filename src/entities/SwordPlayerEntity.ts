@@ -4,7 +4,7 @@ import { cacheFolder, modelsFolder } from "folders";
 import { gameValues, getInstanceDefinedValue } from "gamevalues";
 import { NetworkManager } from "network";
 import { createPlayermodelForEntity, getPlayermodelFromEntity } from "providers/PlayermodelProvider";
-import ServerInstance from "serverinst";
+import SessionInstance from "providers/SessionProvider";
 import { getLocalPlayerEntity, getLocalPlayermodel } from "controllers/LocalEntityController";
 import { CWorldSoundInstance } from "systems/sound";
 import { BufferReader } from "util/bufferreader";
@@ -329,7 +329,7 @@ export class SwordPlayerEntity extends PlayerEntity {
 // # Bindings & misc
 registerEntityClass("SwordPlayerEntity", SwordPlayerEntity);
 
-ServerInstance.serverCreated.Connect(server => {
+SessionInstance.sessionCreated.Connect(server => {
   server.entity.entityCreated.Connect(entity => {
     if (!entity.IsA("SwordPlayerEntity")) return;
 
