@@ -3,7 +3,7 @@ import React, { useEffect } from "@rbxts/react";
 import ReactRoblox from "@rbxts/react-roblox";
 import { defaultEnvironments } from "defaultinsts";
 import { PlayerTeam } from "entities/PlayerEntity";
-import { getPlayersFromTeam } from "systems/playermngr";
+import { getPlayersFromTeam } from "controllers/PlayerController";
 import { BlankWindow } from "UI/blocks/window";
 import countryFlags from "UI/countries";
 import { uiValues } from "UI/values";

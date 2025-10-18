@@ -3,7 +3,7 @@ import { defaultEnvironments } from "defaultinsts";
 import { getPlayermodelFromEntity } from "providers/PlayermodelProvider";
 import { Playermodel } from "providers/PlayermodelProvider/rig";
 import { DoesInstanceExist } from "util/utilfuncs";
-import { CameraSystem } from "./CameraSystem";
+import { CameraSystem } from "../systems/CameraSystem";
 
 // # Constants & variables
 

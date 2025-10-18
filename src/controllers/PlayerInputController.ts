@@ -1,6 +1,6 @@
 import { UserInputService, ContextActionService, RunService } from "@rbxts/services";
 import { defaultEnvironments } from "defaultinsts";
-import { getLocalPlayerEntity } from "./localent";
+import { getLocalPlayerEntity } from "./LocalEntityController";
 
 // # Variables
 let autoAttackEnabled = false;

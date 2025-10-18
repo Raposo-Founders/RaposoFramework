@@ -57,13 +57,17 @@ function WaitForServer() {
 function ImportSystems() {
   _G.Raposo = {
     Systems: {
-      Sound: import("systems/sound").expect(),
-      Playermngr: import("systems/playermngr").expect(),
-      Sessionmngr: import("systems/sessionmngr").expect(),
-      Chatmngr: import("systems/ChatSystem").expect(),
-      Matchmngr: import("systems/matchmngr").expect(),
-      HudMngr: import("systems/hudvalues").expect(),
-      UserInput: import("systems/UserInput").expect(),
+      SoundSystem: import("systems/sound").expect(),
+      ChatSystem: import("systems/ChatSystem").expect(),
+      CameraSystem: import("systems/CameraSystem").expect(),
+      WebhookSystem: import("systems/WebhookSystem").expect(),
+    },
+    Controllers: {
+      PlayerController: import("controllers/PlayerController").expect(),
+      SessionController: import("controllers/SessionController").expect(),
+      MatchController: import("controllers/MatchController").expect(),
+      InterfaceValuesController: import("controllers/InterfaceValuesController").expect(),
+      PlayerInputController: import("controllers/PlayerInputController").expect(),
     },
     Environment: {
       Folders: import("folders").expect(),

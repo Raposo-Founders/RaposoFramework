@@ -7,10 +7,10 @@ import ServerInstance from "serverinst";
 import { uiValues } from "UI/values";
 import { BufferReader } from "util/bufferreader";
 import { startBufferCreation, writeBufferF32, writeBufferU32, writeBufferU8 } from "util/bufferwriter";
-import { getPlayersFromTeam } from "./playermngr";
+import { getPlayersFromTeam } from "./PlayerController";
 import { GetGroupInfo } from "providers/GroupsProvider";
-import { webhookLogEvent } from "./WebhookSystem";
-import ChatSystem from "./ChatSystem";
+import { webhookLogEvent } from "../systems/WebhookSystem";
+import ChatSystem from "../systems/ChatSystem";
 
 // # Constants & variables
 

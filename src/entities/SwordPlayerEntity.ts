@@ -5,7 +5,7 @@ import { gameValues, getInstanceDefinedValue } from "gamevalues";
 import { NetworkManager } from "network";
 import { createPlayermodelForEntity, getPlayermodelFromEntity } from "providers/PlayermodelProvider";
 import ServerInstance from "serverinst";
-import { getLocalPlayerEntity, getLocalPlayermodel } from "systems/localent";
+import { getLocalPlayerEntity, getLocalPlayermodel } from "controllers/LocalEntityController";
 import { CWorldSoundInstance } from "systems/sound";
 import { BufferReader } from "util/bufferreader";
 import { startBufferCreation, writeBufferBool, writeBufferString, writeBufferU32, writeBufferU64, writeBufferU8 } from "util/bufferwriter";

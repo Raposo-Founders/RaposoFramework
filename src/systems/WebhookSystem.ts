@@ -1,7 +1,7 @@
 import { DiscordEmbed, DiscordMessage, DiscordWebhook } from "@rbxts/discord-webhook";
 import { HttpService, RunService } from "@rbxts/services";
 import { PlayerTeam } from "entities/PlayerEntity";
-import { getPlayersFromTeam } from "./playermngr";
+import { getPlayersFromTeam } from "../controllers/PlayerController";
 import { GetGameName } from "providers/GroupsProvider";
 
 // # Variables

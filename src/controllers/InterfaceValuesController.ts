@@ -2,7 +2,7 @@ import { RunService, UserInputService } from "@rbxts/services";
 import { defaultEnvironments } from "defaultinsts";
 import { PlayerTeam } from "entities/PlayerEntity";
 import { colorTable, uiValues } from "UI/values";
-import { getLocalPlayerEntity } from "systems/localent";
+import { getLocalPlayerEntity } from "controllers/LocalEntityController";
 
 // # Constants & variables
 const MAPPED_TEAM_COLOR = new Map<PlayerTeam, Color3>();

@@ -5,7 +5,7 @@ import { gameValues } from "gamevalues";
 import { GetCreatorGroupInfo } from "providers/GroupsProvider";
 import ServerInstance from "serverinst";
 import ChatSystem from "systems/ChatSystem";
-import { getPlayersFromTeam } from "systems/playermngr";
+import { getPlayersFromTeam } from "controllers/PlayerController";
 import { colorTable } from "UI/values";
 import { BufferReader } from "util/bufferreader";
 import { startBufferCreation, writeBufferString, writeBufferU8 } from "util/bufferwriter";

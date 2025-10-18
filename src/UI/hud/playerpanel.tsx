@@ -5,7 +5,7 @@ import { defaultEnvironments } from "defaultinsts";
 import { cacheFolder } from "folders";
 import { Playermodel } from "providers/PlayermodelProvider/rig";
 import { uiValues } from "UI/values";
-import { getLocalPlayerEntity } from "systems/localent";
+import { getLocalPlayerEntity } from "controllers/LocalEntityController";
 import WorldInstance from "worldrender";
 
 const defaultDescription = new Instance("HumanoidDescription");
