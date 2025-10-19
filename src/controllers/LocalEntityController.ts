@@ -1,7 +1,7 @@
 import { Players, RunService } from "@rbxts/services";
 import { defaultEnvironments } from "defaultinsts";
 import { getPlayermodelFromEntity } from "providers/PlayermodelProvider";
-import { Playermodel } from "providers/PlayermodelProvider/rig";
+import { PlayermodelRig } from "providers/PlayermodelProvider/rig";
 import { DoesInstanceExist } from "util/utilfuncs";
 import { CameraSystem } from "../systems/CameraSystem";
 
@@ -16,46 +16,17 @@ export function getLocalPlayerEntity() {
       return ent;
 }
 
-export function getLocalPlayermodel() {
-  const entity = getLocalPlayerEntity();
-  if (!entity) return;
-
-  const playermodel = getPlayermodelFromEntity(entity.id);
-  if (!playermodel) return;
-
-  return playermodel;
-}
-
 // # Bindings & execution
 if (RunService.IsClient())
   defaultEnvironments.lifecycle.BindUpdate(() => {
+    if (defaultEnvironments.entity.isPlayback) return;
+
     const entity = getLocalPlayerEntity();
-    const playermodel = getLocalPlayermodel();
-    if (!entity || entity.health <= 0 || !playermodel || !DoesInstanceExist(playermodel.rig)) return;
+    if (!entity || entity.health <= 0 || !entity.humanoidModel) return;
 
-    entity.origin = playermodel.GetPivot();
-    entity.velocity = playermodel.rig.PrimaryPart?.AssemblyLinearVelocity ?? new Vector3();
-    entity.grounded = playermodel.rig.Humanoid.FloorMaterial.Name !== "Air";
-  });
+    entity.origin = entity.humanoidModel.GetPivot();
+    entity.velocity = entity.humanoidModel.HumanoidRootPart?.AssemblyLinearVelocity ?? new Vector3();
+    entity.grounded = entity.humanoidModel.Humanoid.FloorMaterial.Name !== "Air";
 
-if (RunService.IsClient())
-  defaultEnvironments.entity.entityCreated.Connect(ent => {
-    if (!ent.IsA("PlayerEntity")) return;
-    if (ent.GetUserFromController() !== Players.LocalPlayer) return;
-
-    // Fetch playermodel
-    let playermodel: Playermodel | undefined;
-    while (!playermodel) {
-      playermodel = getPlayermodelFromEntity(ent.id);
-
-      if (playermodel)
-        break;
-
-      task.wait();
-    }
-
-    Players.LocalPlayer.Character = playermodel.rig;
-
-    CameraSystem.setTrackingEntity(ent.id);
-    CameraSystem.setDistance(10);
+    CameraSystem.setTrackingEntity(entity.id);
   });

@@ -1,15 +1,24 @@
-import { Players, RunService } from "@rbxts/services";
+import { Players, RunService, TweenService } from "@rbxts/services";
 import { gameValues } from "gamevalues";
 import { BufferReader } from "util/bufferreader";
 import { writeBufferBool, writeBufferString, writeBufferU16, writeBufferU64, writeBufferU8, writeBufferVector } from "util/bufferwriter";
 import Signal from "util/signal";
 import { EntityManager, registerEntityClass } from ".";
 import HealthEntity from "./HealthEntity";
+import { DoesInstanceExist, ErrorObject } from "util/utilfuncs";
+import { modelsFolder } from "folders";
+import { defaultEnvironments } from "defaultinsts";
 
+// # Types
 declare global {
   interface GameEntities {
     PlayerEntity: typeof PlayerEntity;
   }
+}
+
+interface PlayerEntityHumanoidModel extends Model {
+  Humanoid: Humanoid;
+  HumanoidRootPart: Part;
 }
 
 // # Constants & variables
@@ -41,8 +50,9 @@ export default class PlayerEntity extends HealthEntity {
   size = new Vector3(2, 5, 2);
   velocity = new Vector3();
   grounded = false;
+  anchored = false;
 
-  readonly teleportPlayermodelSignal = new Signal<[origin: CFrame]>();
+  humanoidModel: PlayerEntityHumanoidModel | undefined;
 
   team = PlayerTeam.Spectators;
 
@@ -57,6 +67,86 @@ export default class PlayerEntity extends HealthEntity {
   constructor(public controller: string, public appearanceId = 1) {
     super();
     this.inheritanceList.add("PlayerEntity");
+
+    if (RunService.IsClient())
+      task.defer(() => {
+        task.wait();
+        if (this.environment.isServer) {
+          this.humanoidModel = ErrorObject("humanoidModel is not available for the server.");
+          return;
+        }
+
+        const humanoidModel = modelsFolder.WaitForChild("PlayerEntityHumanoidRig", 1)?.Clone() as PlayerEntityHumanoidModel | undefined;
+        assert(humanoidModel, `No PlayerEntityHumanoidRig has been found on the models folder.`);
+
+        humanoidModel.Name = this.id;
+        humanoidModel.Parent = this.environment.world.objects;
+        humanoidModel.Humanoid.SetStateEnabled("PlatformStanding", false);
+        humanoidModel.Humanoid.SetStateEnabled("Ragdoll", false);
+        humanoidModel.Humanoid.SetStateEnabled("Dead", false);
+        humanoidModel.Humanoid.BreakJointsOnDeath = false;
+
+        // Lerping positions
+        let currentPlayingTween: Tween | undefined;
+
+        const killCurrentTween = () => {
+          let currentCFrame = new CFrame();
+
+          if (DoesInstanceExist(humanoidModel))
+            currentCFrame = humanoidModel.HumanoidRootPart.CFrame;
+
+          currentPlayingTween?.Cancel();
+          currentPlayingTween?.Destroy();
+          currentPlayingTween = undefined;
+
+          if (DoesInstanceExist(humanoidModel))
+            humanoidModel.HumanoidRootPart.CFrame = currentCFrame;
+        };
+
+        const disconnectBinding = defaultEnvironments.lifecycle.BindTickrate(ctx => {
+          if (!DoesInstanceExist(humanoidModel)) return;
+
+          killCurrentTween();
+
+          if (this.GetUserFromController() === Players.LocalPlayer) {
+            humanoidModel.HumanoidRootPart.Anchored = this.health <= 0 || this.anchored;
+            Players.LocalPlayer.Character = humanoidModel;
+            return;
+          }
+
+          if (this.GetUserFromController() !== Players.LocalPlayer) {
+            if (Players.LocalPlayer.Character === humanoidModel)
+              Players.LocalPlayer.Character = undefined;
+          }
+
+          const currentCFrame = humanoidModel.HumanoidRootPart.CFrame;
+          const direction = new CFrame(currentCFrame.Position, this.origin.Position).LookVector;
+          const distance = currentCFrame.Position.sub(this.origin.Position).Magnitude;
+
+          humanoidModel.HumanoidRootPart.Anchored = true;
+          humanoidModel.HumanoidRootPart.AssemblyLinearVelocity = direction.mul(distance);
+
+          if (distance >= 5) {
+            humanoidModel.PivotTo(this.origin);
+            return;
+          }
+
+          currentPlayingTween = TweenService.Create(humanoidModel.HumanoidRootPart, new TweenInfo(ctx.tickrate, Enum.EasingStyle.Linear), { CFrame: this.origin });
+          currentPlayingTween.Play();
+        });
+
+
+        this.OnDelete(() => {
+          disconnectBinding();
+          killCurrentTween();
+
+          humanoidModel.Destroy();
+          rawset(this, "humanoidModel", undefined);
+        });
+
+        rawset(this, "humanoidModel", humanoidModel);
+
+      });
   }
 
   GetUserFromController() {
@@ -136,8 +226,7 @@ export default class PlayerEntity extends HealthEntity {
         if (!isLocalPlayer && this.team === PlayerTeam.Spectators)
           vectorPosition = new Vector3(0, -1000, 0);
 
-        this.origin = new CFrame(vectorPosition).mul(rotationCFrame);
-        this.teleportPlayermodelSignal.Fire(this.origin);
+        this.TeleportTo(new CFrame(vectorPosition).mul(rotationCFrame));
       }
 
     this.size = new Vector3(size.x, size.y, size.z);
@@ -145,6 +234,7 @@ export default class PlayerEntity extends HealthEntity {
     this.grounded = this.environment.isServer || this.environment.isPlayback || (!this.environment.isServer && this.GetUserFromController() !== Players.LocalPlayer)
       ? grounded
       : this.grounded;
+    this.anchored = pendingTeleport;
 
     if (this.environment.isPlayback || !this.environment.isServer) {
       if (this.health !== health) {
@@ -207,11 +297,13 @@ export default class PlayerEntity extends HealthEntity {
   }
 
   TeleportTo(origin: CFrame) {
-    if (!this.environment.isServer)
-      this.teleportPlayermodelSignal.Fire(origin);
-
     this.origin = origin;
     this.pendingTeleport = true;
+
+    if (!this.environment.isServer && this.humanoidModel) {
+      this.humanoidModel.PivotTo(this.origin);
+      this.humanoidModel.HumanoidRootPart.AssemblyLinearVelocity = Vector3.zero;
+    }
   }
 
   takeDamage(amount: number, attacker?: import("./WorldEntity")): void {

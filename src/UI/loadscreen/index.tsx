@@ -8,7 +8,7 @@ import Signal from "util/signal";
 export const loadingScreenGui = new Instance("ScreenGui")
 loadingScreenGui.Name = "LoadingScreen";
 loadingScreenGui.Parent = RunService.IsClient() ? Players.LocalPlayer.WaitForChild("PlayerGui") : undefined;
-loadingScreenGui.Enabled = true;
+loadingScreenGui.Enabled = !RunService.IsStudio();
 loadingScreenGui.ResetOnSpawn = false;
 loadingScreenGui.IgnoreGuiInset = true;
 loadingScreenGui.DisplayOrder = 999;

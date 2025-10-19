@@ -129,12 +129,8 @@ function UpdateCamera(dt: number) {
   const inputDirection = CameraSystem.getInputDirection();
   let focusPoint = new Vector3();
 
-  if (entity.IsA("PlayerEntity")) {
-    const playermodel = getPlayermodelFromEntity(entity.id);
-    const headPart = playermodel?.rig.FindFirstChild("Head");
-
-    if (playermodel && headPart?.IsA("BasePart"))
-      focusPoint = headPart.CFrame.Position;
+  if (entity.IsA("PlayerEntity") && entity.humanoidModel) {
+    focusPoint = entity.humanoidModel.GetPivot().add(new Vector3(0, 1.5, 0)).Position;
   }
 
   // Camera rotation input

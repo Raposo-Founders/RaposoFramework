@@ -1,20 +1,16 @@
 import * as Services from "@rbxts/services";
+import { getLocalPlayerEntity } from "controllers/LocalEntityController";
 import { defaultEnvironments } from "defaultinsts";
-import { cacheFolder, modelsFolder } from "folders";
-import { gameValues, getInstanceDefinedValue } from "gamevalues";
-import { NetworkManager } from "network";
-import { createPlayermodelForEntity, getPlayermodelFromEntity } from "providers/PlayermodelProvider";
+import { gameValues } from "gamevalues";
+import { getPlayermodelFromEntity } from "providers/PlayermodelProvider";
 import SessionInstance from "providers/SessionProvider";
-import { getLocalPlayerEntity, getLocalPlayermodel } from "controllers/LocalEntityController";
-import { CWorldSoundInstance } from "systems/sound";
 import { BufferReader } from "util/bufferreader";
 import { startBufferCreation, writeBufferBool, writeBufferString, writeBufferU32, writeBufferU64, writeBufferU8 } from "util/bufferwriter";
 import Signal from "util/signal";
 import { DoesInstanceExist } from "util/utilfuncs";
 import { registerEntityClass } from ".";
-import BaseEntity from "./BaseEntity";
 import HealthEntity from "./HealthEntity";
-import PlayerEntity, { getPlayerEntityFromController, PlayerTeam } from "./PlayerEntity";
+import PlayerEntity, { getPlayerEntityFromController } from "./PlayerEntity";
 
 // # Types
 declare global {
@@ -24,82 +20,15 @@ declare global {
 }
 
 // # Constants & variables
-enum SwordState {
+export enum SwordState {
   Idle = 5,
   Swing = 10,
   Lunge = 30,
 }
 
-enum NetworkSwordHitIndex {
-  LocalToOther,
-  OtherToLocal,
-}
-
-const forcetieEnabled = getInstanceDefinedValue("ForcetieEnabled", false);
-const teamHealingEnabled = getInstanceDefinedValue("TeamHealingEnabled", false);
-
 const NETWORK_ID = "sword_";
-const SWORD_MODEL = modelsFolder.WaitForChild("Sword") as BasePart;
 
 // # Functions
-function CheckPlayers<T extends BaseEntity>(entity1: SwordPlayerEntity, entity2: T) {
-  if (entity1.id === entity2.id) return;
-  if (!entity2.IsA("HealthEntity")) return;
-
-  if (entity2.IsA("PlayerEntity"))
-    if (entity1.team === PlayerTeam.Spectators || entity2.team === PlayerTeam.Spectators) return;
-
-  if (entity1.health <= 0 || entity2.health <= 0) {
-    if (!forcetieEnabled) return;
-
-    const lastAttacker = entity2.attackersList[0];
-    if (!lastAttacker || time() - lastAttacker.time > 0.25) return;
-  }
-
-  if (!teamHealingEnabled && entity2.IsA("PlayerEntity"))
-    if (entity1.team === entity2.team) return;
-
-  return true;
-}
-
-function ClientHandleHitboxTouched(attacker: SwordPlayerEntity, target: HealthEntity, part: BasePart, network: NetworkManager) {
-  task.spawn(() => {
-    const highlight = new Instance("Highlight");
-    highlight.FillTransparency = 0;
-    highlight.OutlineTransparency = 1;
-    highlight.Adornee = part;
-    highlight.Parent = cacheFolder;
-    highlight.FillColor = new Color3(1, 0, 0);
-    highlight.DepthMode = Enum.HighlightDepthMode.Occluded;
-
-    const tween = Services.TweenService.Create(highlight, new TweenInfo(0.25, Enum.EasingStyle.Linear), { FillTransparency: 1 });
-    tween.Completed.Once(() => {
-      highlight.Destroy();
-      tween.Destroy();
-    });
-    tween.Play();
-  });
-
-  // If the attacker is another player
-  if (attacker.GetUserFromController() !== Services.Players.LocalPlayer) {
-    if (!target.IsA("PlayerEntity") || target.GetUserFromController() !== Services.Players.LocalPlayer) return;
-
-    startBufferCreation();
-    writeBufferU8(NetworkSwordHitIndex.OtherToLocal);
-    writeBufferString(attacker.id);
-    network.sendPacket(`${NETWORK_ID}hit`);
-
-    return;
-  }
-
-  // If we're the ones attacking
-  if (attacker.GetUserFromController() === Services.Players.LocalPlayer) {
-    startBufferCreation();
-    writeBufferU8(NetworkSwordHitIndex.LocalToOther);
-    writeBufferString(target.id);
-    network.sendPacket(`${NETWORK_ID}hit`);
-  }
-}
 
 // # Class
 export class SwordPlayerEntity extends PlayerEntity {
@@ -113,9 +42,6 @@ export class SwordPlayerEntity extends PlayerEntity {
   private canAttack = true;
   private isEquipped = false;
   private lastActiveTime = 0;
-  private instancesList: Instance[] = [];
-  private connectionsList: RBXScriptConnection[] = [];
-  private gripPosition = new CFrame();
   private activationCount = 0;
 
   constructor(public controller: string, public appearanceId = 1) {
@@ -128,43 +54,6 @@ export class SwordPlayerEntity extends PlayerEntity {
 
       this.spawned.Connect(() => this.Equip());
       this.died.Connect(() => this.Unequip());
-
-      createPlayermodelForEntity(this).andThen(playermodel => {
-        const hitboxPart = SWORD_MODEL.Clone();
-        hitboxPart.Parent = this.environment.world.objects;
-        hitboxPart.Name = "Part";
-
-        const hitboxMotor = new Instance("Motor6D");
-        hitboxMotor.Parent = cacheFolder;
-        hitboxMotor.Part0 = playermodel.rig["Right Arm"];
-        hitboxMotor.Part1 = hitboxPart;
-        hitboxMotor.C0 = new CFrame(0, -1, -1.5).mul(CFrame.Angles(0, math.rad(180), math.rad(-90)));
-
-        this.connectionsList.push(hitboxPart.Touched.Connect(other => {
-          if (this.environment.isPlayback) return;
-          if (!this.isEquipped) return;
-          if (!DoesInstanceExist(playermodel.rig)) return;
-          if (other.IsDescendantOf(this.environment.world.parts)) return;
-          if (other.IsDescendantOf(playermodel.rig)) return; // Hitting ourselves, ignore...
-
-          const relatedEntities = this.environment.getEntitiesFromInstance(other);
-          if (relatedEntities.size() <= 0) return;
-
-          for (const ent of relatedEntities) {
-            if (!ent.IsA("HealthEntity") || ent.id === this.id) continue;
-            this.hitboxTouched.Fire(ent, other);
-          }
-        }));
-
-        this.instancesList.push(hitboxPart, hitboxMotor);
-
-        const unbindLifecycleUpdate = defaultEnvironments.lifecycle.BindTickrate(() => {
-          hitboxMotor.C1 = this.gripPosition;
-          hitboxPart.Transparency = this.isEquipped ? 0 : 1;
-        });
-
-        this.OnDelete(() => unbindLifecycleUpdate());
-      });
     });
   }
 
@@ -221,15 +110,6 @@ export class SwordPlayerEntity extends PlayerEntity {
 
   Destroy(): void {
     this.hitboxTouched.Clear();
-
-    for (const connection of this.connectionsList)
-      connection.Disconnect();
-    this.connectionsList.clear();
-
-    for (const inst of this.instancesList) {
-      inst.Destroy();
-    }
-    this.instancesList.clear();
   }
 
   IsWeaponEquipped() {
@@ -281,20 +161,10 @@ export class SwordPlayerEntity extends PlayerEntity {
     getPlayermodelFromEntity(this.id)?.animator.PlayAnimation("toollunge", "Action3", true);
     getPlayermodelFromEntity(this.id)?.animator.StopAnimation("toolslash");
 
-    if (!this.environment.isServer) {
-      const snd = new CWorldSoundInstance("Lunge", "rbxasset://sounds//swordlunge.wav");
-      if (this.instancesList.size() > 0)
-        snd.SetParent(this.instancesList[0] as BasePart);
-      snd.Play().andThen(() => snd.Dispose());
-    }
-
     this.currentState = SwordState.Lunge;
     this.stateChanged.Fire(this.currentState);
 
-    task.wait(0.25);
-    this._SetSwordGripPosition(true);
-    task.wait(0.75);
-    this._SetSwordGripPosition(false);
+    task.wait(1);
 
     this.currentState = SwordState.Idle;
     this.stateChanged.Fire(this.currentState);
@@ -306,23 +176,8 @@ export class SwordPlayerEntity extends PlayerEntity {
     getPlayermodelFromEntity(this.id)?.animator.StopAnimation("toollunge");
     getPlayermodelFromEntity(this.id)?.animator.PlayAnimation("toolslash", "Action2", true);
 
-    if (!this.environment.isServer) {
-      const snd = new CWorldSoundInstance("Slash", "rbxasset://sounds//swordslash.wav");
-      if (this.instancesList.size() > 0)
-        snd.SetParent(this.instancesList[0] as BasePart);
-      snd.Play().andThen(() => snd.Dispose());
-    }
-
     this.currentState = SwordState.Swing;
     this.stateChanged.Fire(this.currentState);
-    this._SetSwordGripPosition(false);
-  }
-
-  private _SetSwordGripPosition(value: boolean) {
-    if (value)
-      this.gripPosition = new CFrame(-1.5, 0, -1.5).mul(CFrame.Angles(0, -math.rad(90), 0));
-    else
-      this.gripPosition = new CFrame();
   }
 }
 
@@ -350,46 +205,6 @@ SessionInstance.sessionCreated.Connect(server => {
     if (!entity || !entity.IsA("SwordPlayerEntity")) return;
 
     entity.Attack1();
-  });
-
-  // Listening for damage
-  server.network.listenPacket(`${NETWORK_ID}hit`, (packet) => {
-    if (!packet.sender) return;
-
-    const reader = BufferReader(packet.content);
-    const hitIndex = reader.u8();
-    const entityId = reader.string();
-
-    const entity = getPlayerEntityFromController(server.entity, tostring(packet.sender.GetAttribute(gameValues.usersessionid)));
-    if (!entity || !entity.IsA("SwordPlayerEntity")) return;
-
-    const targetEntity = server.entity.entities.get(entityId);
-    if (!targetEntity?.IsA("HealthEntity")) return;
-
-    if (!CheckPlayers(entity, targetEntity)) return;
-
-    let totalDealingDamage = 0;
-
-    if (hitIndex === NetworkSwordHitIndex.LocalToOther) {
-      totalDealingDamage = entity.currentState;
-
-      if (teamHealingEnabled && targetEntity.IsA("PlayerEntity"))
-        if (targetEntity.team === entity.team)
-          totalDealingDamage = -totalDealingDamage;
-
-      targetEntity.takeDamage(totalDealingDamage, entity);
-    }
-
-    if (hitIndex === NetworkSwordHitIndex.OtherToLocal) {
-      if (!targetEntity.IsA("SwordPlayerEntity")) return;
-
-      totalDealingDamage = entity.currentState;
-
-      if (teamHealingEnabled && targetEntity.team === entity.team)
-        totalDealingDamage = -totalDealingDamage;
-
-      entity.takeDamage(totalDealingDamage, targetEntity);
-    }
   });
 
   // Server players replication
@@ -450,9 +265,7 @@ if (Services.RunService.IsClient()) {
       entitiesInQueue.add(entityId);
 
       defaultEnvironments.entity.createEntity("SwordPlayerEntity", entityId, controllerId, appearanceId)
-        .andThen(ent => {
-          ent.hitboxTouched.Connect((target, part) => ClientHandleHitboxTouched(ent, target, part, defaultEnvironments.network));
-        }).finally(() => {
+        .finally(() => {
           entitiesInQueue.delete(entityId);
         });
     }
@@ -479,9 +292,7 @@ if (Services.RunService.IsClient()) {
   // Client state update
   defaultEnvironments.lifecycle.BindTickrate(() => {
     const entity = getLocalPlayerEntity();
-    const playermodel = getLocalPlayermodel();
-    if (!entity || !entity.IsA("SwordPlayerEntity") || !playermodel || !DoesInstanceExist(playermodel.rig)) return;
-    if (entity.health <= 0) return;
+    if (!entity || !entity.IsA("SwordPlayerEntity") || entity.health <= 0) return;
 
     startBufferCreation();
     entity.WriteStateBuffer();

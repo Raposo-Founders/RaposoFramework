@@ -3,7 +3,7 @@ import React from "@rbxts/react";
 import { Players } from "@rbxts/services";
 import { defaultEnvironments } from "defaultinsts";
 import { cacheFolder } from "folders";
-import { Playermodel } from "providers/PlayermodelProvider/rig";
+import { PlayermodelRig } from "providers/PlayermodelProvider/rig";
 import { uiValues } from "UI/values";
 import { getLocalPlayerEntity } from "controllers/LocalEntityController";
 import WorldInstance from "worldrender";
@@ -42,7 +42,7 @@ export function HudPlayerPanel() {
     if (!viewportReference.current) return;
 
     let currentEntity = "";
-    let currentModel: Playermodel | undefined;
+    let currentModel: PlayermodelRig | undefined;
 
     worldInstance.rootInstance.Parent = worldReference.current;
     viewportReference.current.CurrentCamera = cameraReference.current;
@@ -69,7 +69,7 @@ export function HudPlayerPanel() {
         currentModel?.Destroy();
         currentModel = undefined;
 
-        currentModel = new Playermodel(worldInstance);
+        currentModel = new PlayermodelRig(worldInstance);
         currentModel.rig.Parent = worldReference.current;
         currentModel.PivotTo(new CFrame());
         currentModel.animator.is_grounded = true;

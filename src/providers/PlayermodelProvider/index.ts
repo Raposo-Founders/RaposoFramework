@@ -1,14 +1,14 @@
 import * as Services from "@rbxts/services";
 import PlayerEntity from "entities/PlayerEntity";
-import { Playermodel } from "./rig";
+import { PlayermodelRig } from "./rig";
 import { defaultEnvironments } from "defaultinsts";
 import { TICKRATE } from "lifecycle";
 import { createHealthBarForEntity } from "./healthbar";
 import { RaposoConsole } from "logging";
 
 // # Constants & variables
-const entityPlayermodels = new Map<EntityId, Playermodel>();
-const tweeningPlayermodels = new Map<EntityId, Tween>();
+const defaultDescription = new Instance("HumanoidDescription");
+const entityPlayermodels = new Map<EntityId, PlayermodelRig>();
 
 const humanoidFetchDescriptionMaxAttempts = 5;
 
@@ -40,7 +40,7 @@ export async function fetchHumanoidDescription(userid: number) {
   return description;
 }
 
-export function refreshPlayermodelAppearance(playermodel: Playermodel, controller?: number) {
+export function refreshPlayermodelAppearance(playermodel: PlayermodelRig, controller?: number) {
   if (!controller) {
     playermodel.SetDescription();
     return;
@@ -54,27 +54,15 @@ export function getPlayermodelFromEntity(entityId: EntityId) {
 }
 
 export async function createPlayermodelForEntity(entity: PlayerEntity) {
-  const playermodel = new Playermodel(entity.environment.world);
+  const playermodel = new PlayermodelRig(entity.environment.world);
   playermodel.SetMaterial();
   playermodel.SetTransparency();
-  playermodel.SetCollisionGroup("Players");
-
-  playermodel.rig.Humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None;
-  playermodel.rig.Humanoid.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff;
-  playermodel.rig.Humanoid.SetStateEnabled("Dead", false);
-  playermodel.rig.HumanoidRootPart.Anchored = true;
-
-  for (const inst of playermodel.rig.GetChildren()) {
-    if (!inst.IsA("BasePart")) continue;
-    entity.AssociateInstance(inst);
-  }
+  refreshPlayermodelAppearance(playermodel, entity.GetUserFromController()?.UserId);
 
   entity.spawned.Connect(() => {
     playermodel.SetMaterial();
     playermodel.SetTransparency();
-    playermodel.SetCollisionGroup("Players");
-    playermodel.SetRigJointsEnabled(true);
-    playermodel.EnableRigCollisionParts();
+    playermodel.SetJointsEnabled(true);
 
     for (const inst of playermodel.rig.GetChildren()) {
       if (!inst.IsA("BasePart")) continue;
@@ -87,72 +75,46 @@ export async function createPlayermodelForEntity(entity: PlayerEntity) {
   });
 
   entity.died.Connect(() => {
-    if (entity.GetUserFromController() !== Services.Players.LocalPlayer) {
-      playermodel.SetCollisionGroup("DeadPlayers");
-      playermodel.SetMaterial(Enum.Material.ForceField);
-      playermodel.SetTransparency(1);
-    }
+    playermodel.SetMaterial();
+    playermodel.SetTransparency();
+    playermodel.SetJointsEnabled(false);
 
-    if (entity.GetUserFromController() === Services.Players.LocalPlayer) {
-      playermodel.SetMaterial();
-      playermodel.SetTransparency();
-      playermodel.SetRigJointsEnabled(false);
-      playermodel.SetCollisionGroup("DeadPlayermodels");
-      playermodel.EnableRigCollisionParts(true); // This needs to be below "SetCollisionGroup" LOL
+    for (const inst of playermodel.rig.GetChildren()) {
+      if (!inst.IsA("BasePart")) continue;
 
-      for (const inst of playermodel.rig.GetChildren()) {
-        if (!inst.IsA("BasePart")) continue;
-
-        inst.AssemblyLinearVelocity = new Vector3(0, 50, 0);
-        inst.AssemblyAngularVelocity = new Vector3(
-          math.random(-45, 45),
-          math.random(-45, 45),
-          math.random(-45, 45),
-        );
-      }
+      inst.AssemblyLinearVelocity = new Vector3(
+        math.random(-50, 50),
+        50,
+        math.random(-50, 50),
+      );
+      inst.AssemblyAngularVelocity = new Vector3(
+        math.random(-45, 45),
+        math.random(-45, 45),
+        math.random(-45, 45),
+      );
     }
   });
 
-  entity.teleportPlayermodelSignal.Connect(origin => {
-    const currentTween = tweeningPlayermodels.get(entity.id);
-    if (currentTween) {
-      const currentPivot = playermodel.GetPivot();
-
-      currentTween.Cancel();
-      currentTween.Destroy();
-      tweeningPlayermodels.delete(entity.id);
-
-      playermodel.PivotTo(currentPivot);
-    }
-
-    const newTween = Services.TweenService.Create(
-      playermodel.rig.PrimaryPart!,
-      new TweenInfo(TICKRATE, Enum.EasingStyle.Linear),
-      { CFrame: origin }
-    );
-
-    tweeningPlayermodels.set(entity.id, newTween);
-    newTween.Completed.Once(() => tweeningPlayermodels.delete(entity.id));
-    newTween.Play();
-  });
+  for (const inst of playermodel.rig.GetChildren()) {
+    if (!inst.IsA("BasePart")) continue;
+    entity.AssociateInstance(inst);
+  }
 
   const unbindConnection = defaultEnvironments.lifecycle.BindLateUpdate(() => {
-    playermodel.rig.Humanoid.Health = entity.health;
-    playermodel.rig.Humanoid.MaxHealth = entity.maxHealth;
+    const entityPart = entity.humanoidModel?.HumanoidRootPart;
+    const playermodelPart = playermodel.rig.PrimaryPart;
 
-    const primaryPart = playermodel.rig.PrimaryPart;
-    if (primaryPart) {
-      primaryPart.Anchored = entity.GetUserFromController() !== Services.Players.LocalPlayer;
-      primaryPart.AssemblyLinearVelocity = entity.GetUserFromController() !== Services.Players.LocalPlayer
-        ? entity.velocity
-        : primaryPart.AssemblyLinearVelocity;
+    if (playermodelPart && entityPart && entity.health > 0) {
+      playermodelPart.Anchored = true;
+      playermodelPart.CFrame = entityPart.CFrame;
+      playermodelPart.AssemblyLinearVelocity = entityPart.AssemblyLinearVelocity;
     }
 
+    playermodel.animator.velocity = entity.humanoidModel?.HumanoidRootPart.AssemblyLinearVelocity || Vector3.zero;
     playermodel.animator.is_grounded = entity.grounded;
     playermodel.animator.Update();
 
-    if (entity.GetUserFromController() !== Services.Players.LocalPlayer)
-      playermodel.rig.Parent = entity.health <= 0 ? Services.ReplicatedStorage : entity.environment.world.objects;
+    playermodel.rig.Parent = entity.health <= 0 ? Services.ReplicatedStorage : entity.environment.world.objects;
   });
 
   entity.OnDelete(() => {
@@ -160,13 +122,10 @@ export async function createPlayermodelForEntity(entity: PlayerEntity) {
     playermodel.Destroy();
 
     entityPlayermodels.delete(entity.id);
-
-    tweeningPlayermodels.get(entity.id)?.Cancel();
-    tweeningPlayermodels.get(entity.id)?.Destroy();
-    tweeningPlayermodels.delete(entity.id);
   });
 
   entityPlayermodels.set(entity.id, playermodel);
+  refreshPlayermodelAppearance(playermodel, entity.GetUserFromController()?.UserId);
 
   task.spawn(() => createHealthBarForEntity(entity));
 

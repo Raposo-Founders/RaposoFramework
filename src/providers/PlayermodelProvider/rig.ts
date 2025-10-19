@@ -24,15 +24,6 @@ interface BaseCharacterModelInfo extends Model {
 
 // # Constants
 const defaultAnimationList = new Map<string, { animid: string, weight: number }>();
-const defaultCollisionValues = new Map<string, boolean>([
-  ["Right Arm", false],
-  ["Left Arm", false],
-  ["Head", true],
-  ["Torso", true],
-  ["Left Leg", false],
-  ["Right Leg", false],
-]);
-
 const defaultDescription = new Instance("HumanoidDescription");
 
 // # Variables
@@ -40,7 +31,7 @@ const defaultDescription = new Instance("HumanoidDescription");
 // # Functions
 
 // # Class
-export class Playermodel {
+export class PlayermodelRig {
   readonly rig: CharacterModel;
   animator: CharacterAnimationManager;
 
@@ -52,75 +43,44 @@ export class Playermodel {
     // Make sure that everything fucking exists
     this.rig.WaitForChild("HumanoidRootPart");
     this.rig.WaitForChild("Humanoid");
-
-    this.rig.Humanoid.ApplyDescriptionFinished.Connect(() => {
-      for (const inst of this.rig.GetDescendants()) {
-        if (!inst.IsA("BasePart")) continue;
-
-        inst.SetAttribute("OG_MATERIAL", inst.Material.Name);
-      }
-    });
+    this.rig.WaitForChild("Torso");
 
     this.rig.Name = "Playermodel";
-    this.rig.Parent = world.objects;
     this.rig.PrimaryPart = this.rig.HumanoidRootPart;
+    this.rig.Humanoid.Health = 1;
+    this.rig.Humanoid.MaxHealth = 1;
+    this.rig.Humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None;
+    this.rig.Humanoid.HealthDisplayDistance = 0;
+    this.rig.Humanoid.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff;
     this.rig.Humanoid.SetStateEnabled("Dead", false);
     this.rig.Humanoid.BreakJointsOnDeath = false;
+    this.rig.HumanoidRootPart.Anchored = true;
     this.rig.PivotTo(new CFrame(0, 100, 0));
-    this.SetCollisionGroup("Players");
+    this.rig.Parent = world.objects;
 
-    this.animator = new CharacterAnimationManager(this.rig);
+    for (const inst of this.rig.GetDescendants()) {
+      if (inst.IsA("LocalScript") || inst.IsA("ModuleScript")) {
+        inst.Destroy();
+        continue;
+      }
 
-    // const animatorModule = vendorFolder.WaitForChild("PlayerHumanoidAnimator").Clone() as ModuleScript;
-    // animatorModule.Parent = this._rigmodel;
-    // task.spawn(() => require(animatorModule));
+      if (!inst.IsA("BasePart")) continue;
 
-    for (const inst of this.rig.GetChildren())
-      if (inst.IsA("BasePart"))
-        inst.CanCollide = defaultCollisionValues.get(inst.Name) ?? inst.CanCollide;
+      inst.CanCollide = false;
+      inst.CanQuery = false;
+      inst.CanTouch = false;
+      inst.CollisionGroup = "Playermodel";
+      inst.SetAttribute("OG_MATERIAL", inst.Material.Name);
+    }
+
+    this.animator = new CharacterAnimationManager(this.rig.Humanoid.WaitForChild("Animator") as Animator);
   }
 
-  GetPivot() {
-    return this.rig.PrimaryPart!.GetPivot();
-  }
-
-  SetRigJointsEnabled(value = true) {
+  SetJointsEnabled(value = true) {
     for (const inst of this.rig.GetDescendants()) {
       if (!inst.IsA("Motor6D")) continue;
 
       inst.Enabled = value;
-    }
-  }
-
-  EnableRigCollisionParts(value?: boolean) {
-    for (const inst of this.rig.GetChildren()) {
-      if (!inst.IsA("BasePart")) continue;
-      if (inst.Name === "HumanoidRootPart") continue;
-
-      const existingCollisionPart = inst.FindFirstChild("__BODYPART_RIG_COLLISION");
-      if (existingCollisionPart) {
-        existingCollisionPart.Destroy();
-      }
-
-      if (!value) continue;
-
-      const collisionPart = new Instance("Part");
-      collisionPart.Parent = inst;
-      collisionPart.Name = "__BODYPART_RIG_COLLISION";
-      collisionPart.Size = inst.Size;
-      collisionPart.CFrame = inst.CFrame;
-      collisionPart.Transparency = 1;
-      collisionPart.CollisionGroup = inst.CollisionGroup; // And this is why it needs to be called after "SetCollisionGroup" :P
-
-      const weld = new Instance("WeldConstraint");
-      weld.Parent = collisionPart;
-      weld.Part0 = inst;
-      weld.Part1 = collisionPart;
-
-      const noCollisionConstraint = new Instance("NoCollisionConstraint");
-      noCollisionConstraint.Parent = collisionPart;
-      noCollisionConstraint.Part0 = inst;
-      noCollisionConstraint.Part1 = collisionPart;
     }
   }
 
@@ -134,14 +94,6 @@ export class Playermodel {
       if (inst.Name === "HumanoidRootPart") continue;
 
       inst.Material = material;
-    }
-  }
-
-  SetCollisionGroup(group = "Default") {
-    for (const inst of this.rig.GetDescendants()) {
-      if (!inst.IsA("BasePart")) continue;
-
-      inst.CollisionGroup = group;
     }
   }
 
@@ -160,6 +112,8 @@ export class Playermodel {
 
   Destroy() {
     this.rig?.Destroy();
+    this.animator.Destroy();
+
     rawset(this, "rigmodel", undefined);
   }
 }
@@ -169,12 +123,11 @@ class CharacterAnimationManager {
   private _connections_list = new Array<RBXScriptConnection>();
   private _loaded_anims = new Map<string, AnimationTrack>();
 
-  private readonly _animatorinst: Animator;
+  walkspeed = Services.StarterPlayer.CharacterWalkSpeed;
+  velocity = Vector3.zero;
   is_grounded = true;
 
-  constructor(readonly character: CharacterModel) {
-    this._animatorinst = character.Humanoid.WaitForChild("Animator") as Animator;
-
+  constructor(private readonly _animatorinst: Animator) {
     // Default animation list
     for (const [name, content] of defaultAnimationList) {
       const inst = new Instance("Animation");
@@ -197,10 +150,6 @@ class CharacterAnimationManager {
       this._instances_list.push(track);
       this._loaded_anims.set(inst.Name, track);
     }
-
-    // Connections
-    // character.Humanoid.Died.Once(() => this.Destroy());
-    character.Destroying.Once(() => this.Destroy());
   }
 
   PlayAnimation(name: string, priority: Enum.AnimationPriority["Name"] = "Action", force = false, speed = 1) {
@@ -255,14 +204,10 @@ class CharacterAnimationManager {
   }
 
   Update() {
-    const primaryPart = this.character.PrimaryPart;
-    if (!primaryPart) return;
+    const horizontalVelocity = this.velocity.mul(new Vector3(1, 0, 1));
 
-    const walkspeed = this.character.Humanoid.WalkSpeed;
-    const velocity = primaryPart.AssemblyLinearVelocity;
-
-    if (velocity.Magnitude > 0.05 && this.is_grounded)
-      this.PlayAnimation("run", "Core", false, walkspeed / 14.5); // the (old) default run speed was this one
+    if (horizontalVelocity.Magnitude > 0.05 && this.is_grounded)
+      this.PlayAnimation("run", "Core", false, this.walkspeed / 14.5); // the (old) default run speed was this one
     else
       this.StopAnimation("run");
 
