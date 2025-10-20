@@ -3,6 +3,8 @@ import { defaultEnvironments } from "defaultinsts";
 import { BindFramerate } from "lifecycle";
 import { RunService, TweenService, UserInputService } from "@rbxts/services";
 import { getPlayermodelFromEntity } from "providers/PlayermodelProvider";
+import { tracelineFixed } from "util/traceline";
+import CTracelineParameter from "util/traceparam";
 
 // # Constants & variables
 const UserGameSettings = UserSettings().GetService("UserGameSettings");
@@ -28,15 +30,19 @@ let lastZoomDistance = targetZoomDistance;
 let lastZoomDistanceChangedTime = 0;
 
 // Shift lock
-const SHIFTLOCK_OFFSET = new Vector3(2.75, 0, 0);
+const SHIFTLOCK_OFFSET = new CFrame(2.75, 0, 0);
 const SHIFTLOCK_KEYS: Enum.KeyCode["Name"][] = ["LeftShift", "RightShift"];
+const SHIFTLOCK_TWEEN_TIME = 0.125;
+
+let shiftlockEnabled = false;
+let currShiftlockOffset = new CFrame();
+let passedShiftlockTime = 0;
 
 // Other
 
 // # Namespace
 export namespace CameraSystem {
   let trackingEntityId: string | undefined;
-  export let shiftlockEnabled = false;
 
   export function getInputDirection() {
     const inversionFactor = new Vector2(1, UserGameSettings.GetCameraYInvertValue());
@@ -95,6 +101,10 @@ export namespace CameraSystem {
   export function setShiftLock(enabled: boolean) {
     shiftlockEnabled = enabled;
   }
+
+  export function isShiftlockEnabled() {
+    return shiftlockEnabled;
+  }
 }
 
 // # Functions
@@ -103,20 +113,28 @@ function updateMouseLock() {
 
   const inputMovingCamera = mouseButtonDown;
 
-  if (inputMovingCamera || CameraSystem.shiftlockEnabled)
-    UserInputService.MouseBehavior = CameraSystem.shiftlockEnabled ? Enum.MouseBehavior.LockCenter : Enum.MouseBehavior.LockCurrentPosition;
+  if (inputMovingCamera || shiftlockEnabled)
+    UserInputService.MouseBehavior = shiftlockEnabled ? Enum.MouseBehavior.LockCenter : Enum.MouseBehavior.LockCurrentPosition;
 
-  if (!inputMovingCamera && !CameraSystem.shiftlockEnabled)
+  if (!inputMovingCamera && !shiftlockEnabled)
     UserInputService.MouseBehavior = Enum.MouseBehavior.Default;
 }
 
-function UpdateCameraZoom() {
+function updateCameraZoom() {
   const passedTime = time() - lastZoomDistanceChangedTime;
   const alpha = math.clamp(passedTime / ZOOM_TWEENTIME, 0, 1);
 
   const lerp = math.lerp(lastZoomDistance, targetZoomDistance, TweenService.GetValue(alpha, "Quad", "Out"));
 
   currZoomDistance = lerp;
+}
+
+function updateShiftlockTween(dt: number) {
+  const addition = dt * (shiftlockEnabled ? 1 : -1);
+  passedShiftlockTime = math.clamp(passedShiftlockTime + addition, 0, SHIFTLOCK_TWEEN_TIME);
+
+  const alpha = math.clamp(passedShiftlockTime / SHIFTLOCK_TWEEN_TIME, 0, 1);
+  currShiftlockOffset = new CFrame().Lerp(SHIFTLOCK_OFFSET, TweenService.GetValue(alpha, "Quad", "InOut"));
 }
 
 function UpdateCamera(dt: number) {
@@ -139,13 +157,30 @@ function UpdateCamera(dt: number) {
     math.clamp(cameraRotation.Y - inputDirection.Y, -PITCH_LIMIT, PITCH_LIMIT),
   );
 
-  const finalCFrame = new CFrame(focusPoint)
+  let targetCFrame = new CFrame(focusPoint)
     .mul(CFrame.Angles(0, math.rad(cameraRotation.X), 0))
+    .mul(currShiftlockOffset)
     .mul(CFrame.Angles(math.rad(cameraRotation.Y), 0, 0))
-    .add(SHIFTLOCK_OFFSET)
     .mul(new CFrame(0, 0, currZoomDistance));
 
-  CAMERA_INST.CFrame = finalCFrame;
+  // Wall detection
+  {
+    const targetPosition = targetCFrame.Position;
+    const direction = targetPosition.sub(focusPoint);
+    const rotation = targetCFrame.Rotation;
+
+    const raycast = workspace.Spherecast(
+      focusPoint,
+      1,
+      direction,
+      new CTracelineParameter(["World"], [], "Blacklist", false).GenerateTraceParams(defaultEnvironments.entity, false),
+    );
+
+    if (raycast)
+      targetCFrame = new CFrame(focusPoint.add(direction.Unit.mul(raycast.Distance))).mul(rotation);
+  }
+
+  CAMERA_INST.CFrame = targetCFrame;
   CAMERA_INST.Focus = new CFrame(focusPoint);
 }
 
@@ -155,7 +190,7 @@ if (RunService.IsClient())
     if (busy) return;
 
     if (SHIFTLOCK_KEYS.includes(input.KeyCode.Name))
-      CameraSystem.setShiftLock(!CameraSystem.shiftlockEnabled);
+      CameraSystem.setShiftLock(!shiftlockEnabled);
   });
 
 if (RunService.IsClient())
@@ -170,7 +205,8 @@ if (RunService.IsClient())
     CAMERA_INST.CameraType = UserInputService.TouchEnabled ? Enum.CameraType.Custom : Enum.CameraType.Scriptable;
 
     updateMouseLock();
-    UpdateCameraZoom();
+    updateCameraZoom();
+    updateShiftlockTween(dt);
     UpdateCamera(dt); 
   });
 
