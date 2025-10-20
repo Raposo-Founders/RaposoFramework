@@ -1,9 +1,7 @@
-import { RaposoConsole } from "logging";
+import { RunService, TweenService, UserInputService } from "@rbxts/services";
 import { defaultEnvironments } from "defaultinsts";
 import { BindFramerate } from "lifecycle";
-import { RunService, TweenService, UserInputService } from "@rbxts/services";
-import { getPlayermodelFromEntity } from "providers/PlayermodelProvider";
-import { tracelineFixed } from "util/traceline";
+import { RaposoConsole } from "logging";
 import CTracelineParameter from "util/traceparam";
 
 // # Constants & variables
@@ -104,6 +102,10 @@ export namespace CameraSystem {
 
   export function isShiftlockEnabled() {
     return shiftlockEnabled;
+  }
+
+  export function getOrigin() {
+    return CAMERA_INST.CFrame;
   }
 }
 

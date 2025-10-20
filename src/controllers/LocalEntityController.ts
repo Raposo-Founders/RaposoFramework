@@ -18,15 +18,25 @@ export function getLocalPlayerEntity() {
 
 // # Bindings & execution
 if (RunService.IsClient())
-  defaultEnvironments.lifecycle.BindUpdate(() => {
+  defaultEnvironments.lifecycle.BindLateUpdate(() => {
     if (defaultEnvironments.entity.isPlayback) return;
 
     const entity = getLocalPlayerEntity();
     if (!entity || entity.health <= 0 || !entity.humanoidModel) return;
 
+    CameraSystem.setTrackingEntity(entity.id);
+
+    if (CameraSystem.isShiftlockEnabled()) {
+      const currentPosition = entity.humanoidModel.HumanoidRootPart.CFrame;
+      const [charX, , charZ] = currentPosition.ToOrientation();
+      const [, camRotY] = CameraSystem.getOrigin().ToOrientation();
+
+      entity.humanoidModel.HumanoidRootPart.CFrame = new CFrame(currentPosition.Position).mul(CFrame.Angles(charX, camRotY, charZ));
+    }
+
+    entity.humanoidModel.Humanoid.AutoRotate = !CameraSystem.isShiftlockEnabled();
+
     entity.origin = entity.humanoidModel.GetPivot();
     entity.velocity = entity.humanoidModel.HumanoidRootPart?.AssemblyLinearVelocity ?? new Vector3();
     entity.grounded = entity.humanoidModel.Humanoid.FloorMaterial.Name !== "Air";
-
-    CameraSystem.setTrackingEntity(entity.id);
   });
