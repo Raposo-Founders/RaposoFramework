@@ -106,7 +106,7 @@ export class CWorldSoundInstance extends CSoundInstance {
     emitter.Parent = this._attachment;
 
     this.latestWire.TargetInstance = emitter;
-    this.instances.push(emitter);
+    this.instances.push(emitter, this._attachment);
   }
 
   SetPosition(pos: Vector3) {

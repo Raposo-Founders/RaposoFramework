@@ -2,7 +2,6 @@ import { RunService } from "@rbxts/services";
 import { t } from "@rbxts/t";
 import Signal from "util/signal";
 import { RandomString } from "util/utilfuncs";
-import WorldInstance from "worldrender";
 import BaseEntity from "./BaseEntity";
 import { RaposoConsole } from "logging";
 
@@ -54,7 +53,7 @@ export class EntityManager {
   isServer = RunService.IsServer();
   isPlayback = false;
 
-  constructor(readonly world: WorldInstance) { }
+  constructor() { }
 
   async createEntity<
     K extends keyof GameEntities,

@@ -1,5 +1,6 @@
 import { t } from "@rbxts/t";
 import BaseEntity from "entities/BaseEntity";
+import WorldProvider from "providers/WorldProvider";
 
 /* -------------------------------------------------------------------------- */
 /*                                  Functions                                 */
@@ -29,7 +30,7 @@ class CTracelineParameter {
     const rgSearchContent: Instance[] = [];
 
     if (this.FilterContents.includes("World")) {
-      rgSearchContent.push(entityEnvironment.world.parts);
+      rgSearchContent.push(WorldProvider.MapFolder);
     }
     if (this.FilterContents.includes("Entities")) {
       for (const entity of entityEnvironment.getEntitiesThatIsA("BaseEntity")) {
@@ -40,12 +41,12 @@ class CTracelineParameter {
           continue;
 
         for (const inst of entity.associatedInstances) {
-          if (!inst.IsDescendantOf(entityEnvironment.world.objects))
+          if (!inst.IsDescendantOf(WorldProvider.ObjectsFolder))
             continue;
           rgSearchContent.push(inst);
         }
       }
-      for (const inst of entityEnvironment.world.objects.GetChildren()) {
+      for (const inst of WorldProvider.ObjectsFolder.GetChildren()) {
         rgSearchContent.push(inst);
       }
     }

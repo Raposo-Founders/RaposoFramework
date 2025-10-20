@@ -1,9 +1,9 @@
 import React from "@rbxts/react";
-import { CollectionService, Players, ReplicatedStorage, RunService, StarterGui } from "@rbxts/services";
+import { Players, ReplicatedStorage, RunService, StarterGui } from "@rbxts/services";
 import StartControllers from "controllers";
 import { defaultEnvironments } from "defaultinsts";
 import { requireEntities } from "entities";
-import { mapStorageFolder, modulesFolder, uiFolder } from "folders";
+import { modulesFolder, uiFolder } from "folders";
 import { gameValues } from "gamevalues";
 import { RaposoConsole } from "logging";
 import { listenDirectPacket } from "network";
@@ -26,7 +26,6 @@ import { SpectatorsList } from "UI/hud/spectatorslist";
 import { DisplayLoadingScreen, HideLoadingScreen } from "UI/loadscreen";
 import { defaultRoot, uiValues } from "UI/values";
 import { BufferReader } from "util/bufferreader";
-import { getInstanceFromPath } from "util/instancepath";
 
 
 // # Constants & variables
@@ -67,20 +66,9 @@ function ExecuteGameModules() {
   }
 }
 
-function ParentMaps() {
-  if (RunService.IsClient()) return;
-
-  for (const inst of CollectionService.GetTagged(gameValues.maptag)) {
-    if (!inst.IsA("Folder")) continue;
-    inst.Parent = mapStorageFolder;
-  }
-}
-
 // # Execution
 if (RunService.IsClient())
   while (!game.IsLoaded()) task.wait();
-
-ParentMaps();
 
 GetCreatorGroupInfo(); // Pre-cache this thing
 GetGameName();
@@ -131,7 +119,6 @@ if (RunService.IsServer()) {
   defaultEnvironments.entity.isServer = true;
   defaultEnvironments.server = new SessionInstance(
     "default",
-    defaultEnvironments.world,
     defaultEnvironments.network,
     defaultEnvironments.entity,
     defaultEnvironments.lifecycle,

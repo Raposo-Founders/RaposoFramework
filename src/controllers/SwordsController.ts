@@ -9,6 +9,7 @@ import { gameValues, getInstanceDefinedValue } from "gamevalues";
 import { NetworkManager } from "network";
 import { createPlayermodelForEntity } from "providers/PlayermodelProvider";
 import SessionInstance from "providers/SessionProvider";
+import WorldProvider from "providers/WorldProvider";
 import { CWorldSoundInstance } from "systems/sound";
 import { BufferReader } from "util/bufferreader";
 import { startBufferCreation, writeBufferString, writeBufferU8 } from "util/bufferwriter";
@@ -86,6 +87,10 @@ function ClientHandleHitboxTouched(attacker: SwordPlayerEntity, target: HealthEn
   }
 }
 
+function CreateSwordForEntity() {
+
+}
+
 // # Bindings & misc
 SessionInstance.sessionCreated.Connect(server => {
   // Listening for damage
@@ -133,7 +138,7 @@ if (RunService.IsClient())
   defaultEnvironments.entity.entityCreated.Connect(ent => {
     if (!ent.IsA("SwordPlayerEntity")) return;
 
-    const playermodel = createPlayermodelForEntity(ent).expect();
+    const playermodel = createPlayermodelForEntity(ent);
 
     const getGripPosition = () => {
       let gripPosition = new CFrame();
@@ -144,21 +149,21 @@ if (RunService.IsClient())
       return gripPosition;
     };
 
-    const hitboxPart = SWORD_MODEL.Clone();
-    hitboxPart.Parent = defaultEnvironments.world.objects;
-    hitboxPart.Name = "Part";
+    const swordModel = SWORD_MODEL.Clone();
+    swordModel.Parent = workspace;
+    swordModel.Name = "Part";
 
-    const hitboxMotor = new Instance("Motor6D");
-    hitboxMotor.Parent = hitboxPart;
-    hitboxMotor.Part0 = playermodel.rig["Right Arm"];
-    hitboxMotor.Part1 = hitboxPart;
-    hitboxMotor.C0 = new CFrame(0, -1, -1.5).mul(CFrame.Angles(0, math.rad(180), math.rad(-90)));
+    const swordMotor = new Instance("Motor6D");
+    swordMotor.Parent = swordModel;
+    swordMotor.Part0 = playermodel.rig["Right Arm"];
+    swordMotor.Part1 = swordModel;
+    swordMotor.C0 = new CFrame(0, -1, -1.5).mul(CFrame.Angles(0, math.rad(180), math.rad(-90)));
 
-    const touchedConnection = hitboxPart.Touched.Connect(other => {
+    const touchedConnection = swordModel.Touched.Connect(other => {
       if (defaultEnvironments.entity.isPlayback) return;
       if (!ent.IsWeaponEquipped()) return;
       if (!DoesInstanceExist(playermodel.rig)) return;
-      if (other.IsDescendantOf(defaultEnvironments.world.parts)) return;
+      if (other.IsDescendantOf(WorldProvider.MapFolder)) return;
       if (other.IsDescendantOf(playermodel.rig)) return; // Hitting ourselves, ignore...
 
       const relatedEntities = defaultEnvironments.entity.getEntitiesFromInstance(other);
@@ -166,7 +171,6 @@ if (RunService.IsClient())
 
       for (const entity of relatedEntities) {
         if (!entity.IsA("HealthEntity") || entity.id === ent.id) continue;
-
         ClientHandleHitboxTouched(ent, entity, other, defaultEnvironments.network);
       }
     });
@@ -181,22 +185,24 @@ if (RunService.IsClient())
       else
         snd = new CWorldSoundInstance("Slash", "rbxasset://sounds//swordslash.wav");
 
-      snd.SetParent(hitboxPart);
+      snd.SetParent(swordModel);
       snd.Play().andThen(() => snd.Dispose());
     });
 
-    const unbindLifecycleUpdate = defaultEnvironments.lifecycle.BindTickrate(() => {
-      const isEquipped = ent.health > 0 || ent.IsWeaponEquipped();
+    const unbindLifecycleUpdate1 = defaultEnvironments.lifecycle.BindTickrate(() => {
+      const isEquipped = ent.health > 0 && ent.IsWeaponEquipped();
 
-      hitboxMotor.C1 = getGripPosition();
-      hitboxPart.Transparency = isEquipped ? 0 : 1;
+      swordMotor.C1 = getGripPosition();
+      swordModel.Transparency = isEquipped ? 0 : 1;
     });
 
     ent.OnDelete(() => {
-      hitboxPart.Destroy();
-      hitboxMotor.Destroy();
+      swordModel.Destroy();
+      swordMotor.Destroy();
       touchedConnection.Disconnect();
 
-      unbindLifecycleUpdate();
+      unbindLifecycleUpdate1();
     });
+
+    print("Finished setting up", ent.classname, ent.id);
   });

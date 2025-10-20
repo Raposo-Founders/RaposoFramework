@@ -9,12 +9,10 @@ import SessionInstance from "providers/SessionProvider";
 import { BufferReader } from "util/bufferreader";
 import { startBufferCreation, writeBufferBool, writeBufferString, writeBufferU64, writeBufferU8 } from "util/bufferwriter";
 import Signal from "util/signal";
-import WorldInstance from "worldrender";
 
 // # Interfaces & types
 interface ServerListingInfo {
   sessionId: string;
-  currentMap: string;
   players: Player[];
 }
 
@@ -23,7 +21,6 @@ enum SessionConnectionIds {
   servercon_FetchServers, // Only used for... you know what, so whatever
   servercon_Request,
   servercon_GetInfo,
-  servercon_GetMapName, // Only used when connecting
   servercon_MapReady,
 }
 
@@ -56,21 +53,7 @@ export function clientConnectToServerSession(sessionId: string) {
     return;
   }
 
-  task.wait(CONNECTION_STEP_COOLDOWN);
-
-  startBufferCreation();
-  writeBufferString(sessionId);
-  sendDirectPacket(SessionConnectionIds[SessionConnectionIds.servercon_GetMapName], undefined);
-
-  const mapName = coroutine.yield()[0] as string;
-  if (mapName === "nil") {
-    canConnect = true;
-    throw "Server has replied MAP_NAME with nil.";
-  }
-
   defaultEnvironments.entity?.murderAllFuckers();
-  defaultEnvironments.world.loadMap(mapName);
-  defaultEnvironments.world.rootInstance.Parent = workspace;
 
   task.wait(CONNECTION_STEP_COOLDOWN);
 
@@ -87,13 +70,10 @@ export function clientConnectToServerSession(sessionId: string) {
 export function clientCreateLocalSession() {
   assert(RunService.IsClient(), "Function can only be called from the client.");
 
-  const worldInstance = new WorldInstance("default");
-
   const serverInst = new SessionInstance(
     "local",
-    worldInstance,
     new NetworkManager(),
-    new EntityManager(worldInstance),
+    new EntityManager(),
     new LifecycleInstance(),
   );
   defaultEnvironments.server = serverInst;
@@ -222,40 +202,6 @@ if (RunService.IsClient())
     coroutine.resume(currentConnectionThread, isAllowed, rejectReason);
   });
 
-// Getting current map name
-if (RunService.IsServer())
-  listenDirectPacket(SessionConnectionIds[SessionConnectionIds.servercon_GetMapName], (sender, bfr) => {
-    if (!sender) return;
-
-    const reader = BufferReader(bfr);
-    const sessionId = reader.string();
-
-    const targetSession = SessionInstance.instances.get(sessionId);
-
-    if (!targetSession || !usersInConnectionProcess.has(sender)) {
-      startBufferCreation();
-      writeBufferString("nil");
-      sendDirectPacket(SessionConnectionIds[SessionConnectionIds.servercon_GetMapName], sender);
-
-      return;
-    }
-
-    startBufferCreation();
-    writeBufferString(targetSession.world.currentMap);
-    sendDirectPacket(SessionConnectionIds[SessionConnectionIds.servercon_GetMapName], sender);
-  });
-
-if (RunService.IsClient())
-  listenDirectPacket(SessionConnectionIds[SessionConnectionIds.servercon_GetMapName], (sender, bfr) => {
-    const reader = BufferReader(bfr);
-    const mapName = reader.string();
-
-    if (!currentConnectionThread)
-      return;
-
-    coroutine.resume(currentConnectionThread, mapName);
-  });
-
 // Finalize connection
 if (RunService.IsServer())
   listenDirectPacket(SessionConnectionIds[SessionConnectionIds.servercon_MapReady], (sender, bfr) => {
@@ -303,7 +249,6 @@ if (RunService.IsServer())
     writeBufferU8(SessionInstance.instances.size());
     for (const [serverId, inst] of SessionInstance.instances) {
       writeBufferString(serverId);
-      writeBufferString(inst.world.currentMap);
 
       writeBufferU8(inst.players.size());
       for (const user of inst.players)
@@ -321,7 +266,6 @@ if (RunService.IsClient())
 
     for (let i = 0; i < serversAmount; i++) {
       const serverId = reader.string();
-      const currentMap = reader.string();
       const playersAmount = reader.u8();
 
       const players: Player[] = [];
@@ -335,7 +279,6 @@ if (RunService.IsClient())
 
       serverList.push({
         sessionId: serverId,
-        currentMap: currentMap,
         players: players,
       });
     }

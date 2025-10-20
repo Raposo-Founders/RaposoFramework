@@ -16,8 +16,6 @@ export const gameValues = {
   cmdnetinfo: "DBG-SVCMD-OUT",
   cmdprefix: ":",
   cmdtempmoddefendersdeny: "Temporary moderators can't mess with the Defenders' team.",
-
-  maptag: "Map",
 } as const;
 
 export function getStringMappedValue(name: string) {

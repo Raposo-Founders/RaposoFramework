@@ -7,7 +7,6 @@ import { NetworkManager, sendDirectPacket } from "../network";
 import { startBufferCreation, writeBufferString } from "../util/bufferwriter";
 import Signal from "../util/signal";
 import { RandomString } from "../util/utilfuncs";
-import WorldInstance from "../worldrender";
 
 /* # Sessions #
   Sessions is what we use for executing server code, which is also compatible with the client.
@@ -33,7 +32,6 @@ class SessionInstance {
 
   constructor(
     readonly id: string,
-    readonly world: WorldInstance,
     readonly network: NetworkManager,
     readonly entity: EntityManager,
     readonly lifecycle: LifecycleInstance,

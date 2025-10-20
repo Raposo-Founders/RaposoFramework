@@ -1,7 +1,7 @@
 import * as Services from "@rbxts/services";
 import { RaposoConsole } from "logging";
 import { animFolder, cacheFolder } from "folders";
-import WorldInstance from "worldrender";
+import WorldProvider from "providers/WorldProvider";
 
 // # Types
 declare global {
@@ -35,7 +35,7 @@ export class PlayermodelRig {
   readonly rig: CharacterModel;
   animator: CharacterAnimationManager;
 
-  constructor(readonly world: WorldInstance) {
+  constructor() {
     assert(Services.RunService.IsClient(), "Class can only be used on the client.");
 
     this.rig = Services.Players.CreateHumanoidModelFromDescription(defaultDescription, "R6") as CharacterModel;
@@ -54,9 +54,9 @@ export class PlayermodelRig {
     this.rig.Humanoid.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff;
     this.rig.Humanoid.SetStateEnabled("Dead", false);
     this.rig.Humanoid.BreakJointsOnDeath = false;
-    this.rig.HumanoidRootPart.Anchored = true;
+    // this.rig.HumanoidRootPart.Anchored = true;
     this.rig.PivotTo(new CFrame(0, 100, 0));
-    this.rig.Parent = world.objects;
+    this.rig.Parent = WorldProvider.ObjectsFolder;
 
     for (const inst of this.rig.GetDescendants()) {
       if (inst.IsA("LocalScript") || inst.IsA("ModuleScript")) {
@@ -65,10 +65,6 @@ export class PlayermodelRig {
       }
 
       if (!inst.IsA("BasePart")) continue;
-
-      inst.CanCollide = false;
-      inst.CanQuery = false;
-      inst.CanTouch = false;
       inst.CollisionGroup = "Playermodel";
       inst.SetAttribute("OG_MATERIAL", inst.Material.Name);
     }

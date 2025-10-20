@@ -6,7 +6,6 @@ import { cacheFolder } from "folders";
 import { PlayermodelRig } from "providers/PlayermodelProvider/rig";
 import { uiValues } from "UI/values";
 import { getLocalPlayerEntity } from "controllers/LocalEntityController";
-import WorldInstance from "worldrender";
 
 const defaultDescription = new Instance("HumanoidDescription");
 
@@ -16,8 +15,6 @@ export function HudPlayerPanel() {
   const worldReference = React.createRef<WorldModel>();
 
   const [visibleBinding, SetVisible] = React.createBinding(false);
-
-  const worldInstance = new WorldInstance("void");
 
   let description = new Instance("HumanoidDescription");
   
@@ -44,7 +41,6 @@ export function HudPlayerPanel() {
     let currentEntity = "";
     let currentModel: PlayermodelRig | undefined;
 
-    worldInstance.rootInstance.Parent = worldReference.current;
     viewportReference.current.CurrentCamera = cameraReference.current;
 
     defaultEnvironments.lifecycle.BindTickrate(() => {
@@ -69,7 +65,7 @@ export function HudPlayerPanel() {
         currentModel?.Destroy();
         currentModel = undefined;
 
-        currentModel = new PlayermodelRig(worldInstance);
+        currentModel = new PlayermodelRig();
         currentModel.rig.Parent = worldReference.current;
         currentModel.PivotTo(new CFrame());
         currentModel.animator.is_grounded = true;

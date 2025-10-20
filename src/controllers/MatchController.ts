@@ -11,12 +11,13 @@ import { getPlayersFromTeam } from "./PlayerController";
 import { GetGroupInfo } from "providers/GroupsProvider";
 import { webhookLogEvent } from "../systems/WebhookSystem";
 import ChatSystem from "../systems/ChatSystem";
+import WorldProvider from "providers/WorldProvider";
 
 // # Constants & variables
 
 // # Functions
 function SpawnCapturePoints(session: SessionInstance) {
-  for (const obj of session.world.objects.GetChildren()) {
+  for (const obj of WorldProvider.ObjectsFolder.GetChildren()) {
     if (!obj.IsA("BasePart")) continue;
     if (obj.Name !== "ent_objective_capturepoint") continue;
 

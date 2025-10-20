@@ -1,13 +1,11 @@
 import * as Services from "@rbxts/services";
-import PlayerEntity from "entities/PlayerEntity";
-import { PlayermodelRig } from "./rig";
 import { defaultEnvironments } from "defaultinsts";
-import { TICKRATE } from "lifecycle";
-import { createHealthBarForEntity } from "./healthbar";
+import PlayerEntity from "entities/PlayerEntity";
 import { RaposoConsole } from "logging";
+import { createHealthBarForEntity } from "./healthbar";
+import { PlayermodelRig } from "./rig";
 
 // # Constants & variables
-const defaultDescription = new Instance("HumanoidDescription");
 const entityPlayermodels = new Map<EntityId, PlayermodelRig>();
 
 const humanoidFetchDescriptionMaxAttempts = 5;
@@ -53,11 +51,9 @@ export function getPlayermodelFromEntity(entityId: EntityId) {
   return entityPlayermodels.get(entityId);
 }
 
-export async function createPlayermodelForEntity(entity: PlayerEntity) {
-  const playermodel = new PlayermodelRig(entity.environment.world);
-  playermodel.SetMaterial();
-  playermodel.SetTransparency();
-  refreshPlayermodelAppearance(playermodel, entity.GetUserFromController()?.UserId);
+export function createPlayermodelForEntity(entity: PlayerEntity) {
+  const playermodel = new PlayermodelRig();
+  // refreshPlayermodelAppearance(playermodel, entity.GetUserFromController()?.UserId);
 
   entity.spawned.Connect(() => {
     playermodel.SetMaterial();
@@ -105,7 +101,7 @@ export async function createPlayermodelForEntity(entity: PlayerEntity) {
     const playermodelPart = playermodel.rig.PrimaryPart;
 
     if (playermodelPart && entityPart && entity.health > 0) {
-      playermodelPart.Anchored = true;
+      // playermodelPart.Anchored = true;
       playermodelPart.CFrame = entityPart.CFrame;
       playermodelPart.AssemblyLinearVelocity = entityPart.AssemblyLinearVelocity;
     }
@@ -113,8 +109,6 @@ export async function createPlayermodelForEntity(entity: PlayerEntity) {
     playermodel.animator.velocity = entity.humanoidModel?.HumanoidRootPart.AssemblyLinearVelocity || Vector3.zero;
     playermodel.animator.is_grounded = entity.grounded;
     playermodel.animator.Update();
-
-    playermodel.rig.Parent = entity.health <= 0 ? Services.ReplicatedStorage : entity.environment.world.objects;
   });
 
   entity.OnDelete(() => {
@@ -125,7 +119,7 @@ export async function createPlayermodelForEntity(entity: PlayerEntity) {
   });
 
   entityPlayermodels.set(entity.id, playermodel);
-  refreshPlayermodelAppearance(playermodel, entity.GetUserFromController()?.UserId);
+  // refreshPlayermodelAppearance(playermodel, entity.GetUserFromController()?.UserId);
 
   task.spawn(() => createHealthBarForEntity(entity));
 

@@ -8,6 +8,7 @@ import HealthEntity from "./HealthEntity";
 import { DoesInstanceExist, ErrorObject } from "util/utilfuncs";
 import { modelsFolder } from "folders";
 import { defaultEnvironments } from "defaultinsts";
+import WorldProvider from "providers/WorldProvider";
 
 // # Types
 declare global {
@@ -80,7 +81,7 @@ export default class PlayerEntity extends HealthEntity {
         assert(humanoidModel, `No PlayerEntityHumanoidRig has been found on the models folder.`);
 
         humanoidModel.Name = this.id;
-        humanoidModel.Parent = this.environment.world.objects;
+        humanoidModel.Parent = WorldProvider.ObjectsFolder;
         humanoidModel.Humanoid.SetStateEnabled("PlatformStanding", false);
         humanoidModel.Humanoid.SetStateEnabled("Ragdoll", false);
         humanoidModel.Humanoid.SetStateEnabled("Dead", false);
@@ -269,7 +270,7 @@ export default class PlayerEntity extends HealthEntity {
     if (!origin) {
       const availableSpawns: BasePart[] = [];
 
-      for (const inst of this.environment.world.objects.GetChildren()) {
+      for (const inst of WorldProvider.ObjectsFolder.GetChildren()) {
         if (!inst.IsA("BasePart") || inst.Name !== `info_player_${PlayerTeam[this.team].lower()}`) continue;
         availableSpawns.push(inst);
       }
