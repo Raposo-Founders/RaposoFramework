@@ -223,7 +223,7 @@ SessionInstance.sessionCreated.Connect(server => {
     for (const ent of entitiesList) {
       startBufferCreation();
       ent.WriteStateBuffer();
-      server.network.sendPacket(`${NETWORK_ID}replication`, undefined, undefined, true);
+      server.network.sendPacket(`${NETWORK_ID}replication`, undefined, undefined);
     }
   });
 
@@ -296,7 +296,7 @@ if (Services.RunService.IsClient()) {
 
     startBufferCreation();
     entity.WriteStateBuffer();
-    defaultEnvironments.network.sendPacket(`${NETWORK_ID}c_stateupd`, undefined, undefined, true);
+    defaultEnvironments.network.sendPacket(`${NETWORK_ID}c_stateupd`, undefined, undefined);
   });
 
   // Sword / attack changes

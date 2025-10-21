@@ -301,7 +301,7 @@ export default class PlayerEntity extends HealthEntity {
     this.origin = origin;
     this.pendingTeleport = true;
 
-    if (!this.environment.isServer && this.humanoidModel) {
+    if (!this.environment.isServer && this.humanoidModel && this.GetUserFromController() === Players.LocalPlayer) {
       this.humanoidModel.PivotTo(this.origin);
       this.humanoidModel.HumanoidRootPart.AssemblyLinearVelocity = Vector3.zero;
     }
