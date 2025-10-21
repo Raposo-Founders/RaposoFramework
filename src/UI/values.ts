@@ -10,6 +10,7 @@ defaultScreenGui.Enabled = true;
 defaultScreenGui.ResetOnSpawn = false;
 defaultScreenGui.IgnoreGuiInset = true;
 defaultScreenGui.DisplayOrder = 99;
+defaultScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling;
 
 export const defaultRoot = ReactRoblox.createRoot(defaultScreenGui, { "hydrate": true });
 

@@ -8,10 +8,11 @@ import Signal from "util/signal";
 export const loadingScreenGui = new Instance("ScreenGui")
 loadingScreenGui.Name = "LoadingScreen";
 loadingScreenGui.Parent = RunService.IsClient() ? Players.LocalPlayer.WaitForChild("PlayerGui") : undefined;
-loadingScreenGui.Enabled = !RunService.IsStudio();
+loadingScreenGui.Enabled = true;
 loadingScreenGui.ResetOnSpawn = false;
 loadingScreenGui.IgnoreGuiInset = true;
 loadingScreenGui.DisplayOrder = 999;
+loadingScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling;
 
 const DISPLAYING_LOADING_SCREEN = new Set<string>();
 const LOADING_SCREEN_UPDATE = new Signal();
@@ -40,7 +41,7 @@ function LoadingScreen() {
   let isVisible = false;
 
   LOADING_SCREEN_UPDATE.Connect(() => {
-    const shouldDisplay = DISPLAYING_LOADING_SCREEN.size() !== 0;
+    const shouldDisplay = !DISPLAYING_LOADING_SCREEN.isEmpty();
     if (isVisible === shouldDisplay) return;
     isVisible = shouldDisplay
 
