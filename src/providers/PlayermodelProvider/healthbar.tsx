@@ -15,7 +15,7 @@ interface HealthFrameSectionInfo {
 
 // # Constants & variables
 const HEALTH_DIVISIONS = 20;
-const FAR_DISTANCE = 40;
+const FAR_DISTANCE = 80;
 const NEAR_DISTANCE = 10;
 const POSITION_OFFSET = new Vector3(0, 4, 0);
 
