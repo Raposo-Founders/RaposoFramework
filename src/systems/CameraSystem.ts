@@ -10,7 +10,7 @@ const UserGameSettings = UserSettings().GetService("UserGameSettings");
 // Camera rotation
 const PITCH_LIMIT = 89;
 // const ROTATION_SPEED_MOUSE = new Vector2(1, 0.77).mul(math.rad(0.5)); // (rad/s)
-const ROTATION_SPEED_MOUSE = new Vector2(1, 0.77); // (rad/s)
+const ROTATION_SPEED_MOUSE = new Vector2(1, 0.77).mul(0.5); // (rad/s)
 const ROTATION_SPEED_TOUCH = new Vector2(1, 0.66).mul(math.rad(1)); // (rad/s)
 const ROTATION_SPEED_GAMEPAD = new Vector2(1, 0.77).mul(math.rad(4)); // (rad/s)
 
@@ -20,7 +20,7 @@ const CAMERA_INST = new Instance("Camera");
 
 // Camera zoom
 const ZOOM_TWEENTIME = 0.25;
-const ZOOM_MAXDIST = 50;
+const ZOOM_MAXDIST = 60;
 const ZOOM_MINDIST = 5;
 let targetZoomDistance = 20;
 let currZoomDistance = targetZoomDistance;
@@ -55,7 +55,6 @@ export namespace CameraSystem {
       const scaledRawDelta = rawMouseDelta.mul(mouseDeltaSens);
       const sensMultipliedDelta = new Vector2(scaledRawDelta.X * ROTATION_SPEED_MOUSE.X, scaledRawDelta.Y * ROTATION_SPEED_MOUSE.Y);
 
-      // delta = delta.add(sensMultipliedDelta.mul(dt));
       delta = delta.add(sensMultipliedDelta);
     }
 
@@ -197,9 +196,8 @@ if (RunService.IsClient())
 
 if (RunService.IsClient())
   UserInputService.InputChanged.Connect((input, busy) => {
-    if (input.UserInputType === Enum.UserInputType.MouseWheel) {
+    if (input.UserInputType === Enum.UserInputType.MouseWheel)
       CameraSystem.setDistance(targetZoomDistance + (5 * -input.Position.Z));
-    }
   });
 
 if (RunService.IsClient())
