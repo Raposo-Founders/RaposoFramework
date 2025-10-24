@@ -100,6 +100,8 @@ if (RunService.IsClient()) {
         entity = ent;
         break;
       }
+
+      let isListed = false;
       
       if (entity) {
         switch (entity.team) {
@@ -113,8 +115,11 @@ if (RunService.IsClient()) {
           textColor = Color3.fromHex(colorTable.spectatorsColor);
           break;
         }
+
+        isListed = entity.caseInfo.isDegenerate || entity.caseInfo.isExploiter;
       }
 
+      finalPrefix = `${finalPrefix}${isListed ? `<font color="#ff0000">[LISTED]</font> ` : ""}`;
       finalPrefix = `${finalPrefix}${CUSTOM_USER_PREFIXES.get(senderUser.UserId) ?? ""}`;
       finalPrefix = `${finalPrefix} <font color="#${textColor.ToHex()}">${senderUser.Name}</font>: `;
     }

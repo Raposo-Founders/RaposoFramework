@@ -38,6 +38,11 @@ SessionInstance.sessionCreated.Connect(inst => {
     }
     const targetController = targetEntity.GetUserFromController();
 
+    if (team !== PlayerTeam.Spectators && (targetEntity.caseInfo.isDegenerate || targetEntity.caseInfo.isExploiter)) {
+      ChatSystem.sendSystemMessage(`Unable to team player: ${targetController?.Name} is listed on Clanware.`);
+      return;
+    }
+
     // Prevent people with tempmod from messing with the defenders' team
     if (!info.sender.GetAttribute(gameValues.adminattr) && callerEntity.team !== PlayerTeam.Defenders) {
       if (team === PlayerTeam.Defenders || targetEntity.team === PlayerTeam.Defenders) {

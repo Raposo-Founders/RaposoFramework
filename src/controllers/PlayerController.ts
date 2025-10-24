@@ -3,6 +3,7 @@ import PlayerEntity, { PlayerTeam } from "entities/PlayerEntity";
 import { gameValues } from "gamevalues";
 import SessionInstance from "providers/SessionProvider";
 import { sendSystemMessage } from "systems/ChatSystem";
+import { ClanwareCaseSystem } from "systems/ClanwareCaseSystem";
 import { startBufferCreation, writeBufferF32, writeBufferString } from "util/bufferwriter";
 
 // # Constants & variables
@@ -39,6 +40,8 @@ SessionInstance.sessionCreated.Connect(inst => {
     user.SetAttribute(gameValues.adminattr, ADMIN_ROLES.includes(user.GetRoleInGroup(TARGET_GROUP).upper()) || RunService.IsStudio());
     user.SetAttribute(gameValues.modattr, user.GetAttribute(gameValues.adminattr));
 
+    const listedInfo = ClanwareCaseSystem.IsUserListed(user.UserId);
+
     inst.entity.createEntity("SwordPlayerEntity", formatEntityId(user.UserId), referenceId, user.UserId).andThen(ent => {
       ent.died.Connect(attacker => {
 
@@ -67,7 +70,10 @@ SessionInstance.sessionCreated.Connect(inst => {
       if (user.UserId === 3754176167) // Ray's shit
         ent.stats.country = "UA";
 
-      sendSystemMessage(`${user.Name} has joined the game.`);
+      ent.caseInfo.isDegenerate = listedInfo.degenerate;
+      ent.caseInfo.isExploiter = listedInfo.exploiter;
+
+      sendSystemMessage(`${listedInfo.degenerate ? "(DGN) " : ""}${listedInfo.exploiter ? "(XPL) " : ""}${user.Name} has joined the game.`);
 
       task.wait(2);
 

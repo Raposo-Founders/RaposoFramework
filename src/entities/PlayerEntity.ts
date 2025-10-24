@@ -57,6 +57,11 @@ export default class PlayerEntity extends HealthEntity {
 
   team = PlayerTeam.Spectators;
 
+  caseInfo = {
+    isExploiter: false,
+    isDegenerate: false,
+  };
+
   stats = {
     kills: 0,
     deaths: 0,
@@ -180,6 +185,9 @@ export default class PlayerEntity extends HealthEntity {
     writeBufferU16(this.stats.ping);
     writeBufferU16(this.stats.damage);
     writeBufferString(this.stats.country);
+
+    writeBufferBool(this.caseInfo.isExploiter);
+    writeBufferBool(this.caseInfo.isDegenerate);
   }
 
   ApplyStateBuffer(state: buffer): void {
@@ -206,6 +214,9 @@ export default class PlayerEntity extends HealthEntity {
     const ping = reader.u16();
     const damage = reader.u16();
     const country = reader.string();
+
+    const isExploiter = reader.bool();
+    const isDegenerate = reader.bool();
 
     let vectorPosition = new Vector3(position.x, position.y, position.z);
     const rotationCFrame = CFrame.Angles(math.rad(rotation.y), math.rad(rotation.x), math.rad(rotation.z));
@@ -258,6 +269,9 @@ export default class PlayerEntity extends HealthEntity {
       this.team = teamIndex;
       this.controller = controllerId;
       this.appearanceId = appearanceId;
+
+      this.caseInfo.isExploiter = isExploiter;
+      this.caseInfo.isDegenerate = isDegenerate;
     }
   }
 
