@@ -42,6 +42,8 @@ function EntityHealthBar(props: { entity: PlayerEntity }) {
   const registeredFrames: HealthFrameSectionInfo[] = [];
 
   let defaultLifecycleUnbind: Callback | undefined = defaultEnvironments.lifecycle.BindLateUpdate(() => {
+    if (!defaultEnvironments.entity.isEntityOnMemoryOrImSchizo(props.entity)) return;
+
     if (props.entity.health <= 0) {
       setVisible(false);
       return;
