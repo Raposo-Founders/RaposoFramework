@@ -159,6 +159,22 @@ export function ChatWindow() {
         CHAT_FOCUSED.Fire(false);
       }}
     >
+      <textlabel
+        FontFace={new Font(
+          "rbxasset://fonts/families/GothamSSm.json",
+          Enum.FontWeight.SemiBold,
+          Enum.FontStyle.Normal
+        )}
+        Text={`Press ${UserInputService.GetStringForKeyCode(Enum.KeyCode.Slash)} to open chat.`}
+        TextTransparency={backgroundTransparency.map(val => math.lerp(0.5, 1, val))}
+        TextColor3={Color3.fromHex("#FFFFFF")}
+        TextSize={20}
+        TextWrapped={true}
+        AnchorPoint={new Vector2(0, 1)}
+        AutomaticSize={"XY"}
+        BackgroundTransparency={1}
+        Position={UDim2.fromOffset(0, -6)}
+      />
       <scrollingframe
         // AutomaticCanvasSize={"Y"}
         CanvasSize={new UDim2(0, 0, 0, 0)}
@@ -166,6 +182,7 @@ export function ChatWindow() {
         Active={true}
         BackgroundTransparency={1}
         Size={UDim2.fromScale(1, 1)}
+        ElasticBehavior={"Never"}
         Event={{
           ChildAdded: scrollingFrame => {
             task.wait();

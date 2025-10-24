@@ -2,6 +2,7 @@ import { LocalizationService, Players, RunService } from "@rbxts/services";
 import PlayerEntity, { PlayerTeam } from "entities/PlayerEntity";
 import { gameValues } from "gamevalues";
 import SessionInstance from "providers/SessionProvider";
+import { sendSystemMessage } from "systems/ChatSystem";
 import { startBufferCreation, writeBufferF32, writeBufferString } from "util/bufferwriter";
 
 // # Constants & variables
@@ -66,6 +67,8 @@ SessionInstance.sessionCreated.Connect(inst => {
       if (user.UserId === 3754176167) // Ray's shit
         ent.stats.country = "UA";
 
+      sendSystemMessage(`${user.Name} has joined the game.`);
+
       task.wait(2);
 
       ent.Spawn();
@@ -73,6 +76,8 @@ SessionInstance.sessionCreated.Connect(inst => {
   });
 
   inst.playerLeft.Connect(user => {
+    sendSystemMessage(`${user.Name} has left the game.`);
+
     const targetEntity = inst.entity.entities.get(formatEntityId(user.UserId));
     if (!targetEntity?.IsA("PlayerEntity")) return;
 
