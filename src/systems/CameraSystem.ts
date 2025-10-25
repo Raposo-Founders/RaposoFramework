@@ -29,7 +29,6 @@ let lastZoomDistanceChangedTime = 0;
 
 // Shift lock
 const SHIFTLOCK_OFFSET = new CFrame(2.75, 0, 0);
-const SHIFTLOCK_KEYS: Enum.KeyCode["Name"][] = ["LeftShift", "RightShift"];
 const SHIFTLOCK_TWEEN_TIME = 0.125;
 
 let shiftlockEnabled = false;
@@ -186,14 +185,6 @@ function UpdateCamera(dt: number) {
 }
 
 // # Bindings
-if (RunService.IsClient())
-  UserInputService.InputBegan.Connect((input, busy) => {
-    if (busy) return;
-
-    if (SHIFTLOCK_KEYS.includes(input.KeyCode.Name))
-      CameraSystem.setShiftLock(!shiftlockEnabled);
-  });
-
 if (RunService.IsClient())
   UserInputService.InputChanged.Connect((input, busy) => {
     if (input.UserInputType === Enum.UserInputType.MouseWheel)
