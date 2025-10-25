@@ -58,6 +58,11 @@ SessionInstance.sessionCreated.Connect(server => {
     if (!packet.sender) return;
     if (!packet.sender.GetAttribute(gameValues.adminattr)) return;
 
+    if (raidingGroupId === 0) {
+      ChatSystem.sendSystemMessage(`Unable to start match: Raiding group id must be set first with ${gameValues.cmdprefix}setraiders <groupId>.`);
+      return;
+    }
+
     const reader = BufferReader(packet.content);
     const pointsAmount = reader.u32();
 
