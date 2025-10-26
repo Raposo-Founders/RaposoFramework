@@ -1,6 +1,5 @@
 import { RunService, TweenService, UserInputService } from "@rbxts/services";
 import { defaultEnvironments } from "defaultinsts";
-import { BindFramerate } from "lifecycle";
 import { RaposoConsole } from "logging";
 import CTracelineParameter from "util/traceparam";
 
@@ -105,6 +104,15 @@ export namespace CameraSystem {
   export function getOrigin() {
     return CAMERA_INST.CFrame;
   }
+
+  export function updateCamera(dt: number) {
+    CAMERA_INST.CameraType = UserInputService.TouchEnabled ? Enum.CameraType.Custom : Enum.CameraType.Scriptable;
+
+    updateMouseLock();
+    updateCameraZoom();
+    updateShiftlockTween(dt);
+    UpdateCamera(dt); 
+  }
 }
 
 // # Functions
@@ -189,16 +197,6 @@ if (RunService.IsClient())
   UserInputService.InputChanged.Connect((input, busy) => {
     if (input.UserInputType === Enum.UserInputType.MouseWheel)
       CameraSystem.setDistance(targetZoomDistance + (5 * -input.Position.Z));
-  });
-
-if (RunService.IsClient())
-  BindFramerate(dt => {
-    CAMERA_INST.CameraType = UserInputService.TouchEnabled ? Enum.CameraType.Custom : Enum.CameraType.Scriptable;
-
-    updateMouseLock();
-    updateCameraZoom();
-    updateShiftlockTween(dt);
-    UpdateCamera(dt); 
   });
 
 // # Logic

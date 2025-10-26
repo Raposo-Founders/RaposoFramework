@@ -5,11 +5,13 @@ import { defaultEnvironments } from "defaultinsts";
 import { requireEntities } from "entities";
 import { modulesFolder, uiFolder } from "folders";
 import { gameValues } from "gamevalues";
+import { earlyUpdateLifecycleInstances, lateUpdateLifecycleInstances } from "lifecycle";
 import { RaposoConsole } from "logging";
 import { listenDirectPacket } from "network";
 import { GetCreatorGroupInfo, GetGameName } from "providers/GroupsProvider";
 import SessionInstance from "providers/SessionProvider";
 import StartSystems from "systems";
+import { CameraSystem } from "systems/CameraSystem";
 import ChatSystem from "systems/ChatSystem";
 import { ChatBar, ChatButton } from "UI/chatui";
 import { ChatWindow } from "UI/chatui/chatwindow";
@@ -64,6 +66,25 @@ function ExecuteGameModules() {
       require(inst);
     });
   }
+}
+
+function BindLifeCycle() {
+  const updateFunction = (dt: number) => {
+    CameraSystem.updateCamera(dt);
+
+    earlyUpdateLifecycleInstances(dt);
+    lateUpdateLifecycleInstances(dt);
+  };
+
+  const lateUpdateFunction = (dt: number) => {
+  };
+
+  if (RunService.IsClient())
+    RunService.PreRender.Connect(dt => updateFunction(dt));
+  else
+    RunService.PreSimulation.Connect(dt => updateFunction(dt));
+
+  RunService.PostSimulation.Connect(dt => lateUpdateFunction(dt));
 }
 
 // # Execution
@@ -208,6 +229,8 @@ if (RunService.IsClient()) {
     task.spawn(() => require(targetModule));
   }
 }
+
+BindLifeCycle();
 
 if (!RunService.IsStudio())
   task.spawn(() => {

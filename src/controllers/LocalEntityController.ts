@@ -18,7 +18,7 @@ export function getLocalPlayerEntity() {
 
 // # Bindings & execution
 if (RunService.IsClient())
-  defaultEnvironments.lifecycle.BindLateUpdate(() => {
+  defaultEnvironments.lifecycle.BindUpdate(() => {
     if (defaultEnvironments.entity.isPlayback) return;
 
     const entity = getLocalPlayerEntity();

@@ -14,19 +14,22 @@ type T_UpdateCallbackInfo = (ctx: LifecycleInstance, deltaTime: number) => void;
 export const TICKRATE = 1 / 33;
 
 // # Functions
-export function BindFramerate(callback: (dt: number) => void) {
-  let connection: RBXScriptConnection;
-
-  if (RunService.IsClient())
-    connection = RunService.PreRender.Connect((dt) => callback(dt));
-  else
-    connection = RunService.PreSimulation.Connect((dt) => callback(dt));
-
-  return connection;
+export function earlyUpdateLifecycleInstances(dt: number) {
+  for (const [, instance] of LifecycleInstance.instances) {
+    instance.FireUpdate(dt);
+    instance.FireTickUpdate(dt);
+  }
+}
+export function lateUpdateLifecycleInstances(dt: number) {
+  for (const [, instance] of LifecycleInstance.instances) {
+    instance.FireLateUpdate(dt);
+  }
 }
 
 // # Classes
 export class LifecycleInstance {
+  static instances = new Map<string, LifecycleInstance>();
+
   private readonly _id = RandomString(20);
   running = false;
   tickrate = TICKRATE;
@@ -40,39 +43,24 @@ export class LifecycleInstance {
   private readonly _yieldingThreads = new Map<string, I_ThreadYieldInfo>();
 
   constructor() {
-
-    //if (RunService.IsClient()) {
-    //  RunService.BindToRenderStep(`${this._id}_lifecycle_update`, Enum.RenderPriority.First.Value, (dt) => this._Update(dt));
-    //  RunService.BindToRenderStep(`${this._id}_lifecycle_lateupdate`, Enum.RenderPriority.Last.Value, (dt) => this._LateUpdate(dt));
-    //  RunService.BindToRenderStep(`${this._id}_lifecycle_tickupdate`, Enum.RenderPriority.First.Value + 1, (dt) => this._TickUpdate(dt));
-    //}
-
-    //if (RunService.IsServer()) {
-    const simConnection = RunService.PreSimulation.Connect((dt) => {
-      this._Update(dt);
-      this._TickUpdate(dt);
-    });
-    const postConnection = RunService.PostSimulation.Connect((dt) => this._LateUpdate(dt));
-
-    this._connections.push(simConnection, postConnection);
-    //}
+    LifecycleInstance.instances.set(this._id, this);
   }
 
-  private _Update(deltaTime: number) {
+  FireUpdate(deltaTime: number) {
     if (!this.running) return;
 
     for (const [, callback] of this._boundUpdateCallbacks)
       task.spawn(callback, this, deltaTime);
   }
 
-  private _LateUpdate(deltaTime: number) {
+  FireLateUpdate(deltaTime: number) {
     if (!this.running) return;
 
     for (const [, callback] of this._boundLateUpdateCallbacks)
       task.spawn(callback, this, deltaTime);
   }
 
-  private _TickUpdate(deltaTime: number) {
+  FireTickUpdate(deltaTime: number) {
     if (!this.running) return;
 
     this._passedTickrateTime += deltaTime;
@@ -130,6 +118,8 @@ export class LifecycleInstance {
   }
 
   Destroy() {
+    LifecycleInstance.instances.delete(this._id);
+
     this.running = false;
 
     this._boundUpdateCallbacks.clear();
