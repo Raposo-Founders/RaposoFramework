@@ -189,6 +189,7 @@ export default class PlayerEntity extends HealthEntity {
     const originalPosition = this.origin;
 
     const originalHealth = this.health;
+    const originalMaxHealth = this.maxHealth;
 
     super.ApplyStateBuffer(reader);
 
@@ -218,6 +219,9 @@ export default class PlayerEntity extends HealthEntity {
         this.origin = originalPosition;
         this.pendingTeleport = true;
       }
+
+      this.health = originalHealth;
+      this.maxHealth = originalMaxHealth;
     }
 
     // Client - Update position
