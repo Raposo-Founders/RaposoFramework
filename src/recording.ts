@@ -6,6 +6,7 @@ import { EntityManager } from "./entities";
 import { LifecycleInstance } from "./lifecycle";
 import { finalizeBufferCreation, startBufferCreation } from "./util/bufferwriter";
 import { ConsoleFunctionCallback } from "./cmd/cvar";
+import { BufferReader } from "util/bufferreader";
 
 // # Types
 interface I_EntitySnapshotContent {
@@ -120,7 +121,7 @@ export class CReplayPlayer {
         const targetEntity = this.GetEntity(entityData.id, entityData.classname);
         if (!targetEntity) continue;
 
-        targetEntity.ApplyStateBuffer(entityData.content);
+        targetEntity.ApplyStateBuffer(BufferReader(entityData.content));
       }
 
     // Update time

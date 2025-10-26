@@ -214,24 +214,20 @@ if (RunService.IsClient()) {
     const reader = BufferReader(packet.content);
     const entityId = reader.string();
 
-    const worldPosition = reader.vec();
-    const worldRotation = reader.vec();
-    const worldSize = reader.vec();
-
     const targetEntity = defaultEnvironments.entity.entities.get(entityId);
     if (!targetEntity || !targetEntity.IsA("CapturePointEntity")) {
 
       defaultEnvironments.entity.createEntity(
         "CapturePointEntity",
         entityId,
-        new CFrame(worldPosition.x, worldPosition.y, worldPosition.z).mul(CFrame.Angles(math.rad(worldRotation.y), math.rad(worldRotation.x), math.rad(worldRotation.z))),
-        new Vector3(worldSize.x, worldSize.y, worldSize.z),
-      ).andThen(ent => ent.ApplyStateBuffer(packet.content));
+        new CFrame(),
+        Vector3.one,
+      ).andThen(ent => ent.ApplyStateBuffer(reader));
 
       return;
     }
 
-    targetEntity.ApplyStateBuffer(packet.content);
+    targetEntity.ApplyStateBuffer(reader);
   });
 }
 

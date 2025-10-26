@@ -52,10 +52,7 @@ export default class CapturePointEntity extends WorldEntity {
   WriteStateBuffer(): void {
     writeBufferString(this.id);
 
-    // These must be at the top for quick entity creation
-    writeBufferVector(this.origin.Position.X, this.origin.Position.Y, this.origin.Position.Z);
-    writeBufferVector(this.origin.ToOrientation()[1], this.origin.ToOrientation()[0], this.origin.ToOrientation()[2]);
-    writeBufferVector(this.size.X, this.size.Y, this.size.Z);
+    super.WriteStateBuffer();
 
     writeBufferF32(this.capture_progress);
     writeBufferU8(this.capture_speed);
@@ -63,24 +60,15 @@ export default class CapturePointEntity extends WorldEntity {
     writeBufferBool(this.is_instant_cap);
   }
 
-  ApplyStateBuffer(state: buffer): void {
+  ApplyStateBuffer(reader: ReturnType<typeof BufferReader>): void {
+    super.ApplyStateBuffer(reader);
+
     if (this.environment.isServer && this.environment.isPlayback) return;
-
-    const reader = BufferReader(state);
-    reader.string(); // Entity ID (o/bvious)
-
-    const pos = reader.vec();
-    const rot = reader.vec();
-    const size = reader.vec();
 
     const captureProgress = reader.f32();
     const captureSpeed = reader.u8();
     const currentTeam = reader.u8();
     const instantCap = reader.bool();
-
-    this.origin = new CFrame(pos.x, pos.y, pos.z)
-      .mul(CFrame.Angles(math.rad(rot.x), math.rad(rot.y), math.rad(rot.z)));
-    this.size = new Vector3(size.x, size.y, size.z);
 
     this.capture_progress = captureProgress;
     this.capture_speed = captureSpeed;

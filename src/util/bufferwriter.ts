@@ -39,6 +39,8 @@ export function writeBufferU8(value: number) {
   const bufferQueue = bufferCreationThreads.get(thread);
   assert(bufferQueue, "No buffer creation spawned on the current thread.");
 
+  assert(value >= 0 && value <= 255, "U8 number must be between 0 and 255.");
+
   bufferQueue.push({
     type: BufferType.u8,
     value: value,
@@ -49,6 +51,8 @@ export function writeBufferI8(bufferInfo: IBufferCreator, value: number) {
   const thread = coroutine.running();
   const bufferQueue = bufferCreationThreads.get(thread);
   assert(bufferQueue, "No buffer creation spawned on the current thread.");
+
+  assert(value >= -128 && value <= 127, "I8 number must be between -128 and 127.");
 
   bufferQueue.push({
     type: BufferType.i8,
@@ -63,6 +67,8 @@ export function writeBufferU16(value: number) {
   const bufferQueue = bufferCreationThreads.get(thread);
   assert(bufferQueue, "No buffer creation spawned on the current thread.");
 
+  assert(value >= 0 && value <= 65_535, "U16 number must be between 0 and 65535.");
+
   bufferQueue.push({
     type: BufferType.u16,
     value: value,
@@ -73,6 +79,8 @@ export function writeBufferI16(value: number) {
   const thread = coroutine.running();
   const bufferQueue = bufferCreationThreads.get(thread);
   assert(bufferQueue, "No buffer creation spawned on the current thread.");
+
+  assert(value >= -32_768 && value <= 32_767, "I16 number must be between -32768 and 32767.");
 
   bufferQueue.push({
     type: BufferType.i16,
@@ -85,6 +93,8 @@ export function writeBufferU32(value: number) {
   const bufferQueue = bufferCreationThreads.get(thread);
   assert(bufferQueue, "No buffer creation spawned on the current thread.");
 
+  assert(value >= 0 && value <= 4_294_967_295, "U32 number must be between 0 and 4294967295.");
+
   bufferQueue.push({
     type: BufferType.u32,
     value: value,
@@ -95,6 +105,8 @@ export function writeBufferI32(value: number) {
   const thread = coroutine.running();
   const bufferQueue = bufferCreationThreads.get(thread);
   assert(bufferQueue, "No buffer creation spawned on the current thread.");
+
+  assert(value >= -2_147_483_648 && value <= 2_147_483_647, "I32 number must be between -2147483648 and 2147483647.");
 
   bufferQueue.push({
     type: BufferType.i32,

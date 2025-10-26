@@ -11,6 +11,7 @@ import { DoesInstanceExist } from "util/utilfuncs";
 import { registerEntityClass } from ".";
 import HealthEntity from "./HealthEntity";
 import PlayerEntity, { getPlayerEntityFromController } from "./PlayerEntity";
+import { RaposoConsole } from "logging";
 
 // # Types
 declare global {
@@ -64,34 +65,8 @@ export class SwordPlayerEntity extends PlayerEntity {
     writeBufferU32(this.activationCount);
   }
 
-  ApplyStateBuffer(state: buffer): void {
-    const reader = BufferReader(state);
-    super.ApplyStateBuffer(state);
-  
-    /* Skip the original content from the PlayerEntity class */
-    reader.string();
-    reader.u16();
-    reader.u16();
-
-    reader.vec();
-    reader.vec();
-    reader.vec();
-    reader.vec();
-    reader.bool();
-    reader.bool();
-
-    reader.u8();
-    reader.string();
-    reader.u64();
-    reader.u16();
-    reader.u16();
-    reader.u16();
-    reader.u16();
-    reader.string();
-
-    reader.bool();
-    reader.bool();
-    /* End-section */
+  ApplyStateBuffer(reader: ReturnType<typeof BufferReader>): void {
+    super.ApplyStateBuffer(reader);
 
     const isEquipped = reader.bool();
     const activationCount = reader.u32();
@@ -210,24 +185,15 @@ SessionInstance.sessionCreated.Connect(server => {
     entity.Attack1();
   });
 
-  // Server players replication
+  // Replicating entities
   server.lifecycle.BindTickrate(() => {
     const entitiesList = server.entity.getEntitiesThatIsA("SwordPlayerEntity");
 
     startBufferCreation();
-    writeBufferU8(entitiesList.size()); // Yes... I know this limits only up to 255 entities, dickhead.
-    for (const ent of entitiesList) {
-      writeBufferString(ent.id);
-      writeBufferString(ent.controller);
-      writeBufferU64(ent.appearanceId);
-    }
-    server.network.sendPacket(`${NETWORK_ID}entities_list`);
-
-    for (const ent of entitiesList) {
-      startBufferCreation();
+    writeBufferU8(math.min(entitiesList.size(), 255)); // Yes... I know this limits only up to 255 entities, dickhead.
+    for (const ent of entitiesList)
       ent.WriteStateBuffer();
-      server.network.sendPacket(`${NETWORK_ID}replication`, undefined, undefined);
-    }
+    server.network.sendPacket(`${NETWORK_ID}replication`);
   });
 
   // Client state updating
@@ -235,61 +201,51 @@ SessionInstance.sessionCreated.Connect(server => {
     if (!packet.sender) return;
 
     const reader = BufferReader(packet.content);
-    const entityId = reader.string();
+    const entityId = reader.string(); // Entity ID can be read from here due to PlayerEntity writing it first
 
     const entity = server.entity.entities.get(entityId);
-    if (!entity || !entity.IsA("SwordPlayerEntity") || entity.GetUserFromController() !== packet.sender) return;
+    if (!entity || !entity.IsA("SwordPlayerEntity") || entity.GetUserFromController() !== packet.sender) {
+      RaposoConsole.Warn(`Invalid ${SwordPlayerEntity} state update from ${packet.sender}.`);
+      return;
+    }
 
-    entity.ApplyStateBuffer(packet.content);
+    entity.ApplyStateBuffer(reader);
   });
 });
 
 if (Services.RunService.IsClient()) {
-  const entitiesInQueue = new Set<EntityId>();
+  let hasEntityInQueue = false;
 
-  // Creating entities
-  defaultEnvironments.network.listenPacket(`${NETWORK_ID}entities_list`, (packet) => {
-    const listedServerEntities = new Array<string>();
+  // Entity replication
+  defaultEnvironments.network.listenPacket(`${NETWORK_ID}replication`, (packet) => {
+    if (hasEntityInQueue) return; // Skip if entities are currently being created.
+    // ! MIGHT RESULT IN THE GAME HANGING FROM TIME TO TIME !
+
+    const listedServerEntities = new Set<EntityId>();
 
     const reader = BufferReader(packet.content);
     const amount = reader.u8();
 
     for (let i = 0; i < amount; i++) {
-      const entityId = reader.string();
-      const controllerId = reader.string();
-      const appearanceId = reader.u64();
+      const entityId = reader.string(); // Entity ID can be read from here due to PlayerEntity writing it first
 
-      listedServerEntities.push(entityId);
-      if (entitiesInQueue.has(entityId)) continue;
+      let entity = defaultEnvironments.entity.entities.get(entityId);
+      if (!entity) {
+        hasEntityInQueue = true;
 
-      const entity = defaultEnvironments.entity.entities.get(entityId);
-      if (entity) continue;
+        entity = defaultEnvironments.entity.createEntity("SwordPlayerEntity", entityId, "", 1).expect();
+        hasEntityInQueue = false;
+      }
 
-      entitiesInQueue.add(entityId);
-
-      defaultEnvironments.entity.createEntity("SwordPlayerEntity", entityId, controllerId, appearanceId)
-        .finally(() => {
-          entitiesInQueue.delete(entityId);
-        });
+      listedServerEntities.add(entityId);
+      entity.ApplyStateBuffer(reader);
     }
 
+    // Deleting non-listed entities
     for (const ent of defaultEnvironments.entity.getEntitiesThatIsA("SwordPlayerEntity")) {
-      if (listedServerEntities.includes(ent.id) || entitiesInQueue.has(ent.id)) continue;
+      if (listedServerEntities.has(ent.id)) continue;
       defaultEnvironments.entity.killThisFucker(ent);
     }
-  });
-
-  // Replication update
-  defaultEnvironments.network.listenPacket(`${NETWORK_ID}replication`, (packet) => {
-    const reader = BufferReader(packet.content);
-    const entityId = reader.string();
-
-    if (entitiesInQueue.has(entityId)) return;
-
-    const targetEntity = defaultEnvironments.entity.entities.get(entityId);
-    if (!targetEntity || !targetEntity.IsA("SwordPlayerEntity")) return;
-
-    targetEntity.ApplyStateBuffer(packet.content);
   });
 
   // Client state update

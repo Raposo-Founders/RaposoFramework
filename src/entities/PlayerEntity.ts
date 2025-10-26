@@ -9,6 +9,7 @@ import { DoesInstanceExist, ErrorObject } from "util/utilfuncs";
 import { modelsFolder } from "folders";
 import { defaultEnvironments } from "defaultinsts";
 import WorldProvider from "providers/WorldProvider";
+import { RaposoConsole } from "logging";
 
 // # Types
 declare global {
@@ -164,16 +165,9 @@ export default class PlayerEntity extends HealthEntity {
 
   WriteStateBuffer(): void {
     writeBufferString(this.id);
-    writeBufferU16(this.health);
-    writeBufferU16(this.maxHealth);
 
-    writeBufferVector(this.origin.Position.X, this.origin.Position.Y, this.origin.Position.Z);
-    {
-      const [rY, rX, rZ] = this.origin.ToOrientation();
-      writeBufferVector(math.round(math.deg(rX)), math.round(math.deg(rY)), math.round(math.deg(rZ)));
-    }
-    writeBufferVector(this.size.X, this.size.Y, this.size.Z);
-    writeBufferVector(this.velocity.X, this.velocity.Y, this.velocity.Z);
+    super.WriteStateBuffer();
+
     writeBufferBool(this.pendingTeleport);
     writeBufferBool(this.grounded);
 
@@ -190,19 +184,14 @@ export default class PlayerEntity extends HealthEntity {
     writeBufferBool(this.caseInfo.isDegenerate);
   }
 
-  ApplyStateBuffer(state: buffer): void {
+  ApplyStateBuffer(reader: ReturnType<typeof BufferReader>): void {
     const isLocalPlayer = this.GetUserFromController() === Players.LocalPlayer;
+    const originalPosition = this.origin;
 
-    const reader = BufferReader(state);
-    reader.string(); // Entity ID (obvious)
+    const originalHealth = this.health;
 
-    const health = reader.u16();
-    const maxHealth = reader.u16();
+    super.ApplyStateBuffer(reader);
 
-    const position = reader.vec();
-    const rotation = reader.vec();
-    const size = reader.vec();
-    const velocity = reader.vec();
     const pendingTeleport = reader.bool();
     const grounded = reader.bool();
 
@@ -218,47 +207,47 @@ export default class PlayerEntity extends HealthEntity {
     const isExploiter = reader.bool();
     const isDegenerate = reader.bool();
 
-    let vectorPosition = new Vector3(position.x, position.y, position.z);
-    const rotationCFrame = CFrame.Angles(math.rad(rotation.y), math.rad(rotation.x), math.rad(rotation.z));
-
     if (this.environment.isServer && !this.environment.isPlayback) {
-      const requestedPosition = new Vector2(position.x, position.z);
-      const currentPosition = new Vector2(this.origin.Position.X, this.origin.Position.Z);
-      const differenceMagnitute = requestedPosition.sub(currentPosition).Magnitude;
+      const requestedHorPosition = new Vector2(this.origin.X, this.origin.Z);
+      const originalHorPosition = new Vector2(originalPosition.X, originalPosition.Z);
+      const differenceMagnitute = originalHorPosition.sub(requestedHorPosition).Magnitude;
 
-      if (differenceMagnitute <= positionDifferenceThreshold) {
-        this.origin = new CFrame(vectorPosition).mul(rotationCFrame);
-        this.pendingTeleport = false;
+      this.pendingTeleport = false;
+
+      if (differenceMagnitute > positionDifferenceThreshold) {
+        this.origin = originalPosition;
+        this.pendingTeleport = true;
       }
     }
 
     // Client - Update position
-    if (!this.environment.isServer)
-      if (this.environment.isPlayback || (isLocalPlayer && pendingTeleport) || !isLocalPlayer) {
-        if (!isLocalPlayer && this.team === PlayerTeam.Spectators)
-          vectorPosition = new Vector3(0, -1000, 0);
+    if (!this.environment.isServer) {
+      // Hide player
+      if (!this.environment.isPlayback && !isLocalPlayer)
+        if (this.team === PlayerTeam.Spectators || this.health <= 0)
+          this.origin = new CFrame(0, -1000, 0);
 
-        this.TeleportTo(new CFrame(vectorPosition).mul(rotationCFrame));
+      if (isLocalPlayer && !pendingTeleport)
+        this.origin = originalPosition;
+
+      if (this.environment.isPlayback || !isLocalPlayer || (isLocalPlayer && pendingTeleport)) {
+        this.TeleportTo(this.origin);
       }
+    }
 
-    this.size = new Vector3(size.x, size.y, size.z);
-    this.velocity = new Vector3(velocity.x, velocity.y, velocity.z);
     this.grounded = this.environment.isServer || this.environment.isPlayback || (!this.environment.isServer && this.GetUserFromController() !== Players.LocalPlayer)
       ? grounded
       : this.grounded;
     this.anchored = pendingTeleport;
 
     if (this.environment.isPlayback || !this.environment.isServer) {
-      if (this.health !== health) {
-        if (this.health <= 0 && health > 0)
-          this.spawned.Fire(this.origin);
-
-        if (this.health > 0 && health <= 0)
+      if (this.health !== originalHealth) {
+        if (this.health <= 0 && originalHealth > 0)
           this.died.Fire();
-      }
 
-      this.health = health;
-      this.maxHealth = maxHealth;
+        if (this.health > 0 && originalHealth <= 0)
+          this.spawned.Fire(this.origin);
+      }
 
       this.stats.kills = kills;
       this.stats.deaths = deaths;

@@ -1,3 +1,4 @@
+import { BufferReader } from "util/bufferreader";
 import { ErrorObject } from "util/utilfuncs";
 
 declare global {
@@ -51,7 +52,7 @@ abstract class BaseEntity {
   abstract Destroy(): void;
 
   abstract WriteStateBuffer(): void;
-  abstract ApplyStateBuffer(state: buffer): void;
+  abstract ApplyStateBuffer(reader: ReturnType<typeof BufferReader>): void;
 
   abstract Think(dt: number): void;
 }

@@ -1,5 +1,7 @@
 import Signal from "util/signal";
 import WorldEntity from "./WorldEntity";
+import { writeBufferU16 } from "util/bufferwriter";
+import { BufferReader } from "util/bufferreader";
 
 declare global {
   interface GameEntities {
@@ -44,6 +46,23 @@ abstract class HealthEntity extends WorldEntity {
 
     if (previousHealthAmount > 0 && this.health <= 0)
       this.died.Fire(attacker);
+  }
+
+  WriteStateBuffer(): void {
+    super.WriteStateBuffer();
+
+    writeBufferU16(this.health);
+    writeBufferU16(this.maxHealth);
+  }
+
+  ApplyStateBuffer(reader: ReturnType<typeof BufferReader>): void {
+    super.ApplyStateBuffer(reader);
+
+    const health = reader.u16();
+    const maxHealth = reader.u16();
+
+    this.health = health;
+    this.maxHealth = maxHealth;
   }
 }
 
