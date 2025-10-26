@@ -2,6 +2,7 @@ import * as Services from "@rbxts/services";
 import { RaposoConsole } from "logging";
 import { animFolder, cacheFolder } from "folders";
 import WorldProvider from "providers/WorldProvider";
+import { colorTable } from "UI/values";
 
 // # Types
 declare global {
@@ -35,28 +36,39 @@ export class PlayermodelRig {
   readonly rig: CharacterModel;
   animator: CharacterAnimationManager;
 
+  humanoidRootPart: Part;
+  humanoid: Humanoid;
+
+  highlight = new Instance("Highlight");
+
   constructor() {
     assert(Services.RunService.IsClient(), "Class can only be used on the client.");
 
     this.rig = Services.Players.CreateHumanoidModelFromDescription(defaultDescription, "R6") as CharacterModel;
 
     // Make sure that everything fucking exists
-    this.rig.WaitForChild("HumanoidRootPart");
-    this.rig.WaitForChild("Humanoid");
+    this.humanoidRootPart = this.rig.WaitForChild("HumanoidRootPart") as Part;
+    this.humanoid = this.rig.WaitForChild("Humanoid") as Humanoid;
     this.rig.WaitForChild("Torso");
 
     this.rig.Name = "Playermodel";
     this.rig.PrimaryPart = this.rig.HumanoidRootPart;
-    this.rig.Humanoid.Health = 1;
-    this.rig.Humanoid.MaxHealth = 1;
-    this.rig.Humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None;
-    this.rig.Humanoid.HealthDisplayDistance = 0;
-    this.rig.Humanoid.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff;
-    this.rig.Humanoid.SetStateEnabled("Dead", false);
-    this.rig.Humanoid.BreakJointsOnDeath = false;
+    this.humanoid.Health = 1;
+    this.humanoid.MaxHealth = 1;
+    this.humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None;
+    this.humanoid.HealthDisplayDistance = 0;
+    this.humanoid.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff;
+    this.humanoid.SetStateEnabled("Dead", false);
+    this.humanoid.BreakJointsOnDeath = false;
     // this.rig.HumanoidRootPart.Anchored = true;
     this.rig.PivotTo(new CFrame(0, 100, 0));
     this.rig.Parent = WorldProvider.ObjectsFolder;
+
+    this.highlight.Parent = this.rig;
+    this.highlight.FillTransparency = 1;
+    this.highlight.OutlineColor = Color3.fromHex(colorTable.spectatorsColor);
+    this.highlight.OutlineTransparency = 0.75;
+    this.highlight.DepthMode = Enum.HighlightDepthMode.Occluded;
 
     for (const inst of this.rig.GetDescendants()) {
       if (inst.IsA("LocalScript") || inst.IsA("ModuleScript")) {

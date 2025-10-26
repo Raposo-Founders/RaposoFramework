@@ -1,3 +1,4 @@
+import ColorUtils from "@rbxts/colour-utils";
 import { Players, RunService, TweenService } from "@rbxts/services";
 import { defaultEnvironments } from "defaultinsts";
 import BaseEntity from "entities/BaseEntity";
@@ -9,8 +10,9 @@ import { gameValues, getInstanceDefinedValue } from "gamevalues";
 import { NetworkManager } from "network";
 import { createPlayermodelForEntity } from "providers/PlayermodelProvider";
 import SessionInstance from "providers/SessionProvider";
-import WorldProvider from "providers/WorldProvider";
+import WorldProvider, { ObjectsFolder } from "providers/WorldProvider";
 import { CWorldSoundInstance } from "systems/sound";
+import { colorTable } from "UI/values";
 import { BufferReader } from "util/bufferreader";
 import { startBufferCreation, writeBufferString, writeBufferU8 } from "util/bufferwriter";
 import { DoesInstanceExist } from "util/utilfuncs";
@@ -49,26 +51,33 @@ function CheckPlayers<T extends BaseEntity>(entity1: SwordPlayerEntity, entity2:
 }
 
 function ClientHandleHitboxTouched(attacker: SwordPlayerEntity, target: HealthEntity, part: BasePart, network: NetworkManager) {
-  task.spawn(() => {
-    const highlight = new Instance("Highlight");
-    highlight.FillTransparency = 0;
-    highlight.OutlineTransparency = 1;
-    highlight.Adornee = part;
-    highlight.Parent = cacheFolder;
-    highlight.FillColor = new Color3(1, 0, 0);
-    highlight.DepthMode = Enum.HighlightDepthMode.Occluded;
+  const spawnHitHighlight = (color: string) => {
+    if (!part.Parent?.FindFirstChildWhichIsA("Humanoid")) return;
 
-    const tween = TweenService.Create(highlight, new TweenInfo(0.25, Enum.EasingStyle.Linear), { FillTransparency: 1 });
+    const selectionBox = new Instance("SelectionBox");
+    selectionBox.Parent = ObjectsFolder;
+    selectionBox.SurfaceColor3 = Color3.fromHex(color);
+    selectionBox.SurfaceTransparency = 0.5;
+    selectionBox.Color3 = ColorUtils.Darken(Color3.fromHex(color), 0.75);
+    selectionBox.Adornee = part;
+
+    const tween = TweenService.Create(selectionBox, new TweenInfo(0.125, Enum.EasingStyle.Linear), { LineThickness: 0, SurfaceTransparency: 1 });
     tween.Completed.Once(() => {
-      highlight.Destroy();
+      selectionBox.Destroy();
       tween.Destroy();
     });
     tween.Play();
-  });
+  };
+
+  let targetColor = colorTable.spectatorsColor;
+  if (target.IsA("PlayerEntity") && target.team === PlayerTeam.Defenders) targetColor = colorTable.defendersColor;
+  if (target.IsA("PlayerEntity") && target.team === PlayerTeam.Raiders) targetColor = colorTable.raidersColor;
 
   // If the attacker is another player
   if (attacker.GetUserFromController() !== Players.LocalPlayer) {
     if (!target.IsA("PlayerEntity") || target.GetUserFromController() !== Players.LocalPlayer) return;
+
+    spawnHitHighlight(targetColor);
 
     startBufferCreation();
     writeBufferU8(NetworkSwordHitIndex.OtherToLocal);
@@ -85,6 +94,9 @@ function ClientHandleHitboxTouched(attacker: SwordPlayerEntity, target: HealthEn
     writeBufferString(target.id);
     network.sendPacket(`${NETWORK_ID}hit`);
   }
+
+  if (target.IsA("PlayerEntity"))
+    spawnHitHighlight(targetColor);
 }
 
 function CreateSwordForEntity() {

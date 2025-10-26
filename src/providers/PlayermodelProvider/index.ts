@@ -1,9 +1,11 @@
 import * as Services from "@rbxts/services";
 import { defaultEnvironments } from "defaultinsts";
-import PlayerEntity from "entities/PlayerEntity";
+import PlayerEntity, { PlayerTeam } from "entities/PlayerEntity";
 import { RaposoConsole } from "logging";
 import { createHealthBarForEntity } from "./healthbar";
 import { PlayermodelRig } from "./rig";
+import { colorTable } from "UI/values";
+import { getLocalPlayerEntity } from "controllers/LocalEntityController";
 
 // # Constants & variables
 const entityPlayermodels = new Map<EntityId, PlayermodelRig>();
@@ -109,6 +111,20 @@ export function createPlayermodelForEntity(entity: PlayerEntity) {
     playermodel.animator.velocity = entity.humanoidModel?.HumanoidRootPart.AssemblyLinearVelocity || Vector3.zero;
     playermodel.animator.is_grounded = entity.grounded;
     playermodel.animator.Update();
+
+    // Update highlight
+    let fillColor = colorTable.spectatorsColor;
+    if (entity.team === PlayerTeam.Defenders) fillColor = colorTable.defendersColor;
+    if (entity.team === PlayerTeam.Raiders) fillColor = colorTable.raidersColor;
+
+    playermodel.highlight.Enabled = entity.GetUserFromController() !== Services.Players.LocalPlayer;
+    playermodel.highlight.OutlineColor = Color3.fromHex(fillColor);
+
+    {
+      const localEntity = getLocalPlayerEntity();
+      if (localEntity && entity !== localEntity)
+        playermodel.highlight.DepthMode = localEntity.team === entity.team ? Enum.HighlightDepthMode.AlwaysOnTop : Enum.HighlightDepthMode.Occluded;
+    }
   });
 
   entity.OnDelete(() => {
