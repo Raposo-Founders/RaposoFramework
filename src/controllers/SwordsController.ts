@@ -99,10 +99,6 @@ function ClientHandleHitboxTouched(attacker: SwordPlayerEntity, target: HealthEn
     spawnHitHighlight(targetColor);
 }
 
-function CreateSwordForEntity() {
-
-}
-
 // # Bindings & misc
 SessionInstance.sessionCreated.Connect(server => {
   // Listening for damage
@@ -136,7 +132,7 @@ SessionInstance.sessionCreated.Connect(server => {
     if (hitIndex === NetworkSwordHitIndex.OtherToLocal) {
       if (!targetEntity.IsA("SwordPlayerEntity")) return;
   
-      totalDealingDamage = entity.currentState;
+      totalDealingDamage = targetEntity.currentState;
   
       if (teamHealingEnabled && targetEntity.team === entity.team)
         totalDealingDamage = -totalDealingDamage;
