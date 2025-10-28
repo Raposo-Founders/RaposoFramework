@@ -85,6 +85,10 @@ export class EntityManager {
     rawset(entity, "id", entityId);
 
     this.entities.set(entity.id, entity);
+
+    for (const callback of entity.setupFinishedCallbacks)
+      task.spawn(callback);
+
     this.entityCreated.Fire(entity);
 
     return entity as unknown as EntityType<K>;

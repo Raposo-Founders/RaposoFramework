@@ -13,6 +13,7 @@ abstract class BaseEntity {
 
   abstract readonly classname: keyof GameEntities;
   protected inheritanceList = new Set<keyof GameEntities>();
+  readonly setupFinishedCallbacks = new Array<Callback>();
   readonly deletionCallbacks = new Array<Callback>();
   readonly associatedInstances = new Set<Instance>();
   readonly attributesList = new Map<string, unknown>();
@@ -25,8 +26,12 @@ abstract class BaseEntity {
     return this.inheritanceList.has(classname) || this.classname === classname;
   }
 
-  OnDelete(callback: (entity: this) => void) {
+  OnDelete(callback: Callback) {
     this.deletionCallbacks.push(callback);
+  }
+
+  OnSetupFinished(callback: Callback) {
+    this.setupFinishedCallbacks.push(callback);
   }
 
   AssociateInstance(inst: Instance) {
