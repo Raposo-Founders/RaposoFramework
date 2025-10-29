@@ -2,6 +2,7 @@ import ColorUtils from "@rbxts/colour-utils";
 import React from "@rbxts/react";
 import { RunService, UserInputService } from "@rbxts/services";
 
+// # Types
 interface WindowBaseProperties {
   AnchorPoint?: React.Binding<Vector2> | Vector2;
   BackgroundColor?: Color3 | React.Binding<Color3>;
@@ -21,6 +22,10 @@ interface WindowProperties {
   AccentColor: React.Binding<Color3>;
 }
 
+// # Constants & variables
+const TITLEBAR_SIZE = 30;
+
+// # Functions
 export function BlankWindow(props: WindowBaseProperties & React.PropsWithChildren) {
   return (
     <imagelabel
@@ -80,7 +85,7 @@ export function Window(props: WindowProperties & Exclude<WindowBaseProperties, W
       <frame // Title bar
         BackgroundColor3={props.AccentColor}
         BorderSizePixel={0}
-        Size={new UDim2(1, 0, 0, 40)}
+        Size={new UDim2(1, 0, 0, TITLEBAR_SIZE)}
         Event={{
           InputBegan: (rbx, input) => {
             if (props.Draggable !== undefined && !props.Draggable) return;
@@ -169,8 +174,8 @@ export function Window(props: WindowProperties & Exclude<WindowBaseProperties, W
       </frame>
       <frame // Content frame
         BackgroundTransparency={1}
-        Size={new UDim2(1, 0, 1, -40)}
-        Position={new UDim2(0, 0, 0, 40)}
+        Size={new UDim2(1, 0, 1, -TITLEBAR_SIZE)}
+        Position={new UDim2(0, 0, 0, TITLEBAR_SIZE)}
       >
         {props.children}
       </frame>
