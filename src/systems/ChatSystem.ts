@@ -19,6 +19,7 @@ const CHAT_SYSMSG_NETID = "chatsys_sysmsg";
 
 const CHANNELS_FOLDER = ReplicatedInstance(TextChatService, "ServerChannels", "Folder");
 const DEFAULT_CHANNEL = ReplicatedInstance(CHANNELS_FOLDER, "RAPOSO_CHANNEL_DEFAULT", "TextChannel");
+const WINDOW_CONFIG = TextChatService.WaitForChild("ChatWindowConfiguration") as ChatWindowConfiguration;
 const INPUTBAR_CONFIG = TextChatService.WaitForChild("ChatInputBarConfiguration") as ChatInputBarConfiguration;
 
 const CUSTOM_USER_PREFIXES = new Map<number, string>();
@@ -85,7 +86,8 @@ if (RunService.IsServer()) {
 
 if (RunService.IsClient()) {
   UserInputService.InputBegan.Connect(() => {
-    INPUTBAR_CONFIG.Enabled = UserInputService.TouchEnabled;
+    INPUTBAR_CONFIG.TargetTextChannel = DEFAULT_CHANNEL;
+    WINDOW_CONFIG.VerticalAlignment = UserInputService.TouchEnabled ? Enum.VerticalAlignment.Top : Enum.VerticalAlignment.Bottom;
   });
 
   DEFAULT_CHANNEL.OnIncomingMessage = (message) => {

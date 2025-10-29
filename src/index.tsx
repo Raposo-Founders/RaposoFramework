@@ -96,6 +96,7 @@ GetGameName();
 
 if (RunService.IsClient()) {
   StarterGui.SetCoreGuiEnabled("All", false);
+  StarterGui.SetCoreGuiEnabled("Chat", true);
   WaitForServer();
 }
 
@@ -211,9 +212,9 @@ if (RunService.IsClient()) {
     <CommandLine />
     <ConsoleCommandsLogs />
 
-    <ChatBar />
-    <ChatButton />
-    <ChatWindow />
+    {/* <ChatBar /> */}
+    {/* <ChatButton /> */}
+    {/* <ChatWindow /> */}
   </>);
 
   // Import interface from storage and execute modules

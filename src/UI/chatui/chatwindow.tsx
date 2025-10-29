@@ -2,7 +2,7 @@ import ColorUtils from "@rbxts/colour-utils";
 import React, { useEffect } from "@rbxts/react";
 import { Players, RunService, TweenService, UserInputService } from "@rbxts/services";
 import { RaposoConsole } from "logging";
-import { BlankWindow } from "UI/blocks/window";
+import { BlankWindow, Window } from "UI/blocks/window";
 import { uiValues } from "UI/values";
 import Signal from "util/signal";
 
@@ -189,12 +189,15 @@ export function ChatWindow() {
 
             updateCanvasSize(scrollingFrame);
 
-            if (isOnBottom) {
-              const absoluteY = scrollingFrame.AbsoluteSize.Y;
-              const offset = scrollingFrame.AbsoluteCanvasSize.Y - absoluteY;
+            // TODO: Make this fucking offset thing fucking work
+            // if (isOnBottom) {
+            //   const absoluteY = scrollingFrame.AbsoluteSize.Y;
+            //   const offset = scrollingFrame.AbsoluteCanvasSize.Y - absoluteY;
 
-              scrollingFrame.CanvasPosition = new Vector2(0, offset);
-            }
+            //   scrollingFrame.CanvasPosition = new Vector2(0, offset);
+            // }
+
+            scrollingFrame.CanvasPosition = new Vector2(0, scrollingFrame.AbsoluteCanvasSize.Y);
           },
           ChildRemoved: scrollingFrame => {
             task.wait();
@@ -212,14 +215,8 @@ export function ChatWindow() {
         }}
         ref={parentFrameRef}
       >
-        <uilistlayout
-          SortOrder={"LayoutOrder"}
-          VerticalAlignment={"Bottom"}
-        />
-        <uipadding
-          PaddingLeft={new UDim(0, 8)}
-          PaddingRight={new UDim(0, 10)}
-        />
+        <uilistlayout SortOrder={"LayoutOrder"} />
+        <uipadding PaddingLeft={new UDim(0, 8)} PaddingRight={new UDim(0, 10)} />
       </scrollingframe>
     </BlankWindow>
   );
