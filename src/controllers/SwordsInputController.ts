@@ -4,12 +4,12 @@ import { getLocalPlayerEntity } from "./LocalEntityController";
 import { CameraSystem } from "systems/CameraSystem";
 
 // # Variables
-let autoAttackEnabled = false;
+let swordsAutoAttack = false;
 
 // # Functions
 function setAutoAttack(state: Enum.UserInputState, enabled: boolean) {
   if (state.Name !== "End") return;
-  autoAttackEnabled = enabled;
+  swordsAutoAttack = enabled;
 }
 
 function swordsAttack() {
@@ -63,7 +63,7 @@ if (RunService.IsClient()) {
 // Setup mobile inputs
 if (RunService.IsClient()) {
   ContextActionService.BindAction("swords_equipToggle", (_, state) => swordsEquipToggle(state), true, Enum.KeyCode.One);
-  ContextActionService.BindAction("swords_autoAttack", (_, state) => setAutoAttack(state, !autoAttackEnabled), true, Enum.KeyCode.R);
+  ContextActionService.BindAction("swords_autoAttack", (_, state) => setAutoAttack(state, !swordsAutoAttack), true, Enum.KeyCode.R);
   ContextActionService.BindAction("shiftlock", (_, state) => setShiftLock(state), true, Enum.KeyCode.LeftShift, Enum.KeyCode.RightShift);
 
   ContextActionService.SetTitle("swords_equipToggle", "Equip");
@@ -97,6 +97,6 @@ if (RunService.IsClient())
     const entity = getLocalPlayerEntity();
     if (!entity || entity.health <= 0) return;
 
-    if (autoAttackEnabled && entity.IsA("SwordPlayerEntity"))
+    if (swordsAutoAttack && entity.IsA("SwordPlayerEntity"))
       entity.Attack1();
   });
