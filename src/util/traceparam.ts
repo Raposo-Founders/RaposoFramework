@@ -5,60 +5,63 @@ import WorldProvider from "providers/WorldProvider";
 /* -------------------------------------------------------------------------- */
 /*                                  Functions                                 */
 /* -------------------------------------------------------------------------- */
-function IsEntityIncluded(entity: BaseEntity, searchList: (keyof GameEntities)[]) {
-  for (const key of rawget(entity, "setIsA") as Set<keyof GameEntities>) {
-    if (!searchList.includes(key)) continue;
+function IsInstanceDescendantOf(target: Instance, instancesList: Instance[]) {
+  if (instancesList.includes(target)) return true;
 
+  for (const inst of instancesList) {
+    if (!target.IsDescendantOf(inst)) continue;
     return true;
   }
-
-  return false;
 }
 
-/* -------------------------------------------------------------------------- */
-/*                                    Class                                   */
-/* -------------------------------------------------------------------------- */
-class CTracelineParameter {
-  constructor(
-    private FilterContents: ("World" | "Entities")[],
-    private FilterEntities: (keyof GameEntities)[],
-    private EntitiesFilterType: "Whitelist" | "Blacklist",
-    private RespectCanCollide: boolean,
-  ) { }
-
-  GenerateTraceParams<B extends boolean, T extends B extends true ? OverlapParams : RaycastParams>(entityEnvironment: T_EntityEnvironment, bIsOverlap: B): T {
-    const rgSearchContent: Instance[] = [];
-
-    if (this.FilterContents.includes("World")) {
-      rgSearchContent.push(WorldProvider.MapFolder);
-    }
-    if (this.FilterContents.includes("Entities")) {
-      for (const entity of entityEnvironment.getEntitiesThatIsA("BaseEntity")) {
-        if (
-          (this.EntitiesFilterType === "Blacklist" && IsEntityIncluded(entity, this.FilterEntities)) ||
-          (this.EntitiesFilterType === "Whitelist" && !IsEntityIncluded(entity, this.FilterEntities))
-        )
-          continue;
-
-        for (const inst of entity.associatedInstances) {
-          if (!inst.IsDescendantOf(WorldProvider.ObjectsFolder))
-            continue;
-          rgSearchContent.push(inst);
-        }
-      }
-      for (const inst of WorldProvider.ObjectsFolder.GetChildren()) {
-        rgSearchContent.push(inst);
-      }
-    }
-
-    const raycastparams = bIsOverlap ? new OverlapParams() : new RaycastParams();
-    raycastparams.FilterType = Enum.RaycastFilterType.Include;
-    raycastparams.RespectCanCollide = this.RespectCanCollide;
-    if (t.RaycastParams(raycastparams)) raycastparams.IgnoreWater = true;
-    raycastparams.FilterDescendantsInstances = rgSearchContent;
-
-    return raycastparams as T;
+function IsEntityListed(target: BaseEntity, list: (keyof GameEntities)[]) {
+  for (const classname of list) {
+    if (!target.IsA(classname)) continue;
+    return true;
   }
 }
 
-export = CTracelineParameter;
+export function generateTracelineParameters<B extends boolean, T extends B extends true ? OverlapParams : RaycastParams>(
+  isOverlap: B,
+  searchInstances: Instance[],
+  ignoreInstances: Instance[],
+  entitiesEnvironment: T_EntityEnvironment,
+  searchEntities: (keyof GameEntities)[] = [],
+  ignoreEntities: (keyof GameEntities)[] = [],
+  respectCanCollide = false,
+): T {
+  const finalSearchArray: Instance[] = [];
+
+  // Filter instances
+  for (const inst of searchInstances) {
+    if (IsInstanceDescendantOf(inst, ignoreInstances)) continue;
+    finalSearchArray.push(inst);
+
+    for (const child of inst.GetDescendants()) {
+      if (IsInstanceDescendantOf(child, ignoreInstances)) continue;
+      finalSearchArray.push(child);
+    }
+  }
+
+  // Filter entities
+  if (searchEntities.size() > 0 || ignoreEntities.size() > 0)
+    for (const [entityId, entity] of entitiesEnvironment.entities) {
+      if (searchEntities.size() > 0 && !IsEntityListed(entity, searchEntities)) continue;
+      if (ignoreEntities.size() > 0 && IsEntityListed(entity, ignoreEntities)) continue;
+
+      for (const inst of entity.associatedInstances) {
+        finalSearchArray.push(inst);
+
+        for (const child of inst.GetDescendants())
+          finalSearchArray.push(child);
+      }
+    }
+
+  const parameters = isOverlap ? new OverlapParams() : new RaycastParams();
+  parameters.FilterType = Enum.RaycastFilterType.Include;
+  parameters.RespectCanCollide = respectCanCollide;
+  if (t.RaycastParams(parameters)) parameters.IgnoreWater = true;
+  parameters.FilterDescendantsInstances = finalSearchArray;
+
+  return parameters as T;
+}

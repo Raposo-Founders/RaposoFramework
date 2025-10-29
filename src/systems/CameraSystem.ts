@@ -1,7 +1,8 @@
 import { RunService, TweenService, UserInputService } from "@rbxts/services";
 import { defaultEnvironments } from "defaultinsts";
 import { RaposoConsole } from "logging";
-import CTracelineParameter from "util/traceparam";
+import { MapContent } from "providers/WorldProvider";
+import { generateTracelineParameters } from "util/traceparam";
 
 // # Constants & variables
 const UserGameSettings = UserSettings().GetService("UserGameSettings");
@@ -181,7 +182,7 @@ function UpdateCamera(dt: number) {
       focusPoint,
       1,
       direction,
-      new CTracelineParameter(["World"], [], "Blacklist", false).GenerateTraceParams(defaultEnvironments.entity, false),
+      generateTracelineParameters(false, [MapContent.Parts], [], defaultEnvironments.entity),
     );
 
     if (raycast)
