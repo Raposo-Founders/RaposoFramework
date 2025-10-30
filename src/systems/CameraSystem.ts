@@ -3,6 +3,7 @@ import { defaultEnvironments } from "defaultinsts";
 import { RaposoConsole } from "logging";
 import { MapContent } from "providers/WorldProvider";
 import { generateTracelineParameters } from "util/traceparam";
+import { SoundSystem } from "./SoundSystem";
 
 // # Constants & variables
 const UserGameSettings = UserSettings().GetService("UserGameSettings");
@@ -205,6 +206,9 @@ if (RunService.IsClient()) {
   CAMERA_INST.Name = "PlayerCamera";
   CAMERA_INST.CameraType = Enum.CameraType.Scriptable;
   CAMERA_INST.Parent = workspace;
+
+  SoundSystem.CreateSoundGroup("Default");
+  SoundSystem.AddListenerToWorldObject(CAMERA_INST, "Default");
 
   workspace.CurrentCamera = CAMERA_INST;
 }

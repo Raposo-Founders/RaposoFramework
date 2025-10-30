@@ -13,8 +13,6 @@ import SessionInstance from "providers/SessionProvider";
 import StartSystems from "systems";
 import { CameraSystem } from "systems/CameraSystem";
 import ChatSystem from "systems/ChatSystem";
-import { ChatBar, ChatButton } from "UI/chatui";
-import { ChatWindow } from "UI/chatui/chatwindow";
 import { CommandLine } from "UI/cmdline";
 import { ConsoleCommandsLogs } from "UI/cmdline/logs";
 import { FairzoneCounter } from "UI/hud/fairzonetimer";

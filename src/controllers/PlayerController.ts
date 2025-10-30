@@ -42,7 +42,7 @@ SessionInstance.sessionCreated.Connect(inst => {
 
     const listedInfo = ClanwareCaseSystem.IsUserListed(user.UserId);
 
-    inst.entity.createEntity(RunService.IsStudio() ? "GunPlayerEntity" : "SwordPlayerEntity", formatEntityId(user.UserId), referenceId, user.UserId).andThen(ent => {
+    inst.entity.createEntity("SwordPlayerEntity", formatEntityId(user.UserId), referenceId, user.UserId).andThen(ent => {
       ent.died.Connect(attacker => {
 
         if (attacker?.IsA("PlayerEntity")) {

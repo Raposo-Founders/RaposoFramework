@@ -9,6 +9,7 @@ import { colorTable, uiValues } from "UI/values";
 import { BufferReader } from "util/bufferreader";
 import { startBufferCreation, writeBufferString } from "util/bufferwriter";
 import { ReplicatedInstance } from "util/utilfuncs";
+import { SoundsPath, SoundSystem } from "./SoundSystem";
 
 // # Types
 type ChatMessageAttributes = "Shout" | "TeamOnly";
@@ -23,6 +24,11 @@ const WINDOW_CONFIG = TextChatService.WaitForChild("ChatWindowConfiguration") as
 const INPUTBAR_CONFIG = TextChatService.WaitForChild("ChatInputBarConfiguration") as ChatInputBarConfiguration;
 
 const CUSTOM_USER_PREFIXES = new Map<number, string>();
+
+const chatSound = new SoundSystem.SoundInstance();
+chatSound.SetAssetPath(SoundsPath.Talk);
+chatSound.player.Volume = 2;
+chatSound.clearOnFinish = false;
 
 // # Functions
 function formatString(text: string) {
@@ -134,6 +140,7 @@ if (RunService.IsClient()) {
 
   DEFAULT_CHANNEL.MessageReceived.Connect(message => {
     RenderChatMessage(`${message.PrefixText}${message.Text}`);
+    chatSound.Play();
   });
 }
 

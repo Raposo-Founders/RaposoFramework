@@ -1,17 +1,17 @@
 import ColorUtils from "@rbxts/colour-utils";
-import { Players, RunService, TweenService } from "@rbxts/services";
+import { Debris, Players, RunService, TweenService } from "@rbxts/services";
 import { defaultEnvironments } from "defaultinsts";
 import BaseEntity from "entities/BaseEntity";
 import HealthEntity from "entities/HealthEntity";
 import { getPlayerEntityFromController, PlayerTeam } from "entities/PlayerEntity";
 import { SwordPlayerEntity, SwordState } from "entities/SwordPlayerEntity";
-import { cacheFolder, modelsFolder } from "folders";
+import { modelsFolder } from "folders";
 import { gameValues, getInstanceDefinedValue } from "gamevalues";
 import { NetworkManager } from "network";
 import { createPlayermodelForEntity } from "providers/PlayermodelProvider";
 import SessionInstance from "providers/SessionProvider";
 import WorldProvider, { ObjectsFolder } from "providers/WorldProvider";
-import { CWorldSoundInstance } from "systems/sound";
+import { SoundsPath, SoundSystem } from "systems/SoundSystem";
 import { colorTable } from "UI/values";
 import { BufferReader } from "util/bufferreader";
 import { startBufferCreation, writeBufferString, writeBufferU8 } from "util/bufferwriter";
@@ -167,6 +167,20 @@ if (RunService.IsClient())
     swordMotor.Part1 = swordModel;
     swordMotor.C0 = new CFrame(0, -1, -1.5).mul(CFrame.Angles(0, math.rad(180), math.rad(-90)));
 
+    const soundAttachment = new Instance("Attachment");
+    soundAttachment.Parent = swordModel;
+    soundAttachment.Name = "SoundAttachment";
+
+    const swingSound = new SoundSystem.WorldSoundInstance();
+    swingSound.SetAssetPath(SoundsPath.Slash);
+    swingSound.SetParent(soundAttachment);
+    swingSound.clearOnFinish = false;
+
+    const lungeSound = new SoundSystem.WorldSoundInstance();
+    lungeSound.SetAssetPath(SoundsPath.Lunge);
+    lungeSound.SetParent(soundAttachment);
+    lungeSound.clearOnFinish = false;
+
     const touchedConnection = swordModel.Touched.Connect(other => {
       if (defaultEnvironments.entity.isPlayback) return;
       if (!ent.IsWeaponEquipped()) return;
@@ -186,15 +200,10 @@ if (RunService.IsClient())
     ent.stateChanged.Connect(state => {
       if (state === SwordState.Idle) return;
 
-      let snd: CWorldSoundInstance;
-
       if (state === SwordState.Lunge)
-        snd = new CWorldSoundInstance("Lunge", "rbxasset://sounds//swordlunge.wav");
+        lungeSound.Play();
       else
-        snd = new CWorldSoundInstance("Slash", "rbxasset://sounds//swordslash.wav");
-
-      snd.SetParent(swordModel);
-      snd.Play().andThen(() => snd.Dispose());
+        swingSound.Play();
     });
 
     const unbindLifecycleUpdate1 = defaultEnvironments.lifecycle.BindTickrate(() => {
