@@ -1,9 +1,10 @@
-import { RunService } from "@rbxts/services";
+import { RunService, TextChatService } from "@rbxts/services";
 import { colorTable } from "UI/values";
 import { RaposoConsole } from "logging";
 import ChatSystem from "systems/ChatSystem";
 import Signal from "util/signal";
 import { CFUNC_REPLY_POST, ConsoleFunctionCallback, createdCVars, cvarFlags } from "./cvar";
+import { gameValues } from "gamevalues";
 
 // # Constants & variables
 export const COMMAND_EXECUTED = new Signal<[name: string, args: string[]]>();
@@ -62,7 +63,8 @@ export async function ExecuteCommand(content: string) {
  
     const [success, errorMessage] = pcall(() => targetCallback.execute(args));
     if (!success)
-      ChatSystem.sendSystemMessage(`Command error: <b><font color="${colorTable.errorneousColor}">${errorMessage}</font></b>`);
+      RaposoConsole.Error(`Command error: <b><font color="${colorTable.errorneousColor}">${errorMessage}</font></b>`);
+      // ChatSystem.sendSystemMessage(`Command error: <b><font color="${colorTable.errorneousColor}">${errorMessage}</font></b>`);
 
     return;
   }
@@ -81,3 +83,18 @@ for (const inst of script.WaitForChild("commands").GetChildren()) {
   if (inst.IsA("ModuleScript"))
     task.spawn(require, inst);
 }
+
+if (RunService.IsClient())
+  TextChatService.SendingMessage.Connect(msg => {
+    if (msg.Text.sub(1, 1) === gameValues.cmdprefix) {
+      const split = msg.Text.split(gameValues.cmdprefix);
+    
+      for (const cmd of split) {
+        if (cmd === "") continue;
+    
+        ExecuteCommand(cmd).expect();
+        task.wait();
+        task.wait(); // Double trouble :)
+      }
+    }
+  });
