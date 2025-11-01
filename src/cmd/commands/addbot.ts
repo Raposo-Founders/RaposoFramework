@@ -1,7 +1,8 @@
 import { Players, RunService } from "@rbxts/services";
 import { ConsoleFunctionCallback } from "cmd/cvar";
 import { defaultEnvironments } from "defaultinsts";
-import { PlayerTeam } from "entities/PlayerEntity";
+import PlayerEntity, { PlayerTeam } from "entities/PlayerEntity";
+import { gameValues } from "gamevalues";
 import SessionInstance from "providers/SessionProvider";
 import ChatSystem from "systems/ChatSystem";
 import { BufferReader } from "util/bufferreader";
@@ -32,10 +33,19 @@ SessionInstance.sessionCreated.Connect(inst => {
 
     const sessionList = SessionInstance.GetServersFromPlayer(info.sender);
 
-    for (const session of sessionList)
+    for (const session of sessionList) {
+      let callerEntity: PlayerEntity | undefined;
+      for (const ent of inst.entity.getEntitiesThatIsA("PlayerEntity")) {
+        if (ent.GetUserFromController() !== info.sender) continue;
+        callerEntity = ent;
+        break;
+      }
+      if (!callerEntity) continue;
+
       session.entity.createEntity("SwordPlayerEntity", `bot_${entityName}`, "", info.sender.UserId)
         .andThen(ent => {
           ent.team = PlayerTeam.Raiders;
+          ent.networkOwner = tostring(info.sender!.GetAttribute(gameValues.usersessionid));
 
           let currentThread: thread | undefined;
 
@@ -66,5 +76,6 @@ SessionInstance.sessionCreated.Connect(inst => {
 
           ChatSystem.sendSystemMessage(`Spawned bot ${ent.id}.`);
         });
+    }
   });
 });

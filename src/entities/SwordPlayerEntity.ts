@@ -2,16 +2,15 @@ import * as Services from "@rbxts/services";
 import { getLocalPlayerEntity } from "controllers/LocalEntityController";
 import { defaultEnvironments } from "defaultinsts";
 import { gameValues } from "gamevalues";
+import { RaposoConsole } from "logging";
 import { getPlayermodelFromEntity } from "providers/PlayermodelProvider";
 import SessionInstance from "providers/SessionProvider";
 import { BufferReader } from "util/bufferreader";
-import { startBufferCreation, writeBufferBool, writeBufferString, writeBufferU32, writeBufferU64, writeBufferU8 } from "util/bufferwriter";
+import { startBufferCreation, writeBufferBool, writeBufferString, writeBufferU32, writeBufferU8 } from "util/bufferwriter";
 import Signal from "util/signal";
-import { DoesInstanceExist } from "util/utilfuncs";
 import { registerEntityClass } from ".";
 import HealthEntity from "./HealthEntity";
 import PlayerEntity, { getPlayerEntityFromController } from "./PlayerEntity";
-import { RaposoConsole } from "logging";
 
 // # Types
 declare global {
@@ -204,7 +203,8 @@ SessionInstance.sessionCreated.Connect(server => {
     const entityId = reader.string(); // Entity ID can be read from here due to PlayerEntity writing it first
 
     const entity = server.entity.entities.get(entityId);
-    if (!entity || !entity.IsA("SwordPlayerEntity") || entity.GetUserFromController() !== packet.sender) {
+    if (!entity?.IsA("SwordPlayerEntity")) return;
+    if (entity.GetUserFromController() !== packet.sender && entity.GetUserFromNetworkOwner() !== packet.sender) {
       RaposoConsole.Warn(`Invalid ${SwordPlayerEntity} state update from ${packet.sender}.`);
       return;
     }
@@ -256,6 +256,15 @@ if (Services.RunService.IsClient()) {
     startBufferCreation();
     entity.WriteStateBuffer();
     defaultEnvironments.network.sendPacket(`${NETWORK_ID}c_stateupd`, undefined, undefined);
+
+    // Update bot entities
+    for (const ent of defaultEnvironments.entity.getEntitiesThatIsA("SwordPlayerEntity")) {
+      if (ent.GetUserFromNetworkOwner() !== Services.Players.LocalPlayer) continue;
+
+      startBufferCreation();
+      ent.WriteStateBuffer();
+      defaultEnvironments.network.sendPacket(`${NETWORK_ID}c_stateupd`, undefined, undefined);
+    }
   });
 
   // Sword / attack changes

@@ -57,6 +57,7 @@ export default class PlayerEntity extends HealthEntity {
   humanoidModel: PlayerEntityHumanoidModel | undefined;
 
   team = PlayerTeam.Spectators;
+  networkOwner = ""; // For BOT entities
 
   caseInfo = {
     isExploiter: false,
@@ -115,13 +116,19 @@ export default class PlayerEntity extends HealthEntity {
 
           killCurrentTween();
 
-          if (this.GetUserFromController() === Players.LocalPlayer) {
+          const controller = this.GetUserFromController();
+          const netOwner = this.GetUserFromNetworkOwner();
+
+          if (controller === Players.LocalPlayer || netOwner === Players.LocalPlayer) {
             humanoidModel.HumanoidRootPart.Anchored = this.health <= 0 || this.anchored;
-            Players.LocalPlayer.Character = humanoidModel;
+
+            if (controller === Players.LocalPlayer)
+              Players.LocalPlayer.Character = humanoidModel;
+
             return;
           }
 
-          if (this.GetUserFromController() !== Players.LocalPlayer) {
+          if (controller !== Players.LocalPlayer) {
             if (Players.LocalPlayer.Character === humanoidModel)
               Players.LocalPlayer.Character = undefined;
           }
@@ -140,6 +147,9 @@ export default class PlayerEntity extends HealthEntity {
 
           currentPlayingTween = TweenService.Create(humanoidModel.HumanoidRootPart, new TweenInfo(ctx.tickrate, Enum.EasingStyle.Linear), { CFrame: this.origin });
           currentPlayingTween.Play();
+
+          if (netOwner === Players.LocalPlayer)
+            print("PLAYED TWEEN ON BOT!");
         });
 
 
@@ -157,8 +167,19 @@ export default class PlayerEntity extends HealthEntity {
   }
 
   GetUserFromController() {
+    if (this.controller === "") return;
+
     for (const user of Players.GetPlayers()) {
       if (user.GetAttribute(gameValues.usersessionid) !== this.controller) continue;
+      return user;
+    }
+  }
+
+  GetUserFromNetworkOwner() {
+    if (this.networkOwner === "") return;
+
+    for (const user of Players.GetPlayers()) {
+      if (user.GetAttribute(gameValues.usersessionid) !== this.networkOwner) continue;
       return user;
     }
   }
@@ -182,10 +203,16 @@ export default class PlayerEntity extends HealthEntity {
 
     writeBufferBool(this.caseInfo.isExploiter);
     writeBufferBool(this.caseInfo.isDegenerate);
+
+    writeBufferString(this.networkOwner);
   }
 
   ApplyStateBuffer(reader: ReturnType<typeof BufferReader>): void {
-    const isLocalPlayer = this.GetUserFromController() === Players.LocalPlayer;
+    const controller = this.GetUserFromController();
+    const netController = this.GetUserFromNetworkOwner();
+    const isLocalPlayer = !this.environment.isPlayback && !this.environment.isServer && controller === Players.LocalPlayer;
+    const isLocalBot = !this.environment.isPlayback && !this.environment.isServer && netController === Players.LocalPlayer;
+
     const originalPosition = this.origin;
 
     const originalHealth = this.health;
@@ -207,6 +234,8 @@ export default class PlayerEntity extends HealthEntity {
 
     const isExploiter = reader.bool();
     const isDegenerate = reader.bool();
+
+    const networkOwner = reader.string();
 
     if (this.environment.isServer && !this.environment.isPlayback) {
       const requestedHorPosition = new Vector2(this.origin.X, this.origin.Z);
@@ -234,14 +263,16 @@ export default class PlayerEntity extends HealthEntity {
       if (isLocalPlayer && !pendingTeleport)
         this.origin = originalPosition;
 
-      if (this.environment.isPlayback || !isLocalPlayer || (isLocalPlayer && pendingTeleport)) {
+      if (this.environment.isPlayback || (!isLocalPlayer && !isLocalBot) || (isLocalPlayer && pendingTeleport) || (isLocalBot && pendingTeleport))
         this.TeleportTo(this.origin);
-      }
     }
 
-    this.grounded = this.environment.isServer || this.environment.isPlayback || (!this.environment.isServer && this.GetUserFromController() !== Players.LocalPlayer)
-      ? grounded
-      : this.grounded;
+    if (this.environment.isServer || this.environment.isPlayback)
+      this.grounded = grounded;
+    else
+      if (!isLocalPlayer && !isLocalBot)
+        this.grounded = grounded;
+
     this.anchored = pendingTeleport;
 
     if (this.environment.isPlayback || !this.environment.isServer) {
@@ -265,6 +296,8 @@ export default class PlayerEntity extends HealthEntity {
 
       this.caseInfo.isExploiter = isExploiter;
       this.caseInfo.isDegenerate = isDegenerate;
+
+      this.networkOwner = networkOwner;
     }
   }
 
@@ -308,7 +341,10 @@ export default class PlayerEntity extends HealthEntity {
     this.origin = origin;
     this.pendingTeleport = true;
 
-    if (!this.environment.isServer && this.humanoidModel && this.GetUserFromController() === Players.LocalPlayer) {
+    const isLocalPlayer = this.GetUserFromController() === Players.LocalPlayer;
+    const isLocalBot = this.GetUserFromNetworkOwner() === Players.LocalPlayer;
+
+    if (!this.environment.isServer && this.humanoidModel && (isLocalPlayer || isLocalBot)) {
       this.humanoidModel.PivotTo(this.origin);
       this.humanoidModel.HumanoidRootPart.AssemblyLinearVelocity = Vector3.zero;
     }

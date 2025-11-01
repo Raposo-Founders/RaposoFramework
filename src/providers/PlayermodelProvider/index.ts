@@ -6,6 +6,7 @@ import { createHealthBarForEntity } from "./healthbar";
 import { PlayermodelRig } from "./rig";
 import { colorTable } from "UI/values";
 import { getLocalPlayerEntity } from "controllers/LocalEntityController";
+import { DoesInstanceExist } from "util/utilfuncs";
 
 // # Constants & variables
 const entityPlayermodels = new Map<EntityId, PlayermodelRig>();
@@ -98,13 +99,15 @@ export function createPlayermodelForEntity(entity: PlayerEntity) {
     entity.AssociateInstance(inst);
   }
 
-  const unbindConnection = defaultEnvironments.lifecycle.BindLateUpdate(() => {
+  const unbindConnection1 = defaultEnvironments.lifecycle.BindLateUpdate(() => {
     const entityPart = entity.humanoidModel?.HumanoidRootPart;
     const playermodelPart = playermodel.rig.PrimaryPart;
 
     if (playermodelPart && entityPart && entity.health > 0) {
       // playermodelPart.Anchored = true;
-      playermodelPart.CFrame = entityPart.CFrame;
+
+      if (entity.GetUserFromController() === Services.Players.LocalPlayer)
+        playermodelPart.CFrame = entityPart.CFrame;
       playermodelPart.AssemblyLinearVelocity = entityPart.AssemblyLinearVelocity;
     }
 
@@ -127,8 +130,33 @@ export function createPlayermodelForEntity(entity: PlayerEntity) {
     }
   });
 
+  // Playermodel position update
+  let currentTween: Tween | undefined;
+  const unbindConnection2 = defaultEnvironments.lifecycle.BindTickrate(ctx => {
+    const entityPart = entity.humanoidModel?.HumanoidRootPart;
+    const playermodelPart = playermodel.rig.PrimaryPart;
+    if (entity.health <= 0 || !DoesInstanceExist(entityPart) || !DoesInstanceExist(playermodelPart)) return;
+
+    if (currentTween) {
+      const currentPosition = playermodelPart.CFrame;
+
+      currentTween.Cancel();
+      currentTween.Destroy();
+
+      playermodelPart.CFrame = currentPosition;
+    }
+
+    currentTween = Services.TweenService.Create(playermodelPart, new TweenInfo(ctx.tickrate, Enum.EasingStyle.Linear), { CFrame: entity.origin });
+    currentTween.Completed.Once(() => {
+      currentTween?.Destroy();
+      currentTween = undefined;
+    });
+    currentTween.Play();
+  });
+
   entity.OnDelete(() => {
-    unbindConnection();
+    unbindConnection1();
+    unbindConnection2();
     playermodel.Destroy();
 
     entityPlayermodels.delete(entity.id);
