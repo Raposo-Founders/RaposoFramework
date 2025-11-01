@@ -18,7 +18,7 @@ export const colorTable = {
   primaryColor: "#55aa7f",
   errorneousColor: "#FF5050",
 
-  windowBackground: "#000000",
+  windowBackground: "#D9D9D9",
   windowText: "#FFFFFF",
 
   spectatorsColor: "#55557F",

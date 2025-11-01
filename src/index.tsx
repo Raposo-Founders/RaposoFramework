@@ -231,9 +231,8 @@ if (RunService.IsClient()) {
 
 BindLifeCycle();
 
-if (!RunService.IsStudio())
-  task.spawn(() => {
-    DisplayLoadingScreen("Init")
-    task.wait(10);
-    HideLoadingScreen("Init")
-  });
+task.spawn(() => {
+  DisplayLoadingScreen("Init")
+  task.wait(10);
+  HideLoadingScreen("Init")
+});
