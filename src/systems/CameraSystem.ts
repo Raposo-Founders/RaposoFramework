@@ -29,12 +29,8 @@ let lastZoomDistance = targetZoomDistance;
 let lastZoomDistanceChangedTime = 0;
 
 // Shift lock
-const SHIFTLOCK_OFFSET = new CFrame(2.75, 0, 0);
-const SHIFTLOCK_TWEEN_TIME = 0.125;
-
+const SHIFTLOCK_OFFSET = new CFrame(1.75, 0, 0);
 let shiftlockEnabled = false;
-let currShiftlockOffset = new CFrame();
-let passedShiftlockTime = 0;
 
 // Other
 
@@ -112,7 +108,6 @@ export namespace CameraSystem {
 
     updateMouseLock();
     updateCameraZoom();
-    updateShiftlockTween(dt);
     UpdateCamera(dt); 
   }
 }
@@ -139,14 +134,6 @@ function updateCameraZoom() {
   currZoomDistance = lerp;
 }
 
-function updateShiftlockTween(dt: number) {
-  const addition = dt * (shiftlockEnabled ? 1 : -1);
-  passedShiftlockTime = math.clamp(passedShiftlockTime + addition, 0, SHIFTLOCK_TWEEN_TIME);
-
-  const alpha = math.clamp(passedShiftlockTime / SHIFTLOCK_TWEEN_TIME, 0, 1);
-  currShiftlockOffset = new CFrame().Lerp(SHIFTLOCK_OFFSET, TweenService.GetValue(alpha, "Quad", "InOut"));
-}
-
 function UpdateCamera(dt: number) {
   if (CAMERA_INST.CameraType.Name !== "Scriptable")
     return;
@@ -169,7 +156,7 @@ function UpdateCamera(dt: number) {
 
   let targetCFrame = new CFrame(focusPoint)
     .mul(CFrame.Angles(0, math.rad(cameraRotation.X), 0))
-    .mul(currShiftlockOffset)
+    .mul(shiftlockEnabled ? SHIFTLOCK_OFFSET : new CFrame())
     .mul(CFrame.Angles(math.rad(cameraRotation.Y), 0, 0))
     .mul(new CFrame(0, 0, currZoomDistance));
 
