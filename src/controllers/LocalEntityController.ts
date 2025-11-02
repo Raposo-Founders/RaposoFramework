@@ -1,7 +1,5 @@
 import { Players, RunService } from "@rbxts/services";
 import { defaultEnvironments } from "defaultinsts";
-import { getPlayermodelFromEntity } from "providers/PlayermodelProvider";
-import { PlayermodelRig } from "providers/PlayermodelProvider/rig";
 import { DoesInstanceExist } from "util/utilfuncs";
 import { CameraSystem } from "../systems/CameraSystem";
 
@@ -22,9 +20,13 @@ if (RunService.IsClient())
     if (defaultEnvironments.entity.isPlayback) return;
 
     const entity = getLocalPlayerEntity();
-    if (!entity || entity.health <= 0 || !entity.humanoidModel) return;
+    if (!entity || !DoesInstanceExist(entity.humanoidModel)) return;
+
+    entity.humanoidModel.HumanoidRootPart.Anchored = entity.anchored || entity.health <= 0;
+    if (entity.health <= 0) return;
 
     CameraSystem.setTrackingEntity(entity.id);
+    Players.LocalPlayer.Character = entity.humanoidModel;
 
     if (CameraSystem.isShiftlockEnabled()) {
       const currentPosition = entity.humanoidModel.HumanoidRootPart.CFrame;
