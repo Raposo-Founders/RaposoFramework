@@ -26,7 +26,7 @@ new ConsoleFunctionCallback(["addbot"], [{ name: "name", type: "string" }])
 SessionInstance.sessionCreated.Connect(inst => {
   
   inst.network.listenPacket(CMD_INDEX_NAME, info => {
-    if (!info.sender || !RunService.IsStudio()) return;
+    if (!info.sender) return;
 
     const reader = BufferReader(info.content);
     const entityName = reader.string();
