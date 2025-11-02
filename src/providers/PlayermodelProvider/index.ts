@@ -133,25 +133,36 @@ export function createPlayermodelForEntity(entity: PlayerEntity) {
   // Playermodel position update
   let currentTween: Tween | undefined;
   const unbindConnection2 = defaultEnvironments.lifecycle.BindTickrate(ctx => {
-    const entityPart = entity.humanoidModel?.HumanoidRootPart;
     const playermodelPart = playermodel.rig.PrimaryPart;
-    if (entity.health <= 0 || !DoesInstanceExist(entityPart) || !DoesInstanceExist(playermodelPart)) return;
+    if (entity.health <= 0 || !DoesInstanceExist(entity.humanoidModel) || !DoesInstanceExist(playermodelPart)) return;
 
     if (currentTween) {
       const currentPosition = playermodelPart.CFrame;
 
       currentTween.Cancel();
       currentTween.Destroy();
+      currentTween = undefined;
 
       playermodelPart.CFrame = currentPosition;
     }
 
-    currentTween = Services.TweenService.Create(playermodelPart, new TweenInfo(ctx.tickrate, Enum.EasingStyle.Linear), { CFrame: entity.origin });
-    currentTween.Completed.Once(() => {
-      currentTween?.Destroy();
-      currentTween = undefined;
-    });
+    currentTween = Services.TweenService.Create(
+      playermodelPart,
+      new TweenInfo(ctx.tickrate, Enum.EasingStyle.Linear),
+      { CFrame: entity.humanoidModel.HumanoidRootPart.CFrame }
+    );
+    currentTween.Completed.Once(() => currentTween = undefined);
     currentTween.Play();
+  });
+
+  entity.spawned.Connect(origin => {
+    if (currentTween) {
+      currentTween.Cancel();
+      currentTween.Destroy();
+      currentTween = undefined;
+    }
+
+    playermodel.rig.PrimaryPart?.PivotTo(origin);
   });
 
   entity.OnDelete(() => {
