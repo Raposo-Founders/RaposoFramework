@@ -176,7 +176,7 @@ export function createPlayermodelForEntity(entity: PlayerEntity) {
   entityPlayermodels.set(entity.id, playermodel);
   // refreshPlayermodelAppearance(playermodel, entity.GetUserFromController()?.UserId);
 
-  task.spawn(() => createHealthBarForEntity(entity));
+  task.spawn(() => createHealthBarForEntity(entity, playermodel.humanoidRootPart));
 
   return playermodel;
 }

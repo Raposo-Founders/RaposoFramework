@@ -31,7 +31,7 @@ const MASTER_SIZE = UDim2.fromOffset(
 );
 
 // # Functions
-function EntityHealthBar(props: { entity: PlayerEntity }) {
+function EntityHealthBar(props: { entity: PlayerEntity, part: BasePart }) {
   const [frameVisibleBinding, setVisible] = React.createBinding(false);
   const [framePositionBinding, setPosition] = React.createBinding(UDim2.fromOffset(-100, -100));
   const [scaleAmountBinding, setScale] = React.createBinding(1);
@@ -78,7 +78,7 @@ function EntityHealthBar(props: { entity: PlayerEntity }) {
       setUsername(props.entity.GetUserFromController()?.Name || "PlayerEntity");
 
     const camera = workspace.CurrentCamera!;
-    const [viewportPosition, onViewport] = camera.WorldToViewportPoint(props.entity.origin.Position.add(POSITION_OFFSET));
+    const [viewportPosition, onViewport] = camera.WorldToViewportPoint(props.part.Position.add(POSITION_OFFSET));
 
     const distance = camera.CFrame.Position.sub(props.entity.origin.Position).Magnitude;
     let scaleAmount = 1;
@@ -197,9 +197,9 @@ function EntityHealthBar(props: { entity: PlayerEntity }) {
   return element;
 }
 
-export function createHealthBarForEntity(entity: PlayerEntity) {
+export function createHealthBarForEntity(entity: PlayerEntity, part: BasePart) {
   const root = ReactRoblox.createRoot(SCREENGUI, { "hydrate": true });
-  root.render(<EntityHealthBar entity={entity} />);
+  root.render(<EntityHealthBar entity={entity} part={part} />);
 
   entity.OnDelete(() => {
     root.unmount();

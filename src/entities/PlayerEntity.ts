@@ -77,10 +77,7 @@ export default class PlayerEntity extends HealthEntity {
     this.inheritanceList.add("PlayerEntity");
 
     this.OnSetupFinished(() => {
-      if (this.environment.isServer) {
-        this.humanoidModel = ErrorObject("humanoidModel is not available for the server.");
-        return;
-      }
+      if (this.environment.isServer) return;
 
       const humanoidModel = modelsFolder.WaitForChild("PlayerEntityHumanoidRig", 1)?.Clone() as PlayerEntityHumanoidModel | undefined;
       assert(humanoidModel, `No PlayerEntityHumanoidRig has been found on the models folder.`);
