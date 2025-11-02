@@ -103,7 +103,6 @@ export default class CapturePointEntity extends WorldEntity {
     const playersList: PlayerEntity[] = [];
 
     for (const ent of this.environment.getEntitiesThatIsA("PlayerEntity")) {
-      if (!ent.GetUserFromController()) continue;
       if (ent.health <= 0 || ent.team === PlayerTeam.Spectators) continue;
       if (!IsPointInZone(ent.origin.Position, this.origin, this.size)) continue;
 

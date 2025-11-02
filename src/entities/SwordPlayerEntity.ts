@@ -204,7 +204,7 @@ SessionInstance.sessionCreated.Connect(server => {
 
     const entity = server.entity.entities.get(entityId);
     if (!entity?.IsA("SwordPlayerEntity")) return;
-    if (entity.GetUserFromController() !== packet.sender && entity.GetUserFromNetworkOwner() !== packet.sender) {
+    if (entity.GetUserFromController() !== packet.sender) {
       RaposoConsole.Warn(`Invalid ${SwordPlayerEntity} state update from ${packet.sender}.`);
       return;
     }
@@ -241,7 +241,7 @@ if (Services.RunService.IsClient()) {
       entity.ApplyStateBuffer(reader);
     }
 
-    // Deleting non-listed entities
+    // Deleting unlisted entities
     for (const ent of defaultEnvironments.entity.getEntitiesThatIsA("SwordPlayerEntity")) {
       if (listedServerEntities.has(ent.id)) continue;
       defaultEnvironments.entity.killThisFucker(ent);
@@ -256,15 +256,6 @@ if (Services.RunService.IsClient()) {
     startBufferCreation();
     entity.WriteStateBuffer();
     defaultEnvironments.network.sendPacket(`${NETWORK_ID}c_stateupd`, undefined, undefined);
-
-    // Update bot entities
-    for (const ent of defaultEnvironments.entity.getEntitiesThatIsA("SwordPlayerEntity")) {
-      if (ent.GetUserFromNetworkOwner() !== Services.Players.LocalPlayer) continue;
-
-      startBufferCreation();
-      ent.WriteStateBuffer();
-      defaultEnvironments.network.sendPacket(`${NETWORK_ID}c_stateupd`, undefined, undefined);
-    }
   });
 
   // Sword / attack changes

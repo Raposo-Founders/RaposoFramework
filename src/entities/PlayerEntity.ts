@@ -76,94 +76,29 @@ export default class PlayerEntity extends HealthEntity {
     super();
     this.inheritanceList.add("PlayerEntity");
 
-    if (RunService.IsClient())
-      task.defer(() => {
-        task.wait();
-        if (this.environment.isServer) {
-          this.humanoidModel = ErrorObject("humanoidModel is not available for the server.");
-          return;
-        }
+    this.OnSetupFinished(() => {
+      if (this.environment.isServer) {
+        this.humanoidModel = ErrorObject("humanoidModel is not available for the server.");
+        return;
+      }
 
-        const humanoidModel = modelsFolder.WaitForChild("PlayerEntityHumanoidRig", 1)?.Clone() as PlayerEntityHumanoidModel | undefined;
-        assert(humanoidModel, `No PlayerEntityHumanoidRig has been found on the models folder.`);
+      const humanoidModel = modelsFolder.WaitForChild("PlayerEntityHumanoidRig", 1)?.Clone() as PlayerEntityHumanoidModel | undefined;
+      assert(humanoidModel, `No PlayerEntityHumanoidRig has been found on the models folder.`);
 
-        humanoidModel.Name = this.id;
-        humanoidModel.Parent = WorldProvider.ObjectsFolder;
-        humanoidModel.Humanoid.SetStateEnabled("PlatformStanding", false);
-        humanoidModel.Humanoid.SetStateEnabled("Ragdoll", false);
-        humanoidModel.Humanoid.SetStateEnabled("Dead", false);
-        humanoidModel.Humanoid.BreakJointsOnDeath = false;
+      humanoidModel.Name = this.id;
+      humanoidModel.Parent = WorldProvider.ObjectsFolder;
+      humanoidModel.Humanoid.SetStateEnabled("PlatformStanding", false);
+      humanoidModel.Humanoid.SetStateEnabled("Ragdoll", false);
+      humanoidModel.Humanoid.SetStateEnabled("Dead", false);
+      humanoidModel.Humanoid.BreakJointsOnDeath = false;
 
-        // Lerping positions
-        let currentPlayingTween: Tween | undefined;
-
-        const killCurrentTween = () => {
-          let currentCFrame = new CFrame();
-
-          if (DoesInstanceExist(humanoidModel))
-            currentCFrame = humanoidModel.HumanoidRootPart.CFrame;
-
-          currentPlayingTween?.Cancel();
-          currentPlayingTween?.Destroy();
-          currentPlayingTween = undefined;
-
-          if (DoesInstanceExist(humanoidModel))
-            humanoidModel.HumanoidRootPart.CFrame = currentCFrame;
-        };
-
-        const disconnectBinding = defaultEnvironments.lifecycle.BindTickrate(ctx => {
-          if (!DoesInstanceExist(humanoidModel)) return;
-
-          killCurrentTween();
-
-          const controller = this.GetUserFromController();
-          const netOwner = this.GetUserFromNetworkOwner();
-
-          if (controller === Players.LocalPlayer || netOwner === Players.LocalPlayer) {
-            humanoidModel.HumanoidRootPart.Anchored = this.health <= 0 || this.anchored;
-
-            if (controller === Players.LocalPlayer)
-              Players.LocalPlayer.Character = humanoidModel;
-
-            return;
-          }
-
-          if (controller !== Players.LocalPlayer) {
-            if (Players.LocalPlayer.Character === humanoidModel)
-              Players.LocalPlayer.Character = undefined;
-          }
-
-          const currentCFrame = humanoidModel.HumanoidRootPart.CFrame;
-          const direction = new CFrame(currentCFrame.Position, this.origin.Position).LookVector;
-          const distance = currentCFrame.Position.sub(this.origin.Position).Magnitude;
-
-          humanoidModel.HumanoidRootPart.Anchored = true;
-          humanoidModel.HumanoidRootPart.AssemblyLinearVelocity = direction.mul(distance);
-
-          if (distance >= 5) {
-            humanoidModel.PivotTo(this.origin);
-            return;
-          }
-
-          currentPlayingTween = TweenService.Create(humanoidModel.HumanoidRootPart, new TweenInfo(ctx.tickrate, Enum.EasingStyle.Linear), { CFrame: this.origin });
-          currentPlayingTween.Play();
-
-          if (netOwner === Players.LocalPlayer)
-            print("PLAYED TWEEN ON BOT!");
-        });
-
-
-        this.OnDelete(() => {
-          disconnectBinding();
-          killCurrentTween();
-
-          humanoidModel.Destroy();
-          rawset(this, "humanoidModel", undefined);
-        });
-
-        rawset(this, "humanoidModel", humanoidModel);
-
+      this.OnDelete(() => {
+        humanoidModel.Destroy();
+        rawset(this, "humanoidModel", undefined);
       });
+
+      rawset(this, "humanoidModel", humanoidModel);
+    });
   }
 
   GetUserFromController() {
@@ -341,10 +276,7 @@ export default class PlayerEntity extends HealthEntity {
     this.origin = origin;
     this.pendingTeleport = true;
 
-    const isLocalPlayer = this.GetUserFromController() === Players.LocalPlayer;
-    const isLocalBot = this.GetUserFromNetworkOwner() === Players.LocalPlayer;
-
-    if (!this.environment.isServer && this.humanoidModel && (isLocalPlayer || isLocalBot)) {
+    if (!this.environment.isServer && this.humanoidModel) {
       this.humanoidModel.PivotTo(this.origin);
       this.humanoidModel.HumanoidRootPart.AssemblyLinearVelocity = Vector3.zero;
     }

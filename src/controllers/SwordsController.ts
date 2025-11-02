@@ -27,6 +27,7 @@ const teamHealingEnabled = getInstanceDefinedValue("TeamHealingEnabled", false);
 enum NetworkSwordHitIndex {
   LocalToOther,
   OtherToLocal,
+  BotToOther,
 }
 
 // # Functions
@@ -48,6 +49,14 @@ function CheckPlayers<T extends BaseEntity>(entity1: SwordPlayerEntity, entity2:
     if (entity1.team === entity2.team) return;
 
   return true;
+}
+
+function ClientWriteNetworkHit(network: NetworkManager, mode: NetworkSwordHitIndex, attacker: EntityId, victim: EntityId) {
+  startBufferCreation();
+  writeBufferU8(mode);
+  writeBufferString(attacker);
+  writeBufferString(victim);
+  network.sendPacket(`${NETWORK_ID}hit`);
 }
 
 function ClientHandleHitboxTouched(attacker: SwordPlayerEntity, target: HealthEntity, part: BasePart, network: NetworkManager) {
@@ -73,26 +82,31 @@ function ClientHandleHitboxTouched(attacker: SwordPlayerEntity, target: HealthEn
   if (target.IsA("PlayerEntity") && target.team === PlayerTeam.Defenders) targetColor = colorTable.defendersColor;
   if (target.IsA("PlayerEntity") && target.team === PlayerTeam.Raiders) targetColor = colorTable.raidersColor;
 
-  // If the attacker is another player
-  if (attacker.GetUserFromController() !== Players.LocalPlayer) {
-    if (!target.IsA("PlayerEntity") || target.GetUserFromController() !== Players.LocalPlayer) return;
+  const isLocalBot = attacker.GetUserFromNetworkOwner() === Players.LocalPlayer;
+  const attackerController = attacker.GetUserFromController();
+  const victimController = target.IsA("PlayerEntity") ? target.GetUserFromController() : undefined;
+
+  // If the attacker is a local bot
+  if (isLocalBot) {
+    spawnHitHighlight(targetColor);
+    ClientWriteNetworkHit(network, NetworkSwordHitIndex.BotToOther, attacker.id, target.id);
+
+    return;
+  }
+
+  // If the attacker is another player attacking us
+  if (attackerController !== Players.LocalPlayer) {
+    if (victimController !== Players.LocalPlayer) return; // Only allow if this attacker is attacking us
 
     spawnHitHighlight(targetColor);
-
-    startBufferCreation();
-    writeBufferU8(NetworkSwordHitIndex.OtherToLocal);
-    writeBufferString(attacker.id);
-    network.sendPacket(`${NETWORK_ID}hit`);
+    ClientWriteNetworkHit(network, NetworkSwordHitIndex.OtherToLocal, attacker.id, target.id);
 
     return;
   }
 
   // If we're the ones attacking
-  if (attacker.GetUserFromController() === Players.LocalPlayer) {
-    startBufferCreation();
-    writeBufferU8(NetworkSwordHitIndex.LocalToOther);
-    writeBufferString(target.id);
-    network.sendPacket(`${NETWORK_ID}hit`);
+  if (attackerController === Players.LocalPlayer) {
+    ClientWriteNetworkHit(network, NetworkSwordHitIndex.LocalToOther, attacker.id, target.id);
   }
 
   if (target.IsA("PlayerEntity"))
@@ -104,41 +118,38 @@ SessionInstance.sessionCreated.Connect(server => {
   // Listening for damage
   server.network.listenPacket(`${NETWORK_ID}hit`, (packet) => {
     if (!packet.sender) return;
-  
+
     const reader = BufferReader(packet.content);
     const hitIndex = reader.u8();
-    const entityId = reader.string();
-  
-    const entity = getPlayerEntityFromController(server.entity, tostring(packet.sender.GetAttribute(gameValues.usersessionid)));
-    if (!entity || !entity.IsA("SwordPlayerEntity")) return;
-  
-    const targetEntity = server.entity.entities.get(entityId);
-    if (!targetEntity?.IsA("HealthEntity")) return;
-  
-    if (!CheckPlayers(entity, targetEntity)) return;
-  
-    let totalDealingDamage = 0;
-  
-    if (hitIndex === NetworkSwordHitIndex.LocalToOther) {
-      totalDealingDamage = entity.currentState;
-  
-      if (teamHealingEnabled && targetEntity.IsA("PlayerEntity"))
-        if (targetEntity.team === entity.team)
-          totalDealingDamage = -totalDealingDamage;
-  
-      targetEntity.takeDamage(totalDealingDamage, entity);
-    }
-  
-    if (hitIndex === NetworkSwordHitIndex.OtherToLocal) {
-      if (!targetEntity.IsA("SwordPlayerEntity")) return;
-  
-      totalDealingDamage = targetEntity.currentState;
-  
-      if (teamHealingEnabled && targetEntity.team === entity.team)
+    const attackerId = reader.string();
+    const victimId = reader.string();
+
+    const attackerEntity = server.entity.entities.get(attackerId);
+    const victimEntity = server.entity.entities.get(victimId);
+    if (!attackerEntity?.IsA("SwordPlayerEntity") || !victimEntity?.IsA("HealthEntity")) return;
+
+    if (!CheckPlayers(attackerEntity, victimEntity)) return;
+
+    let totalDealingDamage = attackerEntity.currentState;
+
+    if (teamHealingEnabled && victimEntity.IsA("PlayerEntity"))
+      if (victimEntity.team === attackerEntity.team)
         totalDealingDamage = -totalDealingDamage;
-  
-      entity.takeDamage(totalDealingDamage, targetEntity);
+
+    if (hitIndex === NetworkSwordHitIndex.BotToOther) {
+      // Check to see if the caller is the owner of the bot
+      if (attackerEntity.GetUserFromNetworkOwner() !== packet.sender) return;
     }
+
+    if (hitIndex === NetworkSwordHitIndex.LocalToOther) {
+      if (attackerEntity.GetUserFromController() !== packet.sender) return;
+    }
+
+    if (hitIndex === NetworkSwordHitIndex.OtherToLocal) {
+      if (!victimEntity?.IsA("SwordPlayerEntity") || victimEntity.GetUserFromController() !== packet.sender) return;
+    }
+
+    victimEntity.takeDamage(totalDealingDamage, attackerEntity);
   });
 });
 
