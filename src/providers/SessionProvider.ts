@@ -40,7 +40,7 @@ class SessionInstance {
 
     SessionInstance.instances.set(id, this);
 
-    this.networkLifecycleDisconnect = lifecycle.BindTickrate(() => network.processPackets());
+    this.networkLifecycleDisconnect = lifecycle.BindTickrate(() => network.processIncomingPackets());
     this.connections.push(Players.PlayerRemoving.Connect(user => this.RemovePlayer(user, "Left the game.")));
 
     network.listenPacket("disconnect_request", (packet) => {

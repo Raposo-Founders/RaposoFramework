@@ -79,15 +79,13 @@ export function clientCreateLocalSession() {
   defaultEnvironments.server = serverInst;
 
   serverInst.network.remoteEnabled = false;
-  const serverSessionConnection = serverInst.network.packetsPosted.Connect(packets => {
-    for (const packet of packets)
-      defaultEnvironments.network.insertNetwork(packet);
+  const serverSessionConnection = serverInst.network.packetPosted.Connect(packet => {
+    defaultEnvironments.network.insertNetwork(packet);
   });
 
   defaultEnvironments.network.remoteEnabled = false;
-  const clientSessionConnection = defaultEnvironments.network.packetsPosted.Connect(packets => {
-    for (const packet of packets)
-      serverInst.network.insertNetwork(packet);
+  const clientSessionConnection = defaultEnvironments.network.packetPosted.Connect(packet => {
+    serverInst.network.insertNetwork(packet);
   });
 
   const connection = DISCONNECT_LOCAL.Connect(() => {

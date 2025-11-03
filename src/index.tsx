@@ -124,7 +124,7 @@ ExecuteGameModules();
 // Misc & other shit
 if (RunService.IsClient()) {
   defaultEnvironments.lifecycle.BindTickrate((_, dt) => {
-    defaultEnvironments.network.processPackets();
+    defaultEnvironments.network.processIncomingPackets();
 
     for (const [, entity] of defaultEnvironments.entity.entities)
       task.spawn(() => entity.Think(dt));

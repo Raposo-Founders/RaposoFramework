@@ -14,18 +14,12 @@ interface PacketInfo {
   content: buffer;
 }
 
-interface PacketOutgoingInfo {
-  packet: PacketInfo;
-  recipients: Set<Player>;
-  unreliable: boolean;
-}
-
 // # Constants
-const REMOTE_EVENT = ReplicatedInstance(workspace, "MESSAGES", "RemoteEvent");
-const UNREL_REMOTE_EVENT = ReplicatedInstance(workspace, "UNREL_MESSAGES", "UnreliableRemoteEvent");
+const REMOTE_EVENT = ReplicatedInstance(workspace, "PACKETS", "RemoteEvent");
+const UNREL_REMOTE_EVENT = ReplicatedInstance(workspace, "UNREL_PACKETS", "UnreliableRemoteEvent");
 
-const DIRECT_REMOTE = ReplicatedInstance(workspace, "DIR_MESSAGES", "RemoteEvent");
-const UNREL_DIRECT_REMOTE = ReplicatedInstance(workspace, "UNREL_DIR_MESSAGES", "UnreliableRemoteEvent");
+const DIRECT_REMOTE = ReplicatedInstance(workspace, "DIR_PACKETS", "RemoteEvent");
+const UNREL_DIRECT_REMOTE = ReplicatedInstance(workspace, "UNREL_DIR_PACKETS", "UnreliableRemoteEvent");
 
 const boundDirectCallbacks = new Map<string, Callback>();
 
@@ -72,8 +66,7 @@ export class NetworkManager {
 
   remoteEnabled = true;
   private incomingPackets = new Array<PacketInfo>();
-  packetsPosted = new Signal<[packets: PacketInfo[]]>();
-  outgoingPackets: PacketOutgoingInfo[] = [];
+  packetPosted = new Signal<[packet: PacketInfo]>();
 
   readonly signedUsers = new Set<Player>();
 
@@ -82,40 +75,48 @@ export class NetworkManager {
     let unreliableConnection: RBXScriptConnection;
 
     if (RunService.IsServer()) {
-      reliableConnection = REMOTE_EVENT.OnServerEvent.Connect((user, content) => {
-        if (!t.array(ASSERT_PACKET_CHECK)(content)) {
-          HandleInfraction(user, content);
-          return;
-        }
+      reliableConnection = REMOTE_EVENT.OnServerEvent.Connect((user, id, content) => {
+        if (!this.signedUsers.has(user)) return;
+        if (!t.string(id) || !t.buffer(content)) return;
 
-        for (const packet of content)
-          this.insertNetwork(packet);
+        this.insertNetwork({
+          id,
+          sender: user,
+          timestamp: time(),
+          content
+        });
       });
-      unreliableConnection = UNREL_REMOTE_EVENT.OnServerEvent.Connect((user, packet) => {
-        if (!ASSERT_PACKET_CHECK(packet)) {
-          HandleInfraction(user, packet);
-          return;
-        }
+      unreliableConnection = UNREL_REMOTE_EVENT.OnServerEvent.Connect((user, id, content) => {
+        if (!this.signedUsers.has(user)) return;
+        if (!t.string(id) || !t.buffer(content)) return;
 
-        this.insertNetwork(packet);
+        this.insertNetwork({
+          id,
+          sender: user,
+          timestamp: time(),
+          content
+        });
       });
     } else {
-      reliableConnection = REMOTE_EVENT.OnClientEvent.Connect((content) => {
-        if (!t.array(ASSERT_PACKET_CHECK)(content)) {
-          HandleInfraction(undefined, content);
-          return;
-        }
+      reliableConnection = REMOTE_EVENT.OnClientEvent.Connect((id, content) => {
+        if (!t.string(id) || !t.buffer(content)) return;
 
-        for (const packet of content)
-          this.insertNetwork(packet);
+        this.insertNetwork({
+          id,
+          sender: undefined,
+          timestamp: time(),
+          content
+        });
       });
-      unreliableConnection = UNREL_REMOTE_EVENT.OnClientEvent.Connect((packet) => {
-        if (!ASSERT_PACKET_CHECK(packet)) {
-          HandleInfraction(undefined, packet);
-          return;
-        }
+      unreliableConnection = UNREL_REMOTE_EVENT.OnClientEvent.Connect((id, content) => {
+        if (!t.string(id) || !t.buffer(content)) return;
 
-        this.insertNetwork(packet);
+        this.insertNetwork({
+          id,
+          sender: undefined,
+          timestamp: time(),
+          content
+        });
       });
     }
 
@@ -136,12 +137,10 @@ export class NetworkManager {
     this.incomingPackets.push(packet);
   }
 
-  processPackets() {
+  processIncomingPackets() {
     const clonedIncomingPacketsList = Object.deepCopy(this.incomingPackets);
-    const clonedOutgoingPacketsList = Object.deepCopy(this.outgoingPackets);
 
     this.incomingPackets.clear();
-    this.outgoingPackets.clear();
 
     for (const packet of clonedIncomingPacketsList) {
       const callbackList = this.boundListeners.get(packet.id);
@@ -158,76 +157,7 @@ export class NetworkManager {
         task.spawn(callback, packet);
     }
 
-    // -- Process outgoing packets
-    // If this is the client, then just send it all without checking
-    if (RunService.IsClient()) {
-      const outgoingReliable: PacketInfo[] = [];
-      const outgoingUnreliable: PacketInfo[] = [];
-      const totalOutgoingPackets: PacketInfo[] = [];
-
-      for (const packet of clonedOutgoingPacketsList) {
-        if (packet.unreliable)
-          outgoingUnreliable.push(packet.packet);
-        else
-          outgoingReliable.push(packet.packet);
-
-        totalOutgoingPackets.push(packet.packet);
-      }
-
-      this.packetsPosted.Fire(totalOutgoingPackets);
-      if (this.remoteEnabled) {
-        if (outgoingReliable.size() > 0) REMOTE_EVENT.FireServer(outgoingReliable);
-
-        // Since unreliable remote events cannot handle data over 80 bytes,
-        // send them one by one individually
-        // ! Might result in heavy data loss !
-        if (outgoingUnreliable.size() > 0)
-          for (const packet of outgoingUnreliable)
-            UNREL_REMOTE_EVENT.FireServer(packet);
-      }
-
-      outgoingReliable.clear();
-      outgoingUnreliable.clear();
-      totalOutgoingPackets.clear(); // Might be risky, since we're erasing the original reference
-    }
-
-    // Process server
-    if (RunService.IsServer()) {
-      const playersOutgoingPackets = new Map<Player, [PacketInfo[], PacketInfo[]]>(); // [Reliable, Unreliable]
-
-      for (const packet of clonedOutgoingPacketsList) {
-        for (const user of packet.recipients) {
-          if (!user.IsDescendantOf(Players)) continue;
-
-          const list = playersOutgoingPackets.get(user) || [[], []];
-
-          if (packet.unreliable)
-            list[1].push(packet.packet);
-          else
-            list[0].push(packet.packet);
-
-          if (!playersOutgoingPackets.has(user))
-            playersOutgoingPackets.set(user, list);
-        }
-      }
-
-      // Server ignores if the remote is enabled or not.
-      for (const [user, packetList] of playersOutgoingPackets) {
-        if (packetList[0].size() > 0)
-          REMOTE_EVENT.FireClient(user, packetList[0]);
-        if (packetList[1].size() > 0)
-          // Since unreliable remote events cannot handle data over 80 bytes,
-          // send them one by one individually
-          // ! Might result in heavy data loss !
-          for (const packet of packetList[1])
-            UNREL_REMOTE_EVENT.FireClient(user, packet);
-      }
-
-      // print("Reached end.", clonedOutgoingPacketsList);
-    }
-
     clonedIncomingPacketsList.clear();
-    clonedOutgoingPacketsList.clear();
   }
 
   sendPacket(id: string, players = Players.GetPlayers(), ignore: Player[] = [], unreliable = false) {
@@ -239,18 +169,27 @@ export class NetworkManager {
       filteredPlayerList.add(user);
     }
 
-    const packet: PacketInfo = {
+    this.packetPosted.Fire({
       id,
-      sender: Players.LocalPlayer, // Will be *nil* on the server-side
-      timestamp: workspace.GetServerTimeNow(),
+      sender: Players.LocalPlayer,
+      timestamp: time(),
       content: bfr,
-    };
-
-    this.outgoingPackets.push({
-      packet,
-      recipients: filteredPlayerList,
-      unreliable,
     });
+
+    if (!this.remoteEnabled) return;
+
+    if (unreliable)
+      if (RunService.IsServer())
+        for (const user of filteredPlayerList)
+          UNREL_REMOTE_EVENT.FireClient(user, id, bfr);
+      else
+        UNREL_REMOTE_EVENT.FireServer(id, bfr);
+    else
+      if (RunService.IsServer())
+        for (const user of filteredPlayerList)
+          REMOTE_EVENT.FireClient(user, id, bfr);
+      else
+        REMOTE_EVENT.FireServer(id, bfr);
   }
 
   listenPacket(id: string, callback: (info: PacketInfo) => void) {
