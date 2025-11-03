@@ -131,35 +131,36 @@ export function createPlayermodelForEntity(entity: PlayerEntity) {
   });
 
   // Playermodel position update
-  let currentTween: Tween | undefined;
+  let currentPositionThread: thread | undefined;
   const unbindConnection2 = defaultEnvironments.lifecycle.BindTickrate(ctx => {
     const playermodelPart = playermodel.rig.PrimaryPart;
     if (entity.health <= 0 || !DoesInstanceExist(entity.humanoidModel) || !DoesInstanceExist(playermodelPart)) return;
 
-    if (currentTween) {
-      const currentPosition = playermodelPart.CFrame;
-
-      currentTween.Cancel();
-      currentTween.Destroy();
-      currentTween = undefined;
-
-      playermodelPart.CFrame = currentPosition;
+    if (currentPositionThread) {
+      task.cancel(currentPositionThread);
+      currentPositionThread = undefined;
     }
 
-    currentTween = Services.TweenService.Create(
-      playermodelPart,
-      new TweenInfo(ctx.tickrate, Enum.EasingStyle.Linear),
-      { CFrame: entity.humanoidModel.HumanoidRootPart.CFrame }
-    );
-    currentTween.Completed.Once(() => currentTween = undefined);
-    currentTween.Play();
+    currentPositionThread = task.spawn(() => {
+      const startingPosition = playermodelPart.CFrame;
+      const targetPosition = entity.humanoidModel?.HumanoidRootPart.CFrame ?? entity.origin;
+      const startingTime = time();
+
+      while (game) {
+        const passedTime = time() - startingTime;
+        const alpha = math.clamp(passedTime / ctx.tickrate, 0, math.huge);
+
+        playermodelPart.CFrame = startingPosition.Lerp(targetPosition, alpha);
+
+        Services.RunService.RenderStepped.Wait();
+      }
+    });
   });
 
   entity.spawned.Connect(origin => {
-    if (currentTween) {
-      currentTween.Cancel();
-      currentTween.Destroy();
-      currentTween = undefined;
+    if (currentPositionThread) {
+      task.cancel(currentPositionThread);
+      currentPositionThread = undefined;
     }
 
     playermodel.rig.PrimaryPart?.PivotTo(origin);
